@@ -545,8 +545,8 @@ def create_xy_grid(
         
         # Check if imx-plot exists
         if not os.path.exists(imx_plot_path):
-            logger.error(f"imx-plot script not found at {imx_plot_path}")
-            return None
+            logger.warning(f"imx-plot script not found at {imx_plot_path}, falling back to ImageMagick")
+            return create_grid_with_imagemagick(image_paths, x_values, y_values, output_path, x_label, y_label)
         
         # Call the imx binary
         logger.info(f"Running imx-plot: {imx_plot_path} {config_path}")
@@ -554,8 +554,9 @@ def create_xy_grid(
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode != 0:
-            logger.error(f"Failed to create grid: {result.stderr}")
-            return None
+            logger.warning(f"Failed to create grid with imx-plot: {result.stderr}")
+            logger.info("Falling back to ImageMagick...")
+            return create_grid_with_imagemagick(image_paths, x_values, y_values, output_path, x_label, y_label)
         
         logger.info(f"Successfully created XY grid at {output_path}")
         if debug_mode:
@@ -566,8 +567,89 @@ def create_xy_grid(
         
         return output_path
     except Exception as e:
-        logger.error(f"Error creating XY grid: {e}")
-        return None
+        logger.error(f"Error creating XY grid with imx-plot: {e}")
+        logger.info("Falling back to ImageMagick...")
+        try:
+            return create_grid_with_imagemagick(image_paths, x_values, y_values, output_path, x_label, y_label)
+        except Exception as e2:
+            logger.error(f"Error creating grid with ImageMagick: {e2}")
+            return None
+
+
+def create_grid_with_imagemagick(
+    image_paths: List[str],
+    x_values: List[str],
+    y_values: List[str],
+    output_path: str,
+    x_label: str,
+    y_label: str
+) -> str:
+    """Create an XY grid using ImageMagick's montage command as a fallback
+    
+    Args:
+        image_paths: List of paths to images (row-major order)
+        x_values: List of X axis values
+        y_values: List of Y axis values
+        output_path: Path to save the output grid
+        x_label: Label for X axis
+        y_label: Label for Y axis
+        
+    Returns:
+        Path to the output grid image
+    """
+    logger.info("Creating grid with ImageMagick")
+    
+    # Create a temporary directory for intermediate files
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Organize images by row
+        rows = []
+        for y_idx in range(len(y_values)):
+            row_images = image_paths[y_idx * len(x_values):(y_idx + 1) * len(x_values)]
+            rows.append(row_images)
+        
+        # Create a labeled image for each cell
+        labeled_images = []
+        for y_idx, row in enumerate(rows):
+            for x_idx, img_path in enumerate(row):
+                # Create labeled version
+                labeled_path = os.path.join(temp_dir, f"labeled_{y_idx}_{x_idx}.png")
+                label_text = f"{x_label}: {x_values[x_idx]}, {y_label}: {y_values[y_idx]}"
+                
+                # Create labeled image with ImageMagick
+                cmd = [
+                    "convert", img_path,
+                    "-gravity", "North",
+                    "-background", "white",
+                    "-splice", "0x30",
+                    "-pointsize", "14",
+                    "-annotate", "+0+5", label_text,
+                    labeled_path
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    logger.warning(f"Failed to add label to image: {result.stderr}")
+                    labeled_images.append(img_path)  # Use original if labeling fails
+                else:
+                    labeled_images.append(labeled_path)
+        
+        # Create the grid with montage
+        cols = len(x_values)
+        cmd = [
+            "montage",
+            *labeled_images,
+            "-tile", f"{cols}x",
+            "-geometry", "+5+5",
+            "-background", "white",
+            output_path
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"Failed to create grid with montage: {result.stderr}")
+            return None
+        
+        logger.info(f"Successfully created XY grid with ImageMagick at {output_path}")
+        return output_path
 
 
 def generate_xyplot(args):
