@@ -20,6 +20,7 @@ from ..utils.comfy_api import (
     get_available_checkpoints,
     get_available_loras,
     get_image_path,
+    get_lora_directory,
     get_matching_checkpoint,
     get_matching_lora,
     get_preferred_checkpoint,
