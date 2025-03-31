@@ -180,7 +180,9 @@ class ComfyAPI:
                 # Special handling for 404 - this usually means the prompt is still processing
                 # and hasn't been added to history yet, so it's not a real error
                 if r.status_code == 404:
-                    logger.debug(f"Prompt {prompt_id} not in history yet, waiting... ({int(time.time() - start_time)}s elapsed)")
+                    logger.debug(
+                        f"Prompt {prompt_id} not in history yet, waiting... ({int(time.time() - start_time)}s elapsed)"
+                    )
                     time.sleep(2)  # Wait a bit longer for processing
                     continue  # This is not counted as an error
 
@@ -223,8 +225,10 @@ class ComfyAPI:
                     return self._extract_image_info(data[prompt_id])
 
                 # If we get here, the prompt is in history but not yet complete
-                logger.debug(f"Prompt {prompt_id} in history but processing not complete... ({int(time.time() - start_time)}s elapsed)")
-                
+                logger.debug(
+                    f"Prompt {prompt_id} in history but processing not complete... ({int(time.time() - start_time)}s elapsed)"
+                )
+
                 # Not ready yet, wait and retry
                 time.sleep(2)
 
@@ -275,10 +279,10 @@ class ComfyAPI:
 
     def check_generation_status(self, prompt_id: str) -> Dict[str, Any]:
         """Check the status of a generation without waiting for timeout
-        
+
         Args:
             prompt_id: The ID of the prompt
-            
+
         Returns:
             A dictionary with the status information:
             {
@@ -291,17 +295,12 @@ class ComfyAPI:
         try:
             # Check if prompt exists in history (meaning it's been processed or is processing)
             r = requests.get(f"{self.base_url}/history/{prompt_id}")
-            
+
             # If not in history yet, it's still pending
             if r.status_code == 404:
                 logger.debug(f"Prompt {prompt_id} not found in history yet, likely still pending")
-                return {
-                    "status": "pending",
-                    "progress": 0.0,
-                    "images": [],
-                    "error": None
-                }
-                
+                return {"status": "pending", "progress": 0.0, "images": [], "error": None}
+
             # Check for other errors
             if r.status_code != 200:
                 logger.warning(f"API returned error code {r.status_code} for prompt {prompt_id}")
@@ -309,21 +308,21 @@ class ComfyAPI:
                     "status": "error",
                     "progress": 0.0,
                     "images": [],
-                    "error": f"API returned error code {r.status_code}"
+                    "error": f"API returned error code {r.status_code}",
                 }
-                
+
             # Parse JSON response
             try:
                 data = r.json()
             except ValueError as e:
                 logger.warning(f"Invalid JSON response for prompt {prompt_id}: {e}")
                 return {
-                    "status": "error", 
+                    "status": "error",
                     "progress": 0.0,
                     "images": [],
-                    "error": "Invalid JSON response"
+                    "error": "Invalid JSON response",
                 }
-                
+
             # Check if this is a valid history item
             if not isinstance(data, dict):
                 logger.warning(f"Unexpected response format for prompt {prompt_id}: {type(data)}")
@@ -331,82 +330,71 @@ class ComfyAPI:
                     "status": "error",
                     "progress": 0.0,
                     "images": [],
-                    "error": "Unexpected response format"
+                    "error": "Unexpected response format",
                 }
-                
+
             # Check if prompt ID is in the response
             if prompt_id not in data:
                 # This could be because the prompt is still pending or because it's invalid
                 # Try to check if there are any recent outputs we can use instead
-                logger.debug(f"Prompt {prompt_id} not found in history data. Checking for recent outputs.")
-                
+                logger.debug(
+                    f"Prompt {prompt_id} not found in history data. Checking for recent outputs."
+                )
+
                 # If history has any entries at all, see if we can find the most recent one
                 if data:
                     # Get most recent entry
                     most_recent = None
                     most_recent_num = -1
-                    
+
                     for key, entry in data.items():
                         if isinstance(entry, dict) and "outputs" in entry:
                             entry_num = entry.get("number", -1)
                             if entry_num > most_recent_num:
                                 most_recent = key
                                 most_recent_num = entry_num
-                    
+
                     if most_recent and "outputs" in data[most_recent]:
                         # We found a recent output, use that instead
-                        logger.info(f"Using most recent output from prompt {most_recent} instead of {prompt_id}")
+                        logger.info(
+                            f"Using most recent output from prompt {most_recent} instead of {prompt_id}"
+                        )
                         images = self._extract_image_info(data[most_recent])
                         if images:
                             return {
                                 "status": "completed",
                                 "progress": 1.0,
                                 "images": images,
-                                "error": f"Using output from prompt {most_recent} as {prompt_id} was not found"
+                                "error": f"Using output from prompt {most_recent} as {prompt_id} was not found",
                             }
-                
+
                 # If we got here, we didn't find any suitable replacement
                 return {
                     "status": "pending",  # Assume pending rather than error
                     "progress": 0.0,
                     "images": [],
-                    "error": "Prompt ID not found in history data"
+                    "error": "Prompt ID not found in history data",
                 }
-                
+
             # Get the history item for this prompt
             history_item = data[prompt_id]
-            
+
             # Check if completed (has outputs)
             if "outputs" in history_item and history_item["outputs"]:
                 # Extract images
                 images = self._extract_image_info(history_item)
-                return {
-                    "status": "completed",
-                    "progress": 1.0,
-                    "images": images,
-                    "error": None
-                }
-                
+                return {"status": "completed", "progress": 1.0, "images": images, "error": None}
+
             # Still processing - check progress if available
             progress = 0.0
             if "progress" in history_item:
                 progress = float(history_item["progress"])
-                
-            return {
-                "status": "processing",
-                "progress": progress,
-                "images": [],
-                "error": None
-            }
-                
+
+            return {"status": "processing", "progress": progress, "images": [], "error": None}
+
         except Exception as e:
             logger.warning(f"Error checking generation status: {e}")
-            return {
-                "status": "error",
-                "progress": 0.0,
-                "images": [],
-                "error": str(e)
-            }
+            return {"status": "error", "progress": 0.0, "images": [], "error": str(e)}
 
 
 # Helper functions for easier use
@@ -453,7 +441,7 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
         api_url = get_comfy_api_url()
 
     api = ComfyAPI(api_url)
-    
+
     try:
         # First, check if we can directly get the history without waiting
         try:
@@ -466,7 +454,7 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
                         # Extract image paths directly
                         history_data = data[prompt_id]
                         images = api._extract_image_info(history_data)
-                        
+
                         if images:
                             filenames = [img["filename"] for img in images]
                             logger.info(f"Image already generated: {', '.join(filenames)}")
@@ -477,11 +465,11 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
                     logger.warning(f"Failed to parse history data: {e}")
         except Exception as e:
             logger.warning(f"Failed to check history directly: {e}")
-        
+
         # If direct check didn't work, wait for the image normally
         logger.info(f"Waiting for image generation (timeout: {timeout}s)")
         images = api.wait_for_image(prompt_id, timeout)
-        
+
         if not images:
             logger.warning("No images were generated")
             return []
@@ -489,10 +477,10 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
         filenames = [img["filename"] for img in images]
         logger.info(f"Image generated: {', '.join(filenames)}")
         return filenames
-    
+
     except ComfyAPIError as e:
         logger.error(f"Failed to get image path: {e}")
-        
+
         # If we timed out, check if we can see any completed images
         if "Timed out" in str(e):
             logger.info("Timed out but checking for partial results...")
@@ -504,16 +492,16 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
                         # Extract image paths directly
                         history_data = data[prompt_id]
                         images = api._extract_image_info(history_data)
-                        
+
                         if images:
                             filenames = [img["filename"] for img in images]
                             logger.info(f"Found images after timeout: {', '.join(filenames)}")
                             return filenames
             except Exception as nested_e:
                 logger.error(f"Failed to check for partial results: {nested_e}")
-        
+
         return []
-    
+
     except Exception as e:
         logger.error(f"Unexpected error in get_image_path: {e}")
         return []
@@ -1247,50 +1235,50 @@ def check_comfy_server(api_url: str = None) -> Tuple[bool, str]:
 
 def get_preferred_checkpoint(api_url: str = None) -> Optional[str]:
     """Get the preferred checkpoint from available checkpoints
-    
+
     This function prioritizes certain models in this order:
     1. noobaiXLVpredv10.safetensors (first priority)
     2. Any noobai model
     3. Any ponyDiffusion model
     4. The first available checkpoint
-    
+
     Args:
         api_url: URL of the ComfyUI server
-        
+
     Returns:
         Name of the preferred checkpoint, or None if no checkpoints are available
     """
     if api_url is None:
         api_url = get_comfy_api_url()
-        
+
     available_checkpoints = get_available_checkpoints(api_url)
     logger.info(f"Found {len(available_checkpoints)} available checkpoints")
-    
+
     if not available_checkpoints:
         logger.warning("No checkpoints available")
         return None
-    
+
     # Log all available checkpoints to help with debugging
     logger.info(f"Available checkpoints: {', '.join(available_checkpoints)}")
-    
+
     # First priority: noobaiXLVpredv10.safetensors
     for checkpoint in available_checkpoints:
         if checkpoint.lower() == "noobaixlvpredv10.safetensors":
             logger.info(f"Selected preferred checkpoint (exact match): {checkpoint}")
             return checkpoint
-            
+
     # Second priority: any noobai model
     for checkpoint in available_checkpoints:
         if "noobai" in checkpoint.lower():
             logger.info(f"Selected noobai checkpoint: {checkpoint}")
             return checkpoint
-            
+
     # Third priority: any ponyDiffusion model
     for checkpoint in available_checkpoints:
         if "ponydiffusion" in checkpoint.lower():
             logger.info(f"Selected ponyDiffusion checkpoint: {checkpoint}")
             return checkpoint
-            
+
     # Fallback: first available checkpoint
     logger.info(f"Using first available checkpoint: {available_checkpoints[0]}")
     return available_checkpoints[0]
@@ -1298,11 +1286,11 @@ def get_preferred_checkpoint(api_url: str = None) -> Optional[str]:
 
 def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, Any]:
     """Check the status of a generation without waiting for timeout
-    
+
     Args:
         prompt_id: The ID of the prompt
         api_url: URL of the ComfyUI server
-        
+
     Returns:
         A dictionary with the status information:
         {
@@ -1314,20 +1302,20 @@ def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, An
     """
     if api_url is None:
         api_url = get_comfy_api_url()
-        
+
     # Check if ComfyUI's queue_prompt endpoint is showing this as an active prompt
     # This is important because sometimes prompts don't show in history right away
     try:
         logger.debug(f"Checking prompt queue for prompt {prompt_id}")
         r = requests.get(f"{api_url}/prompt")
-        
+
         if r.status_code == 200:
             try:
                 queue_data = r.json()
                 if "queue_running" in queue_data and queue_data["queue_running"]:
                     executing = queue_data.get("executing", {})
                     queue = queue_data.get("queue", [])
-                    
+
                     # Check if our prompt is currently executing
                     if executing and executing.get("prompt_id") == prompt_id:
                         logger.debug(f"Prompt {prompt_id} is currently executing")
@@ -1336,25 +1324,27 @@ def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, An
                             "status": "processing",
                             "progress": progress,
                             "images": [],
-                            "error": None
+                            "error": None,
                         }
-                        
+
                     # Check if our prompt is in the queue
                     if queue:
                         for item in queue:
                             if item.get("prompt_id") == prompt_id:
-                                logger.debug(f"Prompt {prompt_id} is in queue but not executing yet")
+                                logger.debug(
+                                    f"Prompt {prompt_id} is in queue but not executing yet"
+                                )
                                 return {
                                     "status": "pending",
                                     "progress": 0.0,
                                     "images": [],
-                                    "error": None
+                                    "error": None,
                                 }
             except Exception as e:
                 logger.warning(f"Error parsing queue data: {e}")
     except Exception as e:
         logger.warning(f"Error checking prompt queue: {e}")
-        
+
     # Now check the history
     api = ComfyAPI(api_url)
     return api.check_generation_status(prompt_id)

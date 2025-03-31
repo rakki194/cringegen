@@ -81,12 +81,12 @@ FEMALE_ANATOMY: Dict[str, List[str]] = {
 
 # Anthropomorphic levels (from feral to human-like)
 ANTHRO_LEVELS: List[str] = [
-    "feral",           # Animal proportions and posture, animal-like behavior
-    "semi-feral",      # Animal proportions but more expressive/intelligent
-    "semi-anthro",     # Mix of animal and human proportions, may be digitigrade
-    "anthro",          # Human proportions with animal features, typically digitigrade
-    "plantigrade",     # Human-like feet and stance
-    "kemonomimi",      # Mostly human with minimal animal traits (ears, tail)
+    "feral",  # Animal proportions and posture, animal-like behavior
+    "semi-feral",  # Animal proportions but more expressive/intelligent
+    "semi-anthro",  # Mix of animal and human proportions, may be digitigrade
+    "anthro",  # Human proportions with animal features, typically digitigrade
+    "plantigrade",  # Human-like feet and stance
+    "kemonomimi",  # Mostly human with minimal animal traits (ears, tail)
 ]
 
 # Body types for character generation
@@ -97,7 +97,16 @@ BODY_TYPES: Dict[str, Dict[str, List[str]]] = {
         "body_shape": ["lithe", "broad-shouldered", "barrel-chested", "compact"],
     },
     "female": {
-        "build": ["petite", "slim", "athletic", "curvy", "voluptuous", "muscular", "toned", "full-figured"],
+        "build": [
+            "petite",
+            "slim",
+            "athletic",
+            "curvy",
+            "voluptuous",
+            "muscular",
+            "toned",
+            "full-figured",
+        ],
         "height": ["short", "average height", "tall", "very tall"],
         "body_shape": ["hourglass", "pear-shaped", "athletic", "slender"],
     },
@@ -105,20 +114,43 @@ BODY_TYPES: Dict[str, Dict[str, List[str]]] = {
         "build": ["slim", "athletic", "lean", "androgynous", "toned", "willowy"],
         "height": ["short", "average height", "tall"],
         "body_shape": ["slim", "balanced", "neutral", "lean"],
-    }
+    },
 }
 
 # Special features for anthro characters
 ANTHRO_FEATURES: Dict[str, List[str]] = {
-    "canine": ["pointed ears", "snout", "paw pads", "tail", "claws", "whiskers", "digitigrade legs"],
-    "feline": ["triangular ears", "whiskers", "slit pupils", "tail", "paw pads", "retractable claws"],
+    "canine": [
+        "pointed ears",
+        "snout",
+        "paw pads",
+        "tail",
+        "claws",
+        "whiskers",
+        "digitigrade legs",
+    ],
+    "feline": [
+        "triangular ears",
+        "whiskers",
+        "slit pupils",
+        "tail",
+        "paw pads",
+        "retractable claws",
+    ],
     "equine": ["long muzzle", "mane", "tail", "hooves", "pointed ears"],
     "bovine": ["horns", "muzzle", "tail", "hooves", "broad shoulders"],
     "lagomorph": ["long ears", "short tail", "whiskers", "pronounced incisors", "paw pads"],
     "rodent": ["rounded ears", "whiskers", "buck teeth", "tail", "paw pads"],
     "reptile": ["scales", "tail", "claws", "slit pupils", "fangs", "forked tongue"],
     "avian": ["beak", "feathered wings", "tail feathers", "crest", "talons", "feather patterns"],
-    "common": ["tufted ears", "ear fluff", "neck fluff", "chest fluff", "tail tip", "markings", "heterochromia"],
+    "common": [
+        "tufted ears",
+        "ear fluff",
+        "neck fluff",
+        "chest fluff",
+        "tail tip",
+        "markings",
+        "heterochromia",
+    ],
 }
 
 # Animal-specific anatomical terms for prompt generation
@@ -134,9 +166,32 @@ ANIMAL_ANATOMICAL_TERMS: Dict[str, List[str]] = {
 
 # Human anatomical terms for prompt generation
 HUMAN_ANATOMICAL_TERMS: List[str] = [
-    "face", "eyes", "nose", "mouth", "lips", "teeth", "ears", "hair", "neck", 
-    "shoulders", "arms", "elbows", "wrists", "hands", "fingers", "chest", "torso", 
-    "back", "waist", "hips", "buttocks", "legs", "knees", "ankles", "feet", "toes"
+    "face",
+    "eyes",
+    "nose",
+    "mouth",
+    "lips",
+    "teeth",
+    "ears",
+    "hair",
+    "neck",
+    "shoulders",
+    "arms",
+    "elbows",
+    "wrists",
+    "hands",
+    "fingers",
+    "chest",
+    "torso",
+    "back",
+    "waist",
+    "hips",
+    "buttocks",
+    "legs",
+    "knees",
+    "ankles",
+    "feet",
+    "toes",
 ]
 
 # Species-specific anatomy traits
@@ -175,5 +230,5 @@ SPECIES_ANATOMY_TRAITS: Dict[str, Dict[str, List[str]]] = {
         "head": ["expressive face", "distinctive ears", "species-appropriate mouth"],
         "body": ["fur/scale covered", "appropriate proportions", "tail"],
         "limbs": ["four limbs", "paws/hooves/etc", "appropriate mobility features"],
-    }
-} 
+    },
+}

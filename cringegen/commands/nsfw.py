@@ -18,11 +18,11 @@ from ..utils.comfy_api import (
     queue_prompt,
 )
 from ..utils.file_utils import (
-    copy_image_from_comfyui, 
+    copy_image_from_comfyui,
     copy_latest_images_from_comfyui,
     rsync_image_from_comfyui,
     rsync_latest_images_from_comfyui,
-    open_images_with_imv
+    open_images_with_imv,
 )
 from ..workflows.furry import create_nsfw_furry_workflow
 
@@ -165,109 +165,77 @@ def add_nsfw_command(subparsers, parent_parser):
         action="store_true",
         help="Copy generated images to cringegen output directory",
     )
-    
+
     # Advanced workflow options
     nsfw_parser.add_argument(
-        "--pag", 
-        action="store_true", 
-        help="Use Perturbed-Attention Guidance for improved detail"
+        "--pag", action="store_true", help="Use Perturbed-Attention Guidance for improved detail"
     )
     nsfw_parser.add_argument(
-        "--pag-scale", 
-        type=float, 
-        default=3.0, 
-        help="Scale for Perturbed-Attention Guidance"
+        "--pag-scale", type=float, default=3.0, help="Scale for Perturbed-Attention Guidance"
     )
     nsfw_parser.add_argument(
-        "--pag-sigma-start", 
-        type=float, 
-        default=-1.0, 
-        help="Start sigma for PAG (default: auto)"
+        "--pag-sigma-start", type=float, default=-1.0, help="Start sigma for PAG (default: auto)"
     )
     nsfw_parser.add_argument(
-        "--pag-sigma-end", 
-        type=float, 
-        default=-1.0, 
-        help="End sigma for PAG (default: auto)"
+        "--pag-sigma-end", type=float, default=-1.0, help="End sigma for PAG (default: auto)"
     )
     nsfw_parser.add_argument(
-        "--detail-daemon", 
-        action="store_true", 
-        help="Use DetailDaemonSamplerNode for enhanced details"
+        "--detail-daemon",
+        action="store_true",
+        help="Use DetailDaemonSamplerNode for enhanced details",
     )
     nsfw_parser.add_argument(
-        "--detail-amount", 
-        type=float, 
-        default=0.1, 
-        help="Detail amount for DetailDaemonSamplerNode (0.0-1.0)"
+        "--detail-amount",
+        type=float,
+        default=0.1,
+        help="Detail amount for DetailDaemonSamplerNode (0.0-1.0)",
     )
     nsfw_parser.add_argument(
-        "--detail-start", 
-        type=float, 
-        default=0.5, 
-        help="Start percent for DetailDaemonSamplerNode (0.0-1.0)"
+        "--detail-start",
+        type=float,
+        default=0.5,
+        help="Start percent for DetailDaemonSamplerNode (0.0-1.0)",
     )
     nsfw_parser.add_argument(
-        "--detail-end", 
-        type=float, 
-        default=0.8, 
-        help="End percent for DetailDaemonSamplerNode (0.0-1.0)"
+        "--detail-end",
+        type=float,
+        default=0.8,
+        help="End percent for DetailDaemonSamplerNode (0.0-1.0)",
     )
     nsfw_parser.add_argument(
-        "--split-sigmas", 
-        type=float, 
-        help="Value to split sigmas for multi-stage sampling"
+        "--split-sigmas", type=float, help="Value to split sigmas for multi-stage sampling"
     )
     nsfw_parser.add_argument(
-        "--split-first-cfg", 
-        type=float, 
-        help="CFG for first stage of split-sigma sampling"
+        "--split-first-cfg", type=float, help="CFG for first stage of split-sigma sampling"
     )
     nsfw_parser.add_argument(
-        "--split-second-cfg", 
-        type=float, 
-        help="CFG for second stage of split-sigma sampling"
+        "--split-second-cfg", type=float, help="CFG for second stage of split-sigma sampling"
     )
     nsfw_parser.add_argument(
-        "--use-deepshrink", 
-        action="store_true", 
-        help="Use DeepShrink for improved high-frequency details"
+        "--use-deepshrink",
+        action="store_true",
+        help="Use DeepShrink for improved high-frequency details",
     )
     nsfw_parser.add_argument(
-        "--deepshrink-factor", 
-        type=float, 
-        default=2.0, 
-        help="Downscale factor for DeepShrink"
+        "--deepshrink-factor", type=float, default=2.0, help="Downscale factor for DeepShrink"
     )
     nsfw_parser.add_argument(
-        "--deepshrink-start", 
-        type=float, 
-        default=0.0, 
-        help="Start percent for DeepShrink (0.0-1.0)"
+        "--deepshrink-start", type=float, default=0.0, help="Start percent for DeepShrink (0.0-1.0)"
     )
     nsfw_parser.add_argument(
-        "--deepshrink-end", 
-        type=float, 
-        default=0.35, 
-        help="End percent for DeepShrink (0.0-1.0)"
+        "--deepshrink-end", type=float, default=0.35, help="End percent for DeepShrink (0.0-1.0)"
     )
     nsfw_parser.add_argument(
-        "--deepshrink-gradual", 
-        type=float, 
-        default=0.6, 
-        help="Gradual percent for DeepShrink (0.0-1.0)"
+        "--deepshrink-gradual",
+        type=float,
+        default=0.6,
+        help="Gradual percent for DeepShrink (0.0-1.0)",
     )
     nsfw_parser.add_argument(
-        "--use-zsnr", 
-        action="store_true", 
-        help="Enable Zero SNR for potentially improved results"
+        "--use-zsnr", action="store_true", help="Enable Zero SNR for potentially improved results"
     )
-    nsfw_parser.add_argument(
-        "--use-vpred", 
-        action="store_true", 
-        help="Use v-prediction sampling"
-    )
-    
+    nsfw_parser.add_argument("--use-vpred", action="store_true", help="Use v-prediction sampling")
+
     nsfw_parser.add_argument(
         "--comfy-output-dir",
         type=str,
@@ -324,17 +292,19 @@ def generate_nsfw_furry(args):
     """Generate a NSFW furry prompt and optionally an image"""
     # To keep track of all copied images for --show flag
     copied_images = []
-    
+
     # Set up seed if provided
     if args.seed == -1:
         seed = random.randint(1, 1000000)
     else:
         seed = args.seed
         random.seed(seed)
-    
+
     # If increment flag is set and count > 1, log that we're using incremental mode
     if args.increment and args.count > 1:
-        logger.info(f"Using seed increment mode: Starting with seed {seed} and incrementing by +1 for each image")
+        logger.info(
+            f"Using seed increment mode: Starting with seed {seed} and incrementing by +1 for each image"
+        )
 
     # Set up NSFW intensity
     intensity_levels = {"suggestive": 1, "mild": 2, "explicit": 3, "hardcore": 4}
@@ -344,25 +314,27 @@ def generate_nsfw_furry(args):
     kinks = []
     if args.kinks:
         kinks = [k.strip() for k in args.kinks.split(",")]
-    
+
     # Check for fart-related kinks and recommend the fart_fetish LoRA
     fart_related_kinks = ["fart", "gas", "flatulence", "fart_fetish"]
     has_fart_kink = any(kink.lower() in fart_related_kinks for kink in kinks)
-    
+
     if has_fart_kink and not args.lora:
         logger.info("Detected fart-related kink. Recommending fart_fetish LoRA for better results.")
-        logger.info("Example usage: --lora fart_fetish-v2s3000 --checkpoint noobaiXLVpredv10.safetensors")
-    
+        logger.info(
+            "Example usage: --lora fart_fetish-v2s3000 --checkpoint noobaiXLVpredv10.safetensors"
+        )
+
     # Parse colors
     colors = None
     if args.colors:
         colors = args.colors  # The FurryPromptGenerator will parse this
-    
+
     # Parse colors2 for duo mode
     colors2 = None
     if args.duo and args.colors2:
         colors2 = args.colors2
-    
+
     # Create generator instance with all parameters upfront
     generator = NsfwFurryPromptGenerator(
         species=args.species,
@@ -372,13 +344,13 @@ def generate_nsfw_furry(args):
         use_nlp=True,
         use_art_style=not args.no_art_style,
         is_anthro=True if args.anthro else (False if args.feral else True),
-        is_feral=args.feral
+        is_feral=args.feral,
     )
-    
+
     # Set additional properties that aren't in the constructor
     if kinks:
         generator.kinks = kinks
-    
+
     # Set duo/group options
     if args.duo:
         generator.use_duo = True
@@ -388,20 +360,22 @@ def generate_nsfw_furry(args):
             generator.gender2 = args.gender2
     elif args.group:
         generator.group_size = max(3, min(6, args.group))
-    
+
     # Set colors and patterns
     if args.colors:
         generator.colors = [c.strip() for c in args.colors.split(",")]
     if args.pattern:
         generator.pattern = args.pattern
-    
+
     if args.duo and args.colors2:
         generator.colors2 = [c.strip() for c in args.colors2.split(",")]
     if args.duo and args.pattern2:
         generator.pattern2 = args.pattern2
-    
+
     # Log the species and gender being used
-    logger.info(f"Generating NSFW prompts with species={generator.species}, gender={generator.gender}")
+    logger.info(
+        f"Generating NSFW prompts with species={generator.species}, gender={generator.gender}"
+    )
 
     prompts = []
     for i in range(args.count):
@@ -428,9 +402,9 @@ def generate_nsfw_furry(args):
             # Generate prompt with the generator
             prompt = generator.generate()
             negative_prompt = generator.get_negative_prompt()
-        
+
         prompts.append((prompt, negative_prompt, curr_seed))
-        
+
         # Print the generated prompt and seed
         logger.info(f"Generated NSFW prompt (seed {curr_seed}):")
         logger.info(f"PROMPT: {prompt}")
@@ -527,8 +501,8 @@ def generate_nsfw_furry(args):
             logger.info(f"Queued prompt {i+1}/{len(prompts)} with ID: {prompt_id}")
 
             # Extract the actual prompt_id string from the response
-            if isinstance(prompt_id, dict) and 'prompt_id' in prompt_id:
-                prompt_id_str = prompt_id['prompt_id']
+            if isinstance(prompt_id, dict) and "prompt_id" in prompt_id:
+                prompt_id_str = prompt_id["prompt_id"]
                 logger.info(f"Using prompt ID string: {prompt_id_str}")
             else:
                 prompt_id_str = str(prompt_id)
@@ -539,52 +513,63 @@ def generate_nsfw_furry(args):
                 try:
                     # First try using the API to get the image path
                     image_path = get_image_path(prompt_id_str, args.comfy_url)
-                    
+
                     if image_path and len(image_path) > 0:
                         logger.info(f"Found image path via API: {image_path[0]}")
                         success = False
-                        
+
                         if args.remote:
                             # Check for required SSH parameters
                             if not args.ssh_host:
                                 logger.error("SSH host is required when using --remote")
                                 return prompts
-                            
+
                             logger.info(f"Using rsync over SSH to copy image from {args.ssh_host}")
-                            success = rsync_image_from_comfyui(
-                                image_path[0],  # Use the first image
-                                args.ssh_host,
-                                args.comfy_output_dir,
-                                args.output_dir,
-                                f"nsfw_furry_{curr_seed}",
-                                ssh_port=args.ssh_port,
-                                ssh_user=args.ssh_user,
-                                ssh_key=args.ssh_key
-                            ) is not None
+                            success = (
+                                rsync_image_from_comfyui(
+                                    image_path[0],  # Use the first image
+                                    args.ssh_host,
+                                    args.comfy_output_dir,
+                                    args.output_dir,
+                                    f"nsfw_furry_{curr_seed}",
+                                    ssh_port=args.ssh_port,
+                                    ssh_user=args.ssh_user,
+                                    ssh_key=args.ssh_key,
+                                )
+                                is not None
+                            )
                         else:
                             # Local copy
-                            success = copy_image_from_comfyui(
-                                image_path[0],  # Use the first image
-                                args.comfy_output_dir,
-                                args.output_dir,
-                                f"nsfw_furry_{curr_seed}",
-                            ) is not None
-                            
+                            success = (
+                                copy_image_from_comfyui(
+                                    image_path[0],  # Use the first image
+                                    args.comfy_output_dir,
+                                    args.output_dir,
+                                    f"nsfw_furry_{curr_seed}",
+                                )
+                                is not None
+                            )
+
                         if success:
                             logger.info(f"Copied image to {args.output_dir}")
                             # If successful, add to the list of copied images
-                            copied_path = os.path.join(args.output_dir, f"nsfw_{curr_seed}{os.path.splitext(image_path[0])[1]}")
+                            copied_path = os.path.join(
+                                args.output_dir,
+                                f"nsfw_{curr_seed}{os.path.splitext(image_path[0])[1]}",
+                            )
                             copied_images.append(copied_path)
                         else:
                             # If copying via API path failed, try looking for the most recent image
                             logger.info("Trying to copy the most recent image instead...")
-                            
+
                             if args.remote:
                                 if not args.ssh_host:
                                     logger.error("SSH host is required when using --remote")
                                     return prompts
-                                    
-                                logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+
+                                logger.info(
+                                    f"Using rsync over SSH to copy latest image from {args.ssh_host}"
+                                )
                                 copied = rsync_latest_images_from_comfyui(
                                     args.ssh_host,
                                     args.comfy_output_dir,
@@ -592,16 +577,14 @@ def generate_nsfw_furry(args):
                                     limit=1,
                                     ssh_port=args.ssh_port,
                                     ssh_user=args.ssh_user,
-                                    ssh_key=args.ssh_key
+                                    ssh_key=args.ssh_key,
                                 )
                             else:
                                 # Local copy
                                 copied = copy_latest_images_from_comfyui(
-                                    args.comfy_output_dir, 
-                                    args.output_dir, 
-                                    limit=1
+                                    args.comfy_output_dir, args.output_dir, limit=1
                                 )
-                                
+
                             if copied:
                                 logger.info(f"Copied most recent image to {args.output_dir}")
                                 # Add to the list of copied images
@@ -610,14 +593,18 @@ def generate_nsfw_furry(args):
                                 logger.warning("Failed to find or copy any images")
                     else:
                         # If API doesn't return image path, try looking for the most recent image
-                        logger.info("No image path from API, trying to copy the most recent image...")
-                        
+                        logger.info(
+                            "No image path from API, trying to copy the most recent image..."
+                        )
+
                         if args.remote:
                             if not args.ssh_host:
                                 logger.error("SSH host is required when using --remote")
                                 return prompts
-                                
-                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+
+                            logger.info(
+                                f"Using rsync over SSH to copy latest image from {args.ssh_host}"
+                            )
                             copied = rsync_latest_images_from_comfyui(
                                 args.ssh_host,
                                 args.comfy_output_dir,
@@ -625,16 +612,14 @@ def generate_nsfw_furry(args):
                                 limit=1,
                                 ssh_port=args.ssh_port,
                                 ssh_user=args.ssh_user,
-                                ssh_key=args.ssh_key
+                                ssh_key=args.ssh_key,
                             )
                         else:
                             # Local copy
                             copied = copy_latest_images_from_comfyui(
-                                args.comfy_output_dir, 
-                                args.output_dir, 
-                                limit=1
+                                args.comfy_output_dir, args.output_dir, limit=1
                             )
-                            
+
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                             # Add to the list of copied images
@@ -650,8 +635,10 @@ def generate_nsfw_furry(args):
                             if not args.ssh_host:
                                 logger.error("SSH host is required when using --remote")
                                 return prompts
-                                
-                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+
+                            logger.info(
+                                f"Using rsync over SSH to copy latest image from {args.ssh_host}"
+                            )
                             copied = rsync_latest_images_from_comfyui(
                                 args.ssh_host,
                                 args.comfy_output_dir,
@@ -659,16 +646,14 @@ def generate_nsfw_furry(args):
                                 limit=1,
                                 ssh_port=args.ssh_port,
                                 ssh_user=args.ssh_user,
-                                ssh_key=args.ssh_key
+                                ssh_key=args.ssh_key,
                             )
                         else:
                             # Local copy
                             copied = copy_latest_images_from_comfyui(
-                                args.comfy_output_dir, 
-                                args.output_dir, 
-                                limit=1
+                                args.comfy_output_dir, args.output_dir, limit=1
                             )
-                            
+
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                             # Add to the list of copied images
@@ -683,83 +668,90 @@ def generate_nsfw_furry(args):
 
     return prompts
 
+
 def create_nsfw_workflow(args):
     """Create a base NSFW workflow template for XY plotting
-    
+
     Args:
         args: Command line arguments
-        
+
     Returns:
         A workflow dictionary
     """
     import random
-    
+
     # Create a basic workflow
     from ..workflows.base import ComfyWorkflow
+
     workflow = ComfyWorkflow()
-    
+
     # Add checkpoint loader
-    checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "bluePencilXL_v101.safetensors"
+    checkpoint = (
+        args.checkpoint
+        if hasattr(args, "checkpoint") and args.checkpoint
+        else "noobaiXLVpredv10.safetensors"
+    )
     model_output = workflow.load_checkpoint(checkpoint)
-    
+
     # Add LoRA if specified
     if hasattr(args, "lora") and args.lora:
         model_output, clip_output = workflow.load_lora(
-            model_output, 
-            args.lora, 
-            args.lora_strength if hasattr(args, "lora_strength") else 1.0, 
-            args.lora_strength if hasattr(args, "lora_strength") else 1.0
+            model_output,
+            args.lora,
+            args.lora_strength if hasattr(args, "lora_strength") else 1.0,
+            args.lora_strength if hasattr(args, "lora_strength") else 1.0,
         )
     else:
         # Extract clip from model output if no LoRA
         clip_output = workflow.get_output(1, 1)
-    
+
     # Create prompt
     if hasattr(args, "prompt") and args.prompt:
         positive_prompt = args.prompt
     else:
         from .utils import generate_random_prompt  # Import here to avoid circular imports
+
         positive_prompt = generate_random_prompt(nsfw=True)
-    
+
     # Create negative prompt
     if hasattr(args, "negative_prompt") and args.negative_prompt:
         negative_prompt = args.negative_prompt
     else:
         negative_prompt = "worst quality, low quality, medium quality, deleted, lowres, bad anatomy, bad hands, watermark"
-    
+
     # Encode prompts
     positive_conditioning = workflow.clip_text_encode(clip_output, positive_prompt)
     negative_conditioning = workflow.clip_text_encode(clip_output, negative_prompt)
-    
+
     # Create latent image
     width = args.width if hasattr(args, "width") else 1024
     height = args.height if hasattr(args, "height") else 1024
     latent = workflow.empty_latent(width, height)
-    
+
     # Set up sampler
     seed = args.seed if hasattr(args, "seed") and args.seed != -1 else random.randint(0, 2**32 - 1)
     steps = args.steps if hasattr(args, "steps") else 40
     cfg = args.cfg if hasattr(args, "cfg") else 7.0
     sampler = args.sampler if hasattr(args, "sampler") else "euler_ancestral"
     scheduler = args.scheduler if hasattr(args, "scheduler") else "normal"
-    
+
     # Add sampler
     latent_sampled = workflow.ksampler(
-        model_output, 
-        positive_conditioning, 
-        negative_conditioning, 
-        latent, 
-        seed, 
-        steps, 
-        cfg, 
-        sampler, 
-        scheduler
+        model_output,
+        positive_conditioning,
+        negative_conditioning,
+        latent,
+        seed,
+        steps,
+        cfg,
+        sampler,
+        scheduler,
     )
-    
+
     # Add VAE decoder
     image = workflow.vae_decode(workflow.get_output(1, 2), latent_sampled)
-    
+
     # Add image saving
     workflow.save_image(image, "xyplot")
-    
+
     return workflow.to_dict()

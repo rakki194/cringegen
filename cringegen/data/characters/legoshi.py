@@ -4,12 +4,7 @@ Legoshi Character Template
 This file contains the character template for Legoshi from Beastars.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -39,12 +34,12 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "rule34": "legoshi \\(beastars\\)",
     },
     appearance_traits=[
-        "gray fur", 
+        "gray fur",
         "cream muzzle",
         "gray face markings",
         "thin build",
         "tall",
-        "dark eyes", 
+        "dark eyes",
         "scar on face",
         "scar on back",
         "large paws",
@@ -55,7 +50,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "lanky",
         "large",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -70,4 +65,4 @@ CHARACTER_OUTFITS = {
     "default": ["school uniform", "white shirt", "blue pants", "black sneakers"],
     "casual": ["loose t-shirt", "pants", "simple clothes"],
     "drama club": ["stage outfit", "costume", "mask"],
-} 
+}

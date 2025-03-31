@@ -93,7 +93,7 @@ GAME_CHARACTER_TYPES: Dict[str, List[str]] = {
 #     SPECIES_COLORS,
 #     SPECIES_TAXONOMY,
 # )
-# 
+#
 # try:
 #     from cringegen.data.anime_data import (
 #         ANIME_ART_STYLES,
@@ -117,7 +117,7 @@ GAME_CHARACTER_TYPES: Dict[str, List[str]] = {
 #     ANIME_VISUAL_EFFECTS = {}
 #     ANIME_GENRES = []
 #     ANIME_CHARACTER_TO_DESCRIPTIVE = {}
-# 
+#
 # try:
 #     from cringegen.data.game_data import (
 #         GAME_CHARACTER_FEATURES,
@@ -141,7 +141,7 @@ GAME_CHARACTER_TYPES: Dict[str, List[str]] = {
 #     GAME_STUDIOS = []
 #     GAME_FRANCHISES = []
 #     GAME_CHARACTER_TO_DESCRIPTIVE = {}
-# 
+#
 # try:
 #     from cringegen.data.media_data import (
 #         ART_STYLE_TO_DESCRIPTIVE,
@@ -165,6 +165,7 @@ GAME_CHARACTER_TYPES: Dict[str, List[str]] = {
 #     LITERATURE_STYLES = {}
 #     ART_STYLE_TO_DESCRIPTIVE = {}
 #     CULTURAL_REFERENCES = {}
+
 
 def get_all_species() -> List[str]:
     """

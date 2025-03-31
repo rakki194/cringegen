@@ -145,12 +145,14 @@ def create_basic_furry_workflow(
         )
         model_out = workflow.get_output(lora_node, 0)
         clip_out = workflow.get_output(lora_node, 1)
-    
+
     # Apply multiple LoRAs if specified
     if loras and len(loras) > 0:
         # Use default weights if not provided
         if not lora_weights or len(lora_weights) != len(loras):
-            lora_weights = [0.35] * len(loras)  # Default weight of 0.35 (in the preferred 0.30-0.40 range)
+            lora_weights = [0.35] * len(
+                loras
+            )  # Default weight of 0.35 (in the preferred 0.30-0.40 range)
 
         logger.info(f"Adding {len(loras)} {'additional' if lora else ''} LoRAs to workflow")
         for i, (lora_name, weight) in enumerate(zip(loras, lora_weights)):
@@ -170,7 +172,7 @@ def create_basic_furry_workflow(
             )
             model_out = workflow.get_output(lora_node, 0)
             clip_out = workflow.get_output(lora_node, 1)
-    
+
     if not using_lora:
         logger.info("No LoRAs specified, using base model only")
 

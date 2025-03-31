@@ -4,12 +4,7 @@ Krystal Character Template
 This file contains the character template for Krystal from the Star Fox series.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -39,9 +34,9 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "rule34": "krystal_(star_fox)",
     },
     appearance_traits=[
-        "blue fur", 
+        "blue fur",
         "white muzzle",
-        "teal eyes", 
+        "teal eyes",
         "pointy ears",
         "white tipped tail",
         "athletic build",
@@ -53,7 +48,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "toned",
         "large breasts",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -68,4 +63,4 @@ CHARACTER_OUTFITS = {
     "default": ["blue body armor", "gold jewelry", "tribal outfit", "blue boots"],
     "assault": ["blue flight suit", "white vest", "combat boots"],
     "adventures": ["tribal outfit", "gold jewelry", "minimal clothing", "jeweled staff"],
-} 
+}

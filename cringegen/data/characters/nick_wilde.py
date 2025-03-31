@@ -4,12 +4,7 @@ Nick Wilde Character Template
 This file contains the character template for Nick Wilde from Zootopia.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -39,8 +34,8 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "rule34": "nick wilde",
     },
     appearance_traits=[
-        "red fur", 
-        "green eyes", 
+        "red fur",
+        "green eyes",
         "cream muzzle",
         "slim build",
         "pointed ears",
@@ -50,7 +45,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "slender",
         "toned",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -83,10 +78,10 @@ RECOMMENDED_LORAS = {
 }
 
 __all__ = [
-    'CHARACTER_TEMPLATE',
-    'CHARACTER_INFO',
-    'CHARACTER_POSES',
-    'CHARACTER_OUTFITS',
-    'RECOMMENDED_ADDITIONS',
-    'RECOMMENDED_LORAS',
-] 
+    "CHARACTER_TEMPLATE",
+    "CHARACTER_INFO",
+    "CHARACTER_POSES",
+    "CHARACTER_OUTFITS",
+    "RECOMMENDED_ADDITIONS",
+    "RECOMMENDED_LORAS",
+]

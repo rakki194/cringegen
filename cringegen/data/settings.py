@@ -600,15 +600,40 @@ SPECIES_HABITATS: Dict[str, Dict[str, List[str]]] = {
     "reptile": {
         "lizard": ["desert", "rocky terrain", "forest", "jungle", "warm climate"],
         "snake": ["forest", "jungle", "desert", "grassland", "rocky areas", "swamp"],
-        "dragon": ["mountain cave", "volcanic region", "ancient ruins", "magical forest", "crystal cavern"],
+        "dragon": [
+            "mountain cave",
+            "volcanic region",
+            "ancient ruins",
+            "magical forest",
+            "crystal cavern",
+        ],
     },
     "avian": {
-        "bird": ["forest", "treetop", "mountain cliff", "coastal area", "urban environment", "marsh"],
+        "bird": [
+            "forest",
+            "treetop",
+            "mountain cliff",
+            "coastal area",
+            "urban environment",
+            "marsh",
+        ],
         "owl": ["forest", "woodland", "barn", "old tree", "abandoned building", "night sky"],
     },
     "fantasy": {
         "sergal": ["tundra", "steppe", "plains", "mountainous region", "tribal village"],
-        "protogen": ["futuristic city", "space station", "cybernetic lab", "digital dimension", "technological hub"],
-        "dragon": ["mountain lair", "ancient castle", "volcanic cave", "enchanted forest", "treasure hoard"],
+        "protogen": [
+            "futuristic city",
+            "space station",
+            "cybernetic lab",
+            "digital dimension",
+            "technological hub",
+        ],
+        "dragon": [
+            "mountain lair",
+            "ancient castle",
+            "volcanic cave",
+            "enchanted forest",
+            "treasure hoard",
+        ],
     },
-} 
+}

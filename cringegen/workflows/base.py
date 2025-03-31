@@ -281,33 +281,45 @@ class ComfyWorkflow:
         node_id = self.add_node("SaveImage", {"images": image, "filename_prefix": filename_prefix})
         return self.get_output(node_id)
 
+
 def get_workflow_template(workflow_type: str) -> Optional[Callable]:
     """Get a function that creates a workflow template based on the workflow type
-    
+
     Args:
         workflow_type: Type of workflow to create (e.g., "furry", "nsfw", "character")
-        
+
     Returns:
         A function that creates a workflow template, or None if the workflow type is unknown
     """
     if workflow_type == "furry":
         from .furry import create_basic_furry_workflow
-        
+
         def furry_workflow_wrapper(args):
             """Wrapper to convert args to proper parameters for create_basic_furry_workflow"""
             import random
-            checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "bluePencilXL_v101.safetensors"
+
+            checkpoint = (
+                args.checkpoint
+                if hasattr(args, "checkpoint") and args.checkpoint
+                else "noobaiXLVpredv10.safetensors"
+            )
             lora = args.lora if hasattr(args, "lora") and args.lora else None
             lora_strength = args.lora_strength if hasattr(args, "lora_strength") else 0.35
-            prompt = args.prompt if hasattr(args, "prompt") and args.prompt else "a cute furry character"
-            negative_prompt = args.negative_prompt if hasattr(args, "negative_prompt") else "worst quality, low quality"
-            
+            prompt = (
+                args.prompt if hasattr(args, "prompt") and args.prompt else "a cute furry character"
+            )
+            negative_prompt = (
+                args.negative_prompt
+                if hasattr(args, "negative_prompt")
+                else "worst quality, low quality"
+            )
+
             # Generate a seed if not provided or -1
             if hasattr(args, "seed") and args.seed != -1:
                 seed = args.seed
             else:
                 seed = random.randint(0, 2**32 - 1)
-                
+
             # Other parameters
             steps = args.steps if hasattr(args, "steps") else 20
             cfg = args.cfg if hasattr(args, "cfg") else None
@@ -315,20 +327,24 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
             height = args.height if hasattr(args, "height") else 1024
             sampler = args.sampler if hasattr(args, "sampler") else None
             scheduler = args.scheduler if hasattr(args, "scheduler") else None
-            
+
             # PAG options
             use_pag = args.pag if hasattr(args, "pag") else False
             pag_scale = args.pag_scale if hasattr(args, "pag_scale") else 3.0
             pag_sigma_start = args.pag_sigma_start if hasattr(args, "pag_sigma_start") else -1.0
             pag_sigma_end = args.pag_sigma_end if hasattr(args, "pag_sigma_end") else -1.0
-            
+
             # DeepShrink options
             use_deepshrink = args.deepshrink if hasattr(args, "deepshrink") else False
-            deepshrink_factor = args.deepshrink_factor if hasattr(args, "deepshrink_factor") else 2.0
+            deepshrink_factor = (
+                args.deepshrink_factor if hasattr(args, "deepshrink_factor") else 2.0
+            )
             deepshrink_start = args.deepshrink_start if hasattr(args, "deepshrink_start") else 0.0
             deepshrink_end = args.deepshrink_end if hasattr(args, "deepshrink_end") else 0.35
-            deepshrink_gradual = args.deepshrink_gradual if hasattr(args, "deepshrink_gradual") else 0.6
-            
+            deepshrink_gradual = (
+                args.deepshrink_gradual if hasattr(args, "deepshrink_gradual") else 0.6
+            )
+
             return create_basic_furry_workflow(
                 checkpoint=checkpoint,
                 lora=lora,
@@ -350,15 +366,17 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
                 deepshrink_factor=deepshrink_factor,
                 deepshrink_start=deepshrink_start,
                 deepshrink_end=deepshrink_end,
-                deepshrink_gradual=deepshrink_gradual
+                deepshrink_gradual=deepshrink_gradual,
             )
-            
+
         return furry_workflow_wrapper
     elif workflow_type == "nsfw":
         from ..commands.nsfw import create_nsfw_workflow
+
         return create_nsfw_workflow
     elif workflow_type == "character":
         from ..commands.character import create_character_workflow
+
         return create_character_workflow
     else:
         return None

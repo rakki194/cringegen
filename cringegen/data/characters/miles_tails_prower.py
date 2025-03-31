@@ -4,16 +4,11 @@ Miles "Tails" Prower Character Template
 This file contains the character template for Tails from the Sonic game series.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
-    "name": "Miles \"Tails\" Prower",
+    "name": 'Miles "Tails" Prower',
     "source": "Sonic the Hedgehog (SEGA)",
     "description": "A young two-tailed fox who is Sonic's best friend and sidekick.",
     "species": "Fox",
@@ -33,16 +28,16 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["tool belt", "wrench"],
     personality=["intelligent", "loyal", "shy", "inventive"],
     model_tags={
-        "e621": "miles \"tails\" prower",
+        "e621": 'miles "tails" prower',
         "danbooru": "miles prower",
         "gelbooru": "tails \\(sonic\\)",
-        "rule34": "miles \"tails\" prower",
+        "rule34": 'miles "tails" prower',
     },
     appearance_traits=[
-        "yellow fur", 
+        "yellow fur",
         "white muzzle",
         "white chest fur",
-        "blue eyes", 
+        "blue eyes",
         "two tails",
         "pointy ears",
         "white gloves",
@@ -51,7 +46,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "young",
         "small",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -66,4 +61,4 @@ CHARACTER_OUTFITS = {
     "default": ["white gloves", "red and white sneakers"],
     "adventure": ["goggles", "brown belt", "white gloves", "red and white sneakers"],
     "workshop": ["goggles", "tool belt", "white gloves", "red and white sneakers"],
-} 
+}

@@ -4,12 +4,7 @@ Sonic the Hedgehog Character Template
 This file contains the character template for Sonic the Hedgehog from the Sonic game series.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -39,8 +34,8 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "rule34": "sonic the hedgehog",
     },
     appearance_traits=[
-        "blue fur", 
-        "green eyes", 
+        "blue fur",
+        "green eyes",
         "blue spikes",
         "peach muzzle",
         "peach arms",
@@ -52,7 +47,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "athletic",
         "toned",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -67,4 +62,4 @@ CHARACTER_OUTFITS = {
     "default": ["white gloves", "red sneakers", "gold buckle shoes"],
     "winter": ["scarf", "white gloves", "red sneakers", "gold buckle shoes"],
     "boom": ["sports tape", "bandana", "white gloves", "blue sneakers"],
-} 
+}

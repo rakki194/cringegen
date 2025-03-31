@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 # Update imports to use new centralized data module
 from cringegen.data import colors, taxonomy
+
 # Original import for reference:
 # from cringegen.data.color_data import (
 #     BASIC_COLORS,

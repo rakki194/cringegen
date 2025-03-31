@@ -4,12 +4,7 @@ Blaidd Character Template
 This file contains the character template for Blaidd the Half-Wolf from Elden Ring.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -35,25 +30,25 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     model_tags={
         "e621": "blaidd \\(elden ring\\)",
         "danbooru": "blaidd the half-wolf",  # TODO: check if this is correct
-        "gelbooru": "blaidd \\(elden ring\\)", # TODO: check if this is correct
-        "rule34": "blaidd the half-wolf",    # TODO: check if this is correct
+        "gelbooru": "blaidd \\(elden ring\\)",  # TODO: check if this is correct
+        "rule34": "blaidd the half-wolf",  # TODO: check if this is correct
     },
     appearance_traits=[
-        "black fur", 
-        "blue cape", 
-        "chest scar", 
+        "black fur",
+        "blue cape",
+        "chest scar",
         "facial scar",
-        "fangs", 
-        "mane", 
+        "fangs",
+        "mane",
         "arm scar",
         "yellow eyes",
     ],
     nsfw_traits=[
-        "muscular", 
+        "muscular",
         "well-endowed",
         "large penis",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -87,10 +82,10 @@ RECOMMENDED_LORAS = {
 }
 
 __all__ = [
-    'CHARACTER_TEMPLATE',
-    'CHARACTER_INFO',
-    'CHARACTER_POSES',
-    'CHARACTER_OUTFITS',
-    'RECOMMENDED_ADDITIONS',
-    'RECOMMENDED_LORAS',
-] 
+    "CHARACTER_TEMPLATE",
+    "CHARACTER_INFO",
+    "CHARACTER_POSES",
+    "CHARACTER_OUTFITS",
+    "RECOMMENDED_ADDITIONS",
+    "RECOMMENDED_LORAS",
+]

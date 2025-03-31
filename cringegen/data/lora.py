@@ -512,15 +512,15 @@ SPECIFIC_CONCEPT_LORAS: Set[str] = {
 EXCLUDED_LORAS: Set[str] = {
     "noob/fart_fetish-v2s3000.safetensors",  # Concept/kink LoRA
     "noob/fart_fetish-v1s3000.safetensors",  # Concept/kink LoRA
-    "noob/foxparks-v1s1600.safetensors",     # Character LoRA
+    "noob/foxparks-v1s1600.safetensors",  # Character LoRA
     "noob/surrounded_by_penis-v1s2400.safetensors",  # Concept LoRA
-    "noob/penn-v2s2600.safetensors",         # Character LoRA
+    "noob/penn-v2s2600.safetensors",  # Character LoRA
 }
 
 # Configuration for artist selection history
 ARTIST_SELECTION_CONFIG: Dict[str, float] = {
-    "MAX_HISTORY": 10,       # How many previous selections to remember
-    "SAME_RUN_PENALTY": 0.8, # Reduce weight of artists used in the same run
+    "MAX_HISTORY": 10,  # How many previous selections to remember
+    "SAME_RUN_PENALTY": 0.8,  # Reduce weight of artists used in the same run
 }
 
 # Configuration for weighted random LoRA strength selection
@@ -536,7 +536,7 @@ KINK_LORA_RECOMMENDATIONS: Dict[str, Dict[str, Union[str, List[str]]]] = {
     "fart": {
         "lora": "fart_fetish-v2s3000",
         "checkpoint": "noobaiXLVpredv10.safetensors",
-        "terms": ["fart", "gas", "flatulence", "fart fetish"]
+        "terms": ["fart", "gas", "flatulence", "fart fetish"],
     }
     # Additional kink recommendations can be added here
 }
@@ -695,21 +695,22 @@ for artist, loras in LORA_ARTISTS.items():
                 "recommended_strength": 0.6,
             }
 
+
 def get_available_loras(comfy_url: str = "http://127.0.0.1:8188") -> List[str]:
     """
     Get a list of available LoRAs from the ComfyUI server.
     If the connection fails, a default list is returned.
-    
+
     Args:
         comfy_url: URL of the ComfyUI server
-        
+
     Returns:
         List of available LoRA file paths
     """
     try:
         import json
         import requests
-        
+
         # Query the ComfyUI API for available LoRAs
         response = requests.get(f"{comfy_url}/object_info", timeout=5)
         if response.status_code == 200:
@@ -720,10 +721,10 @@ def get_available_loras(comfy_url: str = "http://127.0.0.1:8188") -> List[str]:
                     return lora_loader["input"]["lora_name"]["filebrowser_config"]["root_paths"]
     except Exception as e:
         print(f"Error getting available LoRAs: {e}")
-    
+
     # If the connection fails or the data structure is unexpected,
     # return a default list using our known LoRAs
     default_loras = []
     for dataset in LORA_DATASETS.values():
         default_loras.extend(dataset)
-    return default_loras 
+    return default_loras

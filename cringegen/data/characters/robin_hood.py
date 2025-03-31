@@ -4,12 +4,7 @@ Robin Hood Character Template
 This file contains the character template for Robin Hood from Disney's animated film.
 """
 
-from ..character_taxonomy import (
-    CharacterTemplate,
-    CharacterType,
-    FormType,
-    Gender
-)
+from ..character_taxonomy import CharacterTemplate, CharacterType, FormType, Gender
 
 # Character metadata for documentation and reference
 CHARACTER_INFO = {
@@ -39,7 +34,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "rule34": "robin hood \\(disney\\)",
     },
     appearance_traits=[
-        "red fur", 
+        "red fur",
         "cream muzzle",
         "pointy ears",
         "bushy tail",
@@ -52,7 +47,7 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "athletic",
         "toned",
     ],
-    is_canon_character=True
+    is_canon_character=True,
 )
 
 # Optional pose variations that can be used with the character
@@ -67,4 +62,4 @@ CHARACTER_OUTFITS = {
     "default": ["green tunic", "green hat with feather", "yellow scarf", "brown belt"],
     "tournament": ["peasant disguise", "blindfold", "torn clothes"],
     "noble": ["fancy clothes", "royal outfit", "prince attire"],
-} 
+}

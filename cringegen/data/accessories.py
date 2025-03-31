@@ -16,139 +16,274 @@ SPECIES_ACCESSORIES: Dict[str, Dict[str, Dict[str, List[str]]]] = {
     "canine": {
         "anthro": {
             "male": [
-                "collar", "bandana", "scarf", "glasses", "hat", "tie", "jacket", 
-                "vest", "hoodie", "t-shirt", "jeans", "shorts", "backpack"
+                "collar",
+                "bandana",
+                "scarf",
+                "glasses",
+                "hat",
+                "tie",
+                "jacket",
+                "vest",
+                "hoodie",
+                "t-shirt",
+                "jeans",
+                "shorts",
+                "backpack",
             ],
             "female": [
-                "collar", "bandana", "scarf", "glasses", "bow", "necklace", "earrings", 
-                "dress", "skirt", "top", "blouse", "jacket", "shorts", "leggings", "purse"
+                "collar",
+                "bandana",
+                "scarf",
+                "glasses",
+                "bow",
+                "necklace",
+                "earrings",
+                "dress",
+                "skirt",
+                "top",
+                "blouse",
+                "jacket",
+                "shorts",
+                "leggings",
+                "purse",
             ],
-            "neutral": [
-                "collar", "bandana", "scarf", "glasses", "hat", "watch", "bracelet"
-            ]
+            "neutral": ["collar", "bandana", "scarf", "glasses", "hat", "watch", "bracelet"],
         },
-        "feral": {
-            "neutral": ["collar", "bandana", "scarf", "harness"]
-        }
+        "feral": {"neutral": ["collar", "bandana", "scarf", "harness"]},
     },
     "feline": {
         "anthro": {
             "male": [
-                "collar", "glasses", "hat", "tie", "vest", "jacket", 
-                "shirt", "jeans", "pants", "bow tie", "watch"
+                "collar",
+                "glasses",
+                "hat",
+                "tie",
+                "vest",
+                "jacket",
+                "shirt",
+                "jeans",
+                "pants",
+                "bow tie",
+                "watch",
             ],
             "female": [
-                "collar", "glasses", "jewelry", "earrings", "necklace", 
-                "dress", "skirt", "top", "blouse", "jacket", "pants", "leggings"
+                "collar",
+                "glasses",
+                "jewelry",
+                "earrings",
+                "necklace",
+                "dress",
+                "skirt",
+                "top",
+                "blouse",
+                "jacket",
+                "pants",
+                "leggings",
             ],
-            "neutral": ["collar", "glasses", "scarf", "bandana"]
+            "neutral": ["collar", "glasses", "scarf", "bandana"],
         },
-        "feral": {
-            "neutral": ["collar", "bell collar", "ribbon", "bow"]
-        }
+        "feral": {"neutral": ["collar", "bell collar", "ribbon", "bow"]},
     },
     "reptile": {
         "anthro": {
             "male": [
-                "glasses", "hat", "cloak", "robe", "vest", "armband", 
-                "armlets", "wristbands", "pants", "loincloth"
+                "glasses",
+                "hat",
+                "cloak",
+                "robe",
+                "vest",
+                "armband",
+                "armlets",
+                "wristbands",
+                "pants",
+                "loincloth",
             ],
             "female": [
-                "glasses", "jewelry", "necklace", "earrings", "robe", 
-                "dress", "skirt", "top", "sarong", "armband", "bracelets"
+                "glasses",
+                "jewelry",
+                "necklace",
+                "earrings",
+                "robe",
+                "dress",
+                "skirt",
+                "top",
+                "sarong",
+                "armband",
+                "bracelets",
             ],
-            "neutral": ["glasses", "cloak", "armband", "wristbands"]
+            "neutral": ["glasses", "cloak", "armband", "wristbands"],
         },
-        "feral": {
-            "neutral": ["saddle", "harness", "jeweled collar"]
-        }
+        "feral": {"neutral": ["saddle", "harness", "jeweled collar"]},
     },
     "avian": {
         "anthro": {
             "male": [
-                "glasses", "hat", "vest", "jacket", "tie", "bow tie", 
-                "shirt", "pants", "scarf", "cape", "cloak"
+                "glasses",
+                "hat",
+                "vest",
+                "jacket",
+                "tie",
+                "bow tie",
+                "shirt",
+                "pants",
+                "scarf",
+                "cape",
+                "cloak",
             ],
             "female": [
-                "glasses", "jewelry", "earrings", "necklace", "hat", 
-                "dress", "skirt", "blouse", "scarf", "cape", "shawl"
+                "glasses",
+                "jewelry",
+                "earrings",
+                "necklace",
+                "hat",
+                "dress",
+                "skirt",
+                "blouse",
+                "scarf",
+                "cape",
+                "shawl",
             ],
-            "neutral": ["glasses", "scarf", "hat", "cape", "cloak"]
+            "neutral": ["glasses", "scarf", "hat", "cape", "cloak"],
         },
-        "feral": {
-            "neutral": ["ribbon", "anklet", "leg band", "beak decoration"]
-        }
+        "feral": {"neutral": ["ribbon", "anklet", "leg band", "beak decoration"]},
     },
     "equine": {
         "anthro": {
             "male": [
-                "hat", "glasses", "vest", "jacket", "shirt", "tie", 
-                "pants", "boots", "watch", "belt"
+                "hat",
+                "glasses",
+                "vest",
+                "jacket",
+                "shirt",
+                "tie",
+                "pants",
+                "boots",
+                "watch",
+                "belt",
             ],
             "female": [
-                "hat", "glasses", "jewelry", "dress", "skirt", "blouse", 
-                "jacket", "boots", "scarf", "belt"
+                "hat",
+                "glasses",
+                "jewelry",
+                "dress",
+                "skirt",
+                "blouse",
+                "jacket",
+                "boots",
+                "scarf",
+                "belt",
             ],
-            "neutral": ["hat", "glasses", "scarf", "boots", "belt"]
+            "neutral": ["hat", "glasses", "scarf", "boots", "belt"],
         },
-        "feral": {
-            "neutral": ["saddle", "bridle", "harness", "horseshoes", "reins"]
-        }
+        "feral": {"neutral": ["saddle", "bridle", "harness", "horseshoes", "reins"]},
     },
     "bovine": {
         "anthro": {
             "male": [
-                "hat", "glasses", "vest", "jacket", "shirt", "overalls", 
-                "pants", "boots", "belt", "nose ring"
+                "hat",
+                "glasses",
+                "vest",
+                "jacket",
+                "shirt",
+                "overalls",
+                "pants",
+                "boots",
+                "belt",
+                "nose ring",
             ],
             "female": [
-                "hat", "glasses", "dress", "skirt", "blouse", "overalls", 
-                "jacket", "boots", "jewelry", "nose ring"
+                "hat",
+                "glasses",
+                "dress",
+                "skirt",
+                "blouse",
+                "overalls",
+                "jacket",
+                "boots",
+                "jewelry",
+                "nose ring",
             ],
-            "neutral": ["hat", "glasses", "boots", "nose ring"]
+            "neutral": ["hat", "glasses", "boots", "nose ring"],
         },
-        "feral": {
-            "neutral": ["bell", "nose ring", "decorated horns"]
-        }
+        "feral": {"neutral": ["bell", "nose ring", "decorated horns"]},
     },
     "protogen": {
         "anthro": {
             "male": [
-                "visor", "armor pieces", "tech gauntlets", "tech boots", 
-                "digital interface", "LED accents", "circuit patterns"
+                "visor",
+                "armor pieces",
+                "tech gauntlets",
+                "tech boots",
+                "digital interface",
+                "LED accents",
+                "circuit patterns",
             ],
             "female": [
-                "visor", "armor pieces", "tech gauntlets", "tech boots", 
-                "digital interface", "LED accents", "circuit patterns", "decorative panels"
+                "visor",
+                "armor pieces",
+                "tech gauntlets",
+                "tech boots",
+                "digital interface",
+                "LED accents",
+                "circuit patterns",
+                "decorative panels",
             ],
             "neutral": [
-                "visor", "armor pieces", "tech gauntlets", "tech boots", 
-                "digital interface", "LED accents", "circuit patterns"
-            ]
+                "visor",
+                "armor pieces",
+                "tech gauntlets",
+                "tech boots",
+                "digital interface",
+                "LED accents",
+                "circuit patterns",
+            ],
         }
     },
     "synth": {
         "anthro": {
             "neutral": [
-                "visor", "LED panels", "circuit patterns", "tech gauntlets", 
-                "tech boots", "digital interface", "holographic accessories", "tech collar"
+                "visor",
+                "LED panels",
+                "circuit patterns",
+                "tech gauntlets",
+                "tech boots",
+                "digital interface",
+                "holographic accessories",
+                "tech collar",
             ]
         }
     },
     "default": {
         "anthro": {
             "male": [
-                "hat", "glasses", "shirt", "pants", "jacket", "vest", 
-                "tie", "watch", "belt", "boots", "shoes"
+                "hat",
+                "glasses",
+                "shirt",
+                "pants",
+                "jacket",
+                "vest",
+                "tie",
+                "watch",
+                "belt",
+                "boots",
+                "shoes",
             ],
             "female": [
-                "hat", "glasses", "dress", "skirt", "top", "blouse", 
-                "jacket", "jewelry", "earrings", "necklace", "boots", "shoes"
+                "hat",
+                "glasses",
+                "dress",
+                "skirt",
+                "top",
+                "blouse",
+                "jacket",
+                "jewelry",
+                "earrings",
+                "necklace",
+                "boots",
+                "shoes",
             ],
-            "neutral": ["hat", "glasses", "scarf", "watch", "belt", "shoes"]
+            "neutral": ["hat", "glasses", "scarf", "watch", "belt", "shoes"],
         },
-        "feral": {
-            "neutral": ["collar", "harness"]
-        }
-    }
-} 
+        "feral": {"neutral": ["collar", "harness"]},
+    },
+}
