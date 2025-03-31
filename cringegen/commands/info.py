@@ -4,19 +4,22 @@ Information and listing commands for CringeGen
 
 import logging
 import os
+from typing import Dict, List, Optional
 
 from ..utils.comfy_api import (
+    check_comfy_server,
     get_available_checkpoints,
     get_available_loras,
     get_available_samplers,
     get_available_schedulers,
-    get_checkpoint_suggestion,
     get_compatible_checkpoints,
     get_compatible_loras,
-    get_lora_directory,
-    get_lora_suggestions,
+    get_lora_directory
 )
-from ..utils.file_utils import copy_latest_images_from_comfyui
+from ..utils.file_utils import (
+    copy_latest_images_from_comfyui,
+    rsync_latest_images_from_comfyui
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +128,33 @@ def add_info_commands(subparsers, parent_parser):
         type=str,
         default="output",
         help="Output directory for copied images",
+    )
+    # Remote ComfyUI options
+    copy_images_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Use SSH to copy images from a remote ComfyUI instance",
+    )
+    copy_images_parser.add_argument(
+        "--ssh-host",
+        type=str,
+        help="SSH hostname or IP address for remote ComfyUI instance",
+    )
+    copy_images_parser.add_argument(
+        "--ssh-port",
+        type=int,
+        default=22,
+        help="SSH port for remote ComfyUI instance",
+    )
+    copy_images_parser.add_argument(
+        "--ssh-user",
+        type=str,
+        help="SSH username for remote ComfyUI instance",
+    )
+    copy_images_parser.add_argument(
+        "--ssh-key",
+        type=str,
+        help="Path to SSH private key file for remote ComfyUI instance",
     )
     copy_images_parser.set_defaults(func=copy_images_from_comfyui_cmd)
 
@@ -305,7 +335,30 @@ def suggest_loras(args):
 
 def copy_images_from_comfyui_cmd(args):
     """Copy latest images from ComfyUI output directory"""
-    copied = copy_latest_images_from_comfyui(args.comfy_output_dir, args.output_dir, args.count)
+    if args.remote:
+        # Check for required SSH parameters
+        if not args.ssh_host:
+            logger.error("SSH host is required when using --remote")
+            return
+        
+        logger.info(f"Using rsync over SSH to copy images from {args.ssh_host}")
+        copied = rsync_latest_images_from_comfyui(
+            args.ssh_host,
+            args.comfy_output_dir,
+            args.output_dir,
+            limit=args.count,
+            ssh_port=args.ssh_port,
+            ssh_user=args.ssh_user,
+            ssh_key=args.ssh_key
+        )
+    else:
+        # Local copy
+        copied = copy_latest_images_from_comfyui(
+            args.comfy_output_dir, 
+            args.output_dir, 
+            limit=args.count
+        )
+        
     if copied:
         logger.info(f"Copied {len(copied)} images to {args.output_dir}:")
         for image in copied:

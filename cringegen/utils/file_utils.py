@@ -5,7 +5,9 @@ Utilities for file operations in the CringeGen package.
 import glob
 import os
 import shutil
-from typing import List, Optional
+import subprocess
+import tempfile
+from typing import List, Optional, Tuple
 
 from .logger import get_logger
 
@@ -136,3 +138,242 @@ def copy_latest_images_from_comfyui(
         logger.warning(f"No images were copied to {dest_dir}")
 
     return copied_files
+
+
+def rsync_image_from_comfyui(
+    image_name: str, 
+    ssh_host: str, 
+    remote_dir: str, 
+    dest_dir: str, 
+    output_prefix: str = None,
+    ssh_port: int = 22,
+    ssh_user: str = None,
+    ssh_key: str = None
+) -> Optional[str]:
+    """Copy an image from a remote ComfyUI output directory using rsync over SSH.
+
+    Args:
+        image_name: Name of the image file or full ComfyUI path
+        ssh_host: SSH hostname or IP
+        remote_dir: Remote directory containing the image
+        dest_dir: Local destination directory
+        output_prefix: Optional prefix for output filename
+        ssh_port: SSH port (default: 22)
+        ssh_user: SSH username (default: current user)
+        ssh_key: Path to SSH private key file (default: use system default)
+
+    Returns:
+        Path to the copied image if successful, None otherwise
+    """
+    # Ensure destination directory exists
+    ensure_dir_exists(dest_dir)
+    
+    # ComfyUI sometimes returns paths in format 'subfolder/filename'
+    # Extract subfolder if present
+    subfolder = ""
+    if '/' in image_name:
+        subfolder, image_name = image_name.rsplit('/', 1)
+    
+    # Build remote path
+    remote_path = os.path.join(remote_dir, subfolder, image_name)
+    
+    # Create output filename with optional prefix
+    if output_prefix:
+        filename, ext = os.path.splitext(image_name)
+        output_filename = f"{output_prefix}{ext}"
+    else:
+        output_filename = image_name
+    
+    dest_path = os.path.join(dest_dir, output_filename)
+
+    # Prepare SSH host string
+    if ssh_user:
+        ssh_host_str = f"{ssh_user}@{ssh_host}"
+    else:
+        ssh_host_str = ssh_host
+
+    # Prepare rsync command
+    rsync_cmd = ["rsync", "-avz", "--progress"]
+    
+    # Add SSH options
+    ssh_options = f"ssh -p {ssh_port}"
+    if ssh_key:
+        ssh_options += f" -i {ssh_key}"
+    
+    rsync_cmd.extend(["-e", ssh_options])
+    
+    # Add source and destination
+    rsync_cmd.append(f"{ssh_host_str}:{remote_path}")
+    rsync_cmd.append(dest_path)
+    
+    logger.info(f"Running rsync command: {' '.join(rsync_cmd)}")
+    
+    try:
+        # Execute rsync command
+        result = subprocess.run(
+            rsync_cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        
+        logger.debug(f"Rsync output: {result.stdout}")
+        logger.info(f"Successfully rsynced {image_name} to {dest_path}")
+        return dest_path
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Rsync error: {e.stderr}")
+        
+        # Try alternative path (without subfolder)
+        if subfolder:
+            logger.info("Trying alternative path without subfolder...")
+            alt_remote_path = os.path.join(remote_dir, image_name)
+            rsync_cmd[-2] = f"{ssh_host_str}:{alt_remote_path}"
+            
+            try:
+                result = subprocess.run(
+                    rsync_cmd, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=True
+                )
+                
+                logger.debug(f"Rsync output: {result.stdout}")
+                logger.info(f"Successfully rsynced {image_name} to {dest_path}")
+                return dest_path
+            except subprocess.CalledProcessError as e2:
+                logger.error(f"Alternative rsync also failed: {e2.stderr}")
+        
+        return None
+    except Exception as e:
+        logger.error(f"Error during rsync: {e}")
+        return None
+
+
+def rsync_latest_images_from_comfyui(
+    ssh_host: str, 
+    remote_dir: str, 
+    dest_dir: str, 
+    limit: int = 5,
+    ssh_port: int = 22,
+    ssh_user: str = None,
+    ssh_key: str = None
+) -> List[str]:
+    """Copy the latest images from a remote ComfyUI output directory using rsync over SSH.
+
+    Args:
+        ssh_host: SSH hostname or IP
+        remote_dir: Remote directory containing the images
+        dest_dir: Local destination directory
+        limit: Maximum number of images to copy
+        ssh_port: SSH port (default: 22)
+        ssh_user: SSH username (default: current user)
+        ssh_key: Path to SSH private key file (default: use system default)
+
+    Returns:
+        List of paths to the copied images
+    """
+    # Ensure destination directory exists
+    ensure_dir_exists(dest_dir)
+    
+    # Prepare SSH host string
+    if ssh_user:
+        ssh_host_str = f"{ssh_user}@{ssh_host}"
+    else:
+        ssh_host_str = ssh_host
+    
+    # First, get a list of files by running ls -t (sort by modification time)
+    ssh_cmd = ["ssh"]
+    
+    # Add SSH options
+    if ssh_port != 22:
+        ssh_cmd.extend(["-p", str(ssh_port)])
+    
+    if ssh_key:
+        ssh_cmd.extend(["-i", ssh_key])
+    
+    ssh_cmd.append(ssh_host_str)
+    
+    # Use ls -t to get files sorted by modification time, newest first
+    ls_cmd = f"find '{remote_dir}' -type f -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' | xargs ls -t 2>/dev/null | head -n {limit}"
+    ssh_cmd.append(ls_cmd)
+    
+    logger.info(f"Running SSH command to list files: {' '.join(ssh_cmd)}")
+    
+    try:
+        # Execute SSH command
+        result = subprocess.run(
+            ssh_cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False  # Don't raise exception on non-zero exit
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"SSH error: {result.stderr}")
+            return []
+        
+        remote_files = result.stdout.strip().split('\n')
+        remote_files = [f for f in remote_files if f]  # Filter empty lines
+        
+        if not remote_files:
+            logger.warning(f"No files found in remote directory {remote_dir}")
+            return []
+        
+        logger.info(f"Found {len(remote_files)} files to copy")
+        
+        # Now rsync each file
+        copied_files = []
+        for remote_file in remote_files:
+            if not remote_file:
+                continue
+                
+            filename = os.path.basename(remote_file)
+            dest_path = os.path.join(dest_dir, filename)
+            
+            # Prepare rsync command
+            rsync_cmd = ["rsync", "-avz", "--progress"]
+            
+            # Add SSH options
+            ssh_options = f"ssh -p {ssh_port}"
+            if ssh_key:
+                ssh_options += f" -i {ssh_key}"
+            
+            rsync_cmd.extend(["-e", ssh_options])
+            
+            # Add source and destination
+            rsync_cmd.append(f"{ssh_host_str}:{remote_file}")
+            rsync_cmd.append(dest_path)
+            
+            logger.debug(f"Running rsync command: {' '.join(rsync_cmd)}")
+            
+            try:
+                # Execute rsync command
+                rsync_result = subprocess.run(
+                    rsync_cmd, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=True
+                )
+                
+                logger.debug(f"Rsync output: {rsync_result.stdout}")
+                logger.info(f"Successfully rsynced {filename} to {dest_path}")
+                copied_files.append(dest_path)
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Rsync error for {filename}: {e.stderr}")
+            except Exception as e:
+                logger.error(f"Error during rsync for {filename}: {e}")
+        
+        # Return the list of copied files
+        if copied_files:
+            logger.info(f"Copied {len(copied_files)} images to {dest_dir}")
+        else:
+            logger.warning(f"No images were copied to {dest_dir}")
+        
+        return copied_files
+    except Exception as e:
+        logger.error(f"Error getting file list from remote server: {e}")
+        return []

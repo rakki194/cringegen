@@ -16,7 +16,12 @@ from ..utils.comfy_api import (
     get_preferred_checkpoint,
     queue_prompt,
 )
-from ..utils.file_utils import copy_image_from_comfyui, copy_latest_images_from_comfyui
+from ..utils.file_utils import (
+    copy_image_from_comfyui, 
+    copy_latest_images_from_comfyui,
+    rsync_image_from_comfyui,
+    rsync_latest_images_from_comfyui
+)
 from ..workflows.furry import create_nsfw_furry_workflow
 
 logger = logging.getLogger(__name__)
@@ -278,6 +283,35 @@ def add_nsfw_command(subparsers, parent_parser):
         action="store_true",
         help="Force seed increment by exactly +1 for each image when using --count",
     )
+
+    # Remote ComfyUI options
+    nsfw_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Use SSH to copy images from a remote ComfyUI instance",
+    )
+    nsfw_parser.add_argument(
+        "--ssh-host",
+        type=str,
+        help="SSH hostname or IP address for remote ComfyUI instance",
+    )
+    nsfw_parser.add_argument(
+        "--ssh-port",
+        type=int,
+        default=22,
+        help="SSH port for remote ComfyUI instance",
+    )
+    nsfw_parser.add_argument(
+        "--ssh-user",
+        type=str,
+        help="SSH username for remote ComfyUI instance",
+    )
+    nsfw_parser.add_argument(
+        "--ssh-key",
+        type=str,
+        help="Path to SSH private key file for remote ComfyUI instance",
+    )
+
     nsfw_parser.set_defaults(func=generate_nsfw_furry)
     return nsfw_parser
 
@@ -501,22 +535,63 @@ def generate_nsfw_furry(args):
                     
                     if image_path and len(image_path) > 0:
                         logger.info(f"Found image path via API: {image_path[0]}")
-                        success = copy_image_from_comfyui(
-                            image_path[0],  # Use the first image
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            f"nsfw_furry_{curr_seed}",
-                        )
+                        success = False
+                        
+                        if args.remote:
+                            # Check for required SSH parameters
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                            
+                            logger.info(f"Using rsync over SSH to copy image from {args.ssh_host}")
+                            success = rsync_image_from_comfyui(
+                                image_path[0],  # Use the first image
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                f"nsfw_furry_{curr_seed}",
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            ) is not None
+                        else:
+                            # Local copy
+                            success = copy_image_from_comfyui(
+                                image_path[0],  # Use the first image
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                f"nsfw_furry_{curr_seed}",
+                            ) is not None
+                            
                         if success:
                             logger.info(f"Copied image to {args.output_dir}")
                         else:
                             # If copying via API path failed, try looking for the most recent image
                             logger.info("Trying to copy the most recent image instead...")
-                            copied = copy_latest_images_from_comfyui(
-                                args.comfy_output_dir, 
-                                args.output_dir, 
-                                limit=1
-                            )
+                            
+                            if args.remote:
+                                if not args.ssh_host:
+                                    logger.error("SSH host is required when using --remote")
+                                    return prompts
+                                    
+                                logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                                copied = rsync_latest_images_from_comfyui(
+                                    args.ssh_host,
+                                    args.comfy_output_dir,
+                                    args.output_dir,
+                                    limit=1,
+                                    ssh_port=args.ssh_port,
+                                    ssh_user=args.ssh_user,
+                                    ssh_key=args.ssh_key
+                                )
+                            else:
+                                # Local copy
+                                copied = copy_latest_images_from_comfyui(
+                                    args.comfy_output_dir, 
+                                    args.output_dir, 
+                                    limit=1
+                                )
+                                
                             if copied:
                                 logger.info(f"Copied most recent image to {args.output_dir}")
                             else:
@@ -524,11 +599,30 @@ def generate_nsfw_furry(args):
                     else:
                         # If API doesn't return image path, try looking for the most recent image
                         logger.info("No image path from API, trying to copy the most recent image...")
-                        copied = copy_latest_images_from_comfyui(
-                            args.comfy_output_dir, 
-                            args.output_dir, 
-                            limit=1
-                        )
+                        
+                        if args.remote:
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                                
+                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                            copied = rsync_latest_images_from_comfyui(
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1,
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            )
+                        else:
+                            # Local copy
+                            copied = copy_latest_images_from_comfyui(
+                                args.comfy_output_dir, 
+                                args.output_dir, 
+                                limit=1
+                            )
+                            
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                         else:
@@ -538,11 +632,29 @@ def generate_nsfw_furry(args):
                     # Try copying the latest image as a fallback
                     logger.info("Trying to copy the most recent image as fallback...")
                     try:
-                        copied = copy_latest_images_from_comfyui(
-                            args.comfy_output_dir, 
-                            args.output_dir, 
-                            limit=1
-                        )
+                        if args.remote:
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                                
+                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                            copied = rsync_latest_images_from_comfyui(
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1,
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            )
+                        else:
+                            # Local copy
+                            copied = copy_latest_images_from_comfyui(
+                                args.comfy_output_dir, 
+                                args.output_dir, 
+                                limit=1
+                            )
+                            
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                     except Exception as fallback_e:

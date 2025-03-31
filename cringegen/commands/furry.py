@@ -18,7 +18,12 @@ from ..utils.comfy_api import (
     get_preferred_checkpoint,
     queue_prompt,
 )
-from ..utils.file_utils import copy_image_from_comfyui, copy_latest_images_from_comfyui
+from ..utils.file_utils import (
+    copy_image_from_comfyui,
+    copy_latest_images_from_comfyui,
+    rsync_image_from_comfyui,
+    rsync_latest_images_from_comfyui
+)
 from ..workflows.furry import create_basic_furry_workflow
 
 logger = logging.getLogger(__name__)
@@ -158,6 +163,35 @@ def add_furry_command(subparsers, parent_parser):
         action="store_true",
         help="Force seed increment by exactly +1 for each image when using --count",
     )
+    
+    # Remote ComfyUI options
+    furry_parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Use SSH to copy images from a remote ComfyUI instance",
+    )
+    furry_parser.add_argument(
+        "--ssh-host",
+        type=str,
+        help="SSH hostname or IP address for remote ComfyUI instance",
+    )
+    furry_parser.add_argument(
+        "--ssh-port",
+        type=int,
+        default=22,
+        help="SSH port for remote ComfyUI instance",
+    )
+    furry_parser.add_argument(
+        "--ssh-user",
+        type=str,
+        help="SSH username for remote ComfyUI instance",
+    )
+    furry_parser.add_argument(
+        "--ssh-key",
+        type=str,
+        help="Path to SSH private key file for remote ComfyUI instance",
+    )
+    
     furry_parser.set_defaults(func=generate_furry)
     return furry_parser
 
@@ -179,11 +213,11 @@ def generate_furry(args):
     generator = FurryPromptGenerator(
         species=args.species,  # Pass species directly
         gender=args.gender,    # Pass gender directly
-        colors=args.colors.split(",") if args.colors else None,
+        colors=args.colors if args.colors else None,
         pattern=args.pattern,
         species2=args.species2 if args.duo else None,
         gender2=args.gender2 if args.duo else None,
-        colors2=args.colors2.split(",") if args.duo and args.colors2 else None,
+        colors2=args.colors2 if args.duo and args.colors2 else None,
         pattern2=args.pattern2 if args.duo else None,
         use_duo=args.duo,
         group_size=max(3, min(6, args.group)) if args.group else 0,
@@ -344,23 +378,63 @@ def generate_furry(args):
                         image_filename = status["images"][0]["filename"]
                         logger.info(f"Found image: {image_filename}")
                         
-                        success = copy_image_from_comfyui(
-                            image_filename,
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            f"furry_{curr_seed}",
-                        )
+                        success = False
+                        if args.remote:
+                            # Check for required SSH parameters
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                            
+                            logger.info(f"Using rsync over SSH to copy image from {args.ssh_host}")
+                            success = rsync_image_from_comfyui(
+                                image_filename,
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                f"furry_{curr_seed}",
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            ) is not None
+                        else:
+                            # Local copy
+                            success = copy_image_from_comfyui(
+                                image_filename,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                f"furry_{curr_seed}",
+                            ) is not None
                         
                         if success:
                             logger.info(f"Copied image to {args.output_dir}")
                         else:
                             logger.warning("Failed to copy image, trying alternate methods...")
                             # Try with latest images as fallback
-                            copied = copy_latest_images_from_comfyui(
-                                args.comfy_output_dir,
-                                args.output_dir,
-                                limit=1
-                            )
+                            copied = []
+                            
+                            if args.remote:
+                                if not args.ssh_host:
+                                    logger.error("SSH host is required when using --remote")
+                                    return prompts
+                                    
+                                logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                                copied = rsync_latest_images_from_comfyui(
+                                    args.ssh_host,
+                                    args.comfy_output_dir,
+                                    args.output_dir,
+                                    limit=1,
+                                    ssh_port=args.ssh_port,
+                                    ssh_user=args.ssh_user,
+                                    ssh_key=args.ssh_key
+                                )
+                            else:
+                                # Local copy
+                                copied = copy_latest_images_from_comfyui(
+                                    args.comfy_output_dir,
+                                    args.output_dir,
+                                    limit=1
+                                )
+                                
                             if copied:
                                 logger.info(f"Copied most recent image to {args.output_dir}")
                             else:
@@ -374,11 +448,30 @@ def generate_furry(args):
                             
                         # Try to copy latest image as a fallback
                         logger.info("Trying to copy the most recent image instead...")
-                        copied = copy_latest_images_from_comfyui(
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            limit=1
-                        )
+                        
+                        if args.remote:
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                                
+                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                            copied = rsync_latest_images_from_comfyui(
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1,
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            )
+                        else:
+                            # Local copy
+                            copied = copy_latest_images_from_comfyui(
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1
+                            )
+                            
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                         else:
@@ -388,11 +481,29 @@ def generate_furry(args):
                     logger.error(f"Error during generation monitoring: {e}")
                     # Try copying the latest image as a fallback
                     try:
-                        copied = copy_latest_images_from_comfyui(
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            limit=1
-                        )
+                        if args.remote:
+                            if not args.ssh_host:
+                                logger.error("SSH host is required when using --remote")
+                                return prompts
+                                
+                            logger.info(f"Using rsync over SSH to copy latest image from {args.ssh_host}")
+                            copied = rsync_latest_images_from_comfyui(
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1,
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key
+                            )
+                        else:
+                            # Local copy
+                            copied = copy_latest_images_from_comfyui(
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1
+                            )
+                            
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
                     except Exception as fallback_e:
