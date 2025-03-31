@@ -539,8 +539,18 @@ def create_xy_grid(
         config_path = temp.name
     
     try:
+        # Get the absolute path to imx-plot in the project root
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        imx_plot_path = os.path.join(script_dir, "imx-plot")
+        
+        # Check if imx-plot exists
+        if not os.path.exists(imx_plot_path):
+            logger.error(f"imx-plot script not found at {imx_plot_path}")
+            return None
+        
         # Call the imx binary
-        cmd = ["imx-plot", config_path]
+        logger.info(f"Running imx-plot: {imx_plot_path} {config_path}")
+        cmd = [imx_plot_path, config_path]
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode != 0:
