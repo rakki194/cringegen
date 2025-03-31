@@ -158,6 +158,62 @@ def add_xyplot_command(subparsers, parent_parser):
         help="Output directory for generated images"
     )
     
+    # PAG (Perturbed-Attention Guidance) options
+    xyplot_parser.add_argument(
+        "--pag",
+        action="store_true",
+        help="Use Perturbed-Attention Guidance for better details"
+    )
+    xyplot_parser.add_argument(
+        "--pag-scale",
+        type=float,
+        default=3.0,
+        help="Scale for PAG"
+    )
+    xyplot_parser.add_argument(
+        "--pag-sigma-start",
+        type=float,
+        default=-1.0,
+        help="Start sigma for PAG (default: auto)"
+    )
+    xyplot_parser.add_argument(
+        "--pag-sigma-end",
+        type=float,
+        default=-1.0,
+        help="End sigma for PAG (default: auto)"
+    )
+    
+    # DeepShrink options
+    xyplot_parser.add_argument(
+        "--deepshrink",
+        action="store_true",
+        help="Use DeepShrink for improved high-frequency details"
+    )
+    xyplot_parser.add_argument(
+        "--deepshrink-factor",
+        type=float,
+        default=2.0,
+        help="Downscale factor for DeepShrink"
+    )
+    xyplot_parser.add_argument(
+        "--deepshrink-start",
+        type=float,
+        default=0.0,
+        help="Start percent for DeepShrink (0.0-1.0)"
+    )
+    xyplot_parser.add_argument(
+        "--deepshrink-end",
+        type=float,
+        default=0.35,
+        help="End percent for DeepShrink (0.0-1.0)"
+    )
+    xyplot_parser.add_argument(
+        "--deepshrink-gradual",
+        type=float,
+        default=0.6,
+        help="Gradual percent for DeepShrink (0.0-1.0)"
+    )
+    
     # Remote ComfyUI options
     xyplot_parser.add_argument(
         "--remote",
@@ -740,11 +796,11 @@ def generate_xyplot(args):
         args.debug_mode
     )
     
-    if grid_path and args.show:
-        logger.info("Opening XY plot grid with imv")
-        open_images_with_imv([grid_path])
-    
     if grid_path:
         logger.info(f"XY plot grid saved to {grid_path}")
+        # If show option is enabled, open the grid image with imv
+        if hasattr(args, "show") and args.show:
+            logger.info("Opening XY plot grid with imv")
+            open_images_with_imv([grid_path])
     else:
         logger.error("Failed to create XY plot grid") 

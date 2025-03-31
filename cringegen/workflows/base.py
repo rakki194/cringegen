@@ -316,6 +316,19 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
             sampler = args.sampler if hasattr(args, "sampler") else None
             scheduler = args.scheduler if hasattr(args, "scheduler") else None
             
+            # PAG options
+            use_pag = args.pag if hasattr(args, "pag") else False
+            pag_scale = args.pag_scale if hasattr(args, "pag_scale") else 3.0
+            pag_sigma_start = args.pag_sigma_start if hasattr(args, "pag_sigma_start") else -1.0
+            pag_sigma_end = args.pag_sigma_end if hasattr(args, "pag_sigma_end") else -1.0
+            
+            # DeepShrink options
+            use_deepshrink = args.deepshrink if hasattr(args, "deepshrink") else False
+            deepshrink_factor = args.deepshrink_factor if hasattr(args, "deepshrink_factor") else 2.0
+            deepshrink_start = args.deepshrink_start if hasattr(args, "deepshrink_start") else 0.0
+            deepshrink_end = args.deepshrink_end if hasattr(args, "deepshrink_end") else 0.35
+            deepshrink_gradual = args.deepshrink_gradual if hasattr(args, "deepshrink_gradual") else 0.6
+            
             return create_basic_furry_workflow(
                 checkpoint=checkpoint,
                 lora=lora,
@@ -328,7 +341,16 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
                 cfg=cfg,
                 lora_strength=lora_strength,
                 sampler=sampler,
-                scheduler=scheduler
+                scheduler=scheduler,
+                use_pag=use_pag,
+                pag_scale=pag_scale,
+                pag_sigma_start=pag_sigma_start,
+                pag_sigma_end=pag_sigma_end,
+                use_deepshrink=use_deepshrink,
+                deepshrink_factor=deepshrink_factor,
+                deepshrink_start=deepshrink_start,
+                deepshrink_end=deepshrink_end,
+                deepshrink_gradual=deepshrink_gradual
             )
             
         return furry_workflow_wrapper
