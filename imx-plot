@@ -149,9 +149,9 @@ fn run(config_path: &str) -> anyhow::Result<()> {
         config.vertical_spacing as u32
     };
 
-    // Create plot config - note that font_size is ignored as it's not in the current API
+    // Create plot config
     println!("Creating plot config...");
-    let mut plot_config = PlotConfig {
+    let plot_config = PlotConfig {
         images,
         output: PathBuf::from(&config.output),
         rows: rows_u32,
