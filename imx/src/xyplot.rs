@@ -479,19 +479,13 @@ fn calculate_layout(config: &PlotConfig, max_width: u32, max_height: u32, cols: 
             .row_labels
             .iter()
             .map(|label| {
-                let rows = label.split('\n').collect::<Vec<_>>();
-                let max_width = rows
+                let lines = label.split('\n').collect::<Vec<_>>();
+                let max_width = lines
                     .iter()
-                    .map(|row| {
-                        ab_glyph::Font::horizontal_advance(
-                            &fonts.main,
-                            &ab_glyph::point_size::PointSize::new(font_size, font_size),
-                            row,
-                        )
-                    })
+                    .map(|line| calculate_label_width(line, fonts, font_size))
                     .fold(0.0f32, f32::max);
 
-                let height = rows.len() as u32 * (font_size as u32 + 2);
+                let height = lines.len() as u32 * (font_size as u32 + 2);
                 (max_width, height)
             })
             .fold((0.0f32, 0), |acc, (width, height)| {
