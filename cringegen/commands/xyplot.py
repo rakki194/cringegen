@@ -10,6 +10,7 @@ import os
 import tempfile
 import json
 import subprocess
+import time
 from typing import List, Dict, Any, Tuple, Optional, Callable
 
 from ..utils.comfy_api import (
@@ -27,7 +28,9 @@ from ..utils.file_utils import (
     copy_image_from_comfyui,
     ensure_dir_exists,
     rsync_image_from_comfyui,
-    open_images_with_imv
+    open_images_with_imv,
+    rsync_latest_images_from_comfyui,
+    copy_latest_images_from_comfyui,
 )
 from ..workflows.base import get_workflow_template
 
@@ -387,24 +390,65 @@ def generate_single_image(
             node["inputs"]["height"] = args.height
     
     # Queue the workflow
-    prompt_id = queue_prompt(modified_workflow, args.comfy_url)
-    if not prompt_id:
+    prompt_id_response = queue_prompt(modified_workflow, args.comfy_url)
+    if not prompt_id_response:
         logger.error("Failed to queue prompt for XY plot image")
         return None
     
-    # Get image path - this will handle waiting for generation
-    image_paths = get_image_path(prompt_id, args.comfy_url)
-    if not image_paths or len(image_paths) == 0:
-        logger.error("Failed to get image path for XY plot")
+    # Extract the actual prompt_id string from the response
+    if isinstance(prompt_id_response, dict) and 'prompt_id' in prompt_id_response:
+        prompt_id = prompt_id_response['prompt_id']
+    else:
+        prompt_id = str(prompt_id_response)
+    
+    # Poll for generation status with a reasonable timeout
+    max_poll_time = 300  # 5 minutes max
+    poll_interval = 2  # Check every 2 seconds
+    start_time = time.time()
+    
+    logger.info(f"Monitoring generation status for prompt {prompt_id}")
+    
+    # Poll until completed or timeout
+    last_progress = 0
+    while time.time() - start_time < max_poll_time:
+        status = check_generation_status(prompt_id, args.comfy_url)
+        
+        # Print progress updates only when progress changes significantly
+        if status["status"] == "pending":
+            if time.time() - start_time > 10:  # Only log after 10 seconds of waiting
+                logger.info(f"Generation pending... ({int(time.time() - start_time)}s elapsed)")
+        elif status["status"] == "processing":
+            current_progress = int(status["progress"] * 100)
+            if current_progress >= last_progress + 10 or (time.time() - start_time) % 10 < 2:
+                logger.info(f"Generation in progress: {current_progress}% ({int(time.time() - start_time)}s elapsed)")
+                last_progress = current_progress
+        elif status["status"] == "completed":
+            logger.info(f"Generation completed in {int(time.time() - start_time)}s!")
+            break
+        elif status["status"] == "error":
+            logger.error(f"Generation error: {status['error']}")
+            return None
+            
+        # Wait before polling again
+        time.sleep(poll_interval)
+    
+    # Check if we timed out
+    if time.time() - start_time >= max_poll_time:
+        logger.warning(f"Generation timed out after {max_poll_time}s")
         return None
     
-    # Use the first image if multiple were generated
-    image_path = image_paths[0]
+    # Get the image filename
+    if status and status["status"] == "completed" and status["images"]:
+        image_filename = status["images"][0]["filename"]
+        logger.info(f"Found image: {image_filename}")
+    else:
+        logger.error("No images were generated")
+        return None
     
     # Copy the image
     if args.remote:
         local_path = rsync_image_from_comfyui(
-            image_path,
+            image_filename,
             args.ssh_host,
             args.comfy_output_dir,
             args.output_dir,
@@ -415,11 +459,39 @@ def generate_single_image(
         )
     else:
         local_path = copy_image_from_comfyui(
-            image_path,
+            image_filename,
             args.comfy_output_dir,
             args.output_dir,
             f"xy_{x_value}_{y_value}"
         )
+    
+    if not local_path:
+        logger.warning("Failed to copy image, trying to copy the latest image instead...")
+        
+        # Try with latest images as fallback
+        copied = []
+        
+        if args.remote:
+            copied = rsync_latest_images_from_comfyui(
+                args.ssh_host,
+                args.comfy_output_dir,
+                args.output_dir,
+                limit=1,
+                ssh_port=args.ssh_port,
+                ssh_user=args.ssh_user,
+                ssh_key=args.ssh_key
+            )
+        else:
+            # Local copy
+            copied = copy_latest_images_from_comfyui(
+                args.comfy_output_dir,
+                args.output_dir,
+                limit=1
+            )
+            
+        if copied:
+            logger.info(f"Copied most recent image as fallback")
+            local_path = copied[0]
     
     return local_path
 
