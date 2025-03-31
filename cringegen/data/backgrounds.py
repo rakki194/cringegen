@@ -1,0 +1,523 @@
+"""
+Background and Settings Data for CringeGen
+
+This module provides centralized data structures for background settings, time of day,
+weather conditions, seasons, and mood descriptors for the CringeGen toolkit.
+
+Key components:
+- Background location definitions
+- Time of day descriptors
+- Weather condition descriptors
+- Seasonal descriptors
+- Mood and atmosphere descriptors
+"""
+
+from typing import Dict, List, Any
+
+# Time of day definitions with lighting and atmosphere
+TIME_OF_DAY: Dict[str, Dict[str, List[str]]] = {
+    "dawn": {
+        "lighting": [
+            "soft golden light",
+            "gentle rays of sunlight",
+            "a warm orange glow",
+            "first light breaking over the horizon",
+        ],
+        "atmosphere": ["peaceful", "quiet", "hopeful", "new beginning"],
+    },
+    "morning": {
+        "lighting": [
+            "bright morning light",
+            "clear sunlight",
+            "warm golden rays",
+            "soft morning glow",
+        ],
+        "atmosphere": ["fresh", "energetic", "lively", "promising"],
+    },
+    "noon": {
+        "lighting": [
+            "harsh overhead sunlight",
+            "bright midday light",
+            "strong direct sunlight",
+            "blinding brightness",
+        ],
+        "atmosphere": ["busy", "active", "vibrant", "bustling"],
+    },
+    "afternoon": {
+        "lighting": [
+            "warm afternoon sunlight",
+            "golden hour glow",
+            "soft yellow light",
+            "long shadows",
+        ],
+        "atmosphere": ["relaxed", "lazy", "pleasant", "warm"],
+    },
+    "sunset": {
+        "lighting": [
+            "vibrant red and orange hues",
+            "rich golden light",
+            "dramatic sky colors",
+            "long purple shadows",
+        ],
+        "atmosphere": ["romantic", "reflective", "calming", "serene"],
+    },
+    "dusk": {
+        "lighting": [
+            "fading twilight",
+            "blue hour lighting",
+            "soft purple glow",
+            "last light of day",
+        ],
+        "atmosphere": ["mysterious", "transitional", "contemplative", "quiet"],
+    },
+    "evening": {
+        "lighting": [
+            "soft evening light",
+            "gentle artificial lighting",
+            "warm indoor lights",
+            "early stars appearing",
+        ],
+        "atmosphere": ["cozy", "relaxed", "intimate", "social"],
+    },
+    "night": {
+        "lighting": [
+            "silver moonlight",
+            "dark shadows",
+            "starlight",
+            "deep blue darkness",
+        ],
+        "atmosphere": ["mysterious", "quiet", "secretive", "peaceful"],
+    },
+    "midnight": {
+        "lighting": [
+            "deep darkness",
+            "eerie moonlight",
+            "black shadows",
+            "faint starlight",
+        ],
+        "atmosphere": ["secretive", "forbidden", "mysterious", "supernatural"],
+    },
+}
+
+# Weather conditions with features and atmosphere
+WEATHER_CONDITIONS: Dict[str, Dict[str, List[str]]] = {
+    "sunny": {
+        "features": [
+            "clear blue skies",
+            "bright sunshine",
+            "warm rays of light",
+            "not a cloud in sight",
+        ],
+        "atmosphere": ["cheerful", "warm", "energetic", "vibrant"],
+    },
+    "cloudy": {
+        "features": [
+            "overcast skies",
+            "diffused light",
+            "soft gray clouds",
+            "muted sunlight",
+        ],
+        "atmosphere": ["subdued", "calm", "thoughtful", "introspective"],
+    },
+    "partly cloudy": {
+        "features": [
+            "scattered clouds",
+            "patches of blue sky",
+            "shifting sunlight",
+            "dynamic sky",
+        ],
+        "atmosphere": ["pleasant", "mild", "changing", "variable"],
+    },
+    "rainy": {
+        "features": [
+            "falling raindrops",
+            "puddles forming",
+            "wet surfaces",
+            "the sound of rainfall",
+        ],
+        "atmosphere": ["melancholic", "refreshing", "cleansing", "introspective"],
+    },
+    "stormy": {
+        "features": [
+            "dark thunderclouds",
+            "flashes of lightning",
+            "rumbling thunder",
+            "heavy rainfall",
+        ],
+        "atmosphere": ["dramatic", "intense", "powerful", "ominous"],
+    },
+    "foggy": {
+        "features": [
+            "thick mist",
+            "limited visibility",
+            "diffused light",
+            "moisture in the air",
+        ],
+        "atmosphere": ["mysterious", "eerie", "secretive", "isolating"],
+    },
+    "snowy": {
+        "features": [
+            "falling snowflakes",
+            "white blanket covering",
+            "crisp air",
+            "pristine landscape",
+        ],
+        "atmosphere": ["serene", "magical", "quiet", "pure"],
+    },
+    "windy": {
+        "features": [
+            "swaying trees",
+            "rustling leaves",
+            "blowing debris",
+            "dynamic movement",
+        ],
+        "atmosphere": ["energetic", "restless", "wild", "changing"],
+    },
+    "misty": {
+        "features": [
+            "light fog",
+            "vapor rising",
+            "dew on surfaces",
+            "soft hazy outline",
+        ],
+        "atmosphere": ["dreamy", "mysterious", "magical", "ethereal"],
+    },
+    "hot": {
+        "features": [
+            "heat waves visible",
+            "beating sun",
+            "dry conditions",
+            "seeking shade",
+        ],
+        "atmosphere": ["oppressive", "languorous", "sluggish", "intense"],
+    },
+    "cold": {
+        "features": [
+            "visible breath",
+            "frozen surfaces",
+            "bundled figures",
+            "crystalline air",
+        ],
+        "atmosphere": ["brisk", "invigorating", "stark", "clear"],
+    },
+    "humid": {
+        "features": [
+            "thick air",
+            "beads of sweat",
+            "clinging moisture",
+            "tropical feeling",
+        ],
+        "atmosphere": ["heavy", "oppressive", "tropical", "sultry"],
+    },
+}
+
+# Seasons with features and atmosphere
+SEASONS: Dict[str, Dict[str, List[str]]] = {
+    "spring": {
+        "features": [
+            "blooming flowers",
+            "new green growth",
+            "nesting birds",
+            "gentle rain showers",
+        ],
+        "atmosphere": ["fresh", "hopeful", "renewing", "vibrant"],
+    },
+    "summer": {
+        "features": [
+            "lush vegetation",
+            "long days",
+            "vibrant colors",
+            "warm temperatures",
+        ],
+        "atmosphere": ["lively", "energetic", "carefree", "playful"],
+    },
+    "autumn": {
+        "features": [
+            "falling leaves",
+            "golden and red foliage",
+            "harvest time",
+            "crisp air",
+        ],
+        "atmosphere": ["nostalgic", "transitional", "reflective", "cozy"],
+    },
+    "winter": {
+        "features": [
+            "snow-covered landscape",
+            "bare trees",
+            "frozen waters",
+            "short days",
+        ],
+        "atmosphere": ["quiet", "stark", "contemplative", "restful"],
+    },
+}
+
+# Common mood descriptors
+MOOD_DESCRIPTORS: Dict[str, List[str]] = {
+    "peaceful": [
+        "tranquil", "serene", "calming", "harmonious", "quiet"
+    ],
+    "mysterious": [
+        "enigmatic", "secretive", "intriguing", "cryptic", "shadowy"
+    ],
+    "romantic": [
+        "intimate", "amorous", "passionate", "dreamy", "tender"
+    ],
+    "dramatic": [
+        "intense", "powerful", "striking", "dynamic", "bold"
+    ],
+    "melancholic": [
+        "wistful", "nostalgic", "reflective", "somber", "pensive"
+    ],
+    "whimsical": [
+        "playful", "fanciful", "quirky", "lighthearted", "capricious"
+    ],
+    "suspenseful": [
+        "tense", "anticipatory", "ominous", "foreboding", "uneasy"
+    ],
+    "joyful": [
+        "jubilant", "cheerful", "exuberant", "elated", "uplifting"
+    ],
+    "magical": [
+        "enchanted", "mystical", "wondrous", "spellbinding", "otherworldly"
+    ],
+    "sinister": [
+        "menacing", "dark", "threatening", "malevolent", "eerie"
+    ],
+    "epic": [
+        "grand", "majestic", "awe-inspiring", "monumental", "vast"
+    ],
+    "dystopian": [
+        "bleak", "grim", "post-apocalyptic", "desolate", "oppressive"
+    ],
+    "ethereal": [
+        "delicate", "heavenly", "gossamer", "celestial", "transcendent"
+    ],
+    "cozy": [
+        "comfortable", "snug", "homey", "warm", "sheltered"
+    ],
+}
+
+# Background settings by location type
+BACKGROUND_SETTINGS: Dict[str, Dict[str, List[str]]] = {
+    "forest": {
+        "descriptors": [
+            "dense", "ancient", "sprawling", "lush", "verdant", "mystical", "enchanted", "shadowy"
+        ],
+        "features": [
+            "towering trees", "dappled sunlight", "carpet of leaves", "moss-covered rocks",
+            "ancient oaks", "thick undergrowth", "meandering paths", "fallen logs",
+            "bird songs", "rustling leaves", "woodland creatures", "flowering shrubs"
+        ],
+        "modifiers": [
+            "pine", "redwood", "oak", "birch", "tropical", "bamboo", "rainforest", "jungle"
+        ]
+    },
+    "mountains": {
+        "descriptors": [
+            "majestic", "towering", "rugged", "snow-capped", "jagged", "imposing", "ancient", "massive"
+        ],
+        "features": [
+            "rocky peaks", "steep cliffs", "alpine meadows", "flowing streams",
+            "hidden valleys", "mountain trails", "high altitude views", "waterfalls",
+            "rocky outcrops", "mountain goats", "eagles soaring", "evergreen forests"
+        ],
+        "modifiers": [
+            "Himalayan", "alpine", "volcanic", "granite", "foggy", "coastal"
+        ]
+    },
+    "beach": {
+        "descriptors": [
+            "sandy", "pristine", "tropical", "secluded", "expansive", "idyllic", "sunny", "picturesque"
+        ],
+        "features": [
+            "rolling waves", "fine sand", "seashells", "palm trees",
+            "colorful beach towels", "beach umbrellas", "tide pools", "driftwood",
+            "distant sailboats", "seagulls", "crashing surf", "coastal cliffs"
+        ],
+        "modifiers": [
+            "tropical", "rocky", "private", "public", "resort", "Mediterranean", "Pacific", "Atlantic"
+        ]
+    },
+    "desert": {
+        "descriptors": [
+            "vast", "arid", "scorching", "barren", "windswept", "endless", "ancient", "desolate"
+        ],
+        "features": [
+            "sand dunes", "cacti", "rocky outcrops", "mirages",
+            "dry washes", "desert flowers", "lizards", "scorpions",
+            "bleached bones", "tumbleweed", "desert oasis", "mesa formations"
+        ],
+        "modifiers": [
+            "Saharan", "Mojave", "Arabian", "high desert", "painted desert", "salt flat"
+        ]
+    },
+    "city": {
+        "descriptors": [
+            "bustling", "sprawling", "cosmopolitan", "towering", "urban", "vibrant", "modern", "historic"
+        ],
+        "features": [
+            "skyscrapers", "busy streets", "sidewalk cafés", "public parks",
+            "honking taxis", "neon signs", "street vendors", "pedestrians",
+            "traffic lights", "subway entrances", "historical buildings", "modern architecture"
+        ],
+        "modifiers": [
+            "European", "Asian", "American", "capital", "coastal", "metropolitan", "cyberpunk", "futuristic"
+        ]
+    },
+    "meadow": {
+        "descriptors": [
+            "lush", "rolling", "flowery", "peaceful", "sunlit", "verdant", "open", "tranquil"
+        ],
+        "features": [
+            "wildflowers", "tall grasses", "butterflies", "buzzing bees",
+            "gentle slopes", "shady trees", "grazing animals", "clear streams",
+            "rolling hills", "hedgerows", "field mice", "dandelion seeds"
+        ],
+        "modifiers": [
+            "alpine", "valley", "countryside", "prairie", "highland"
+        ]
+    },
+    "river": {
+        "descriptors": [
+            "flowing", "winding", "majestic", "gentle", "rushing", "meandering", "wide", "crystal-clear"
+        ],
+        "features": [
+            "clear waters", "smooth stones", "rapids", "riverbanks",
+            "overhanging trees", "swimming spots", "jumping fish", "water plants",
+            "river otters", "fishing boats", "bridges", "waterfalls"
+        ],
+        "modifiers": [
+            "mountain", "jungle", "tropical", "ancient", "sacred", "mighty"
+        ]
+    },
+    "lake": {
+        "descriptors": [
+            "serene", "vast", "crystal-clear", "placid", "glistening", "reflective", "deep", "tranquil"
+        ],
+        "features": [
+            "calm waters", "lakeside dock", "swimming area", "fishing spots",
+            "small boats", "water lilies", "surrounding forests", "distant mountains",
+            "diving birds", "jumping fish", "morning mist", "sunset reflections"
+        ],
+        "modifiers": [
+            "alpine", "crater", "glacial", "volcanic", "forest", "mountain"
+        ]
+    },
+    "jungle": {
+        "descriptors": [
+            "lush", "dense", "tropical", "humid", "vibrant", "primeval", "wild", "exotic"
+        ],
+        "features": [
+            "dense vegetation", "hanging vines", "exotic flowers", "towering trees",
+            "chattering monkeys", "colorful birds", "rushing waterfalls", "hidden temples",
+            "massive roots", "humidity", "ancient ruins", "dangerous predators"
+        ],
+        "modifiers": [
+            "Amazonian", "Southeast Asian", "African", "primordial", "coastal", "highland"
+        ]
+    },
+    "village": {
+        "descriptors": [
+            "quaint", "rustic", "charming", "peaceful", "small", "traditional", "idyllic", "historic"
+        ],
+        "features": [
+            "thatched cottages", "cobblestone streets", "village square", "local pub",
+            "flower gardens", "church spire", "market stalls", "friendly locals",
+            "grazing sheep", "stone walls", "wooden fences", "smoke from chimneys"
+        ],
+        "modifiers": [
+            "European", "Mediterranean", "Asian", "African", "coastal", "mountain", "farming"
+        ]
+    },
+    "castle": {
+        "descriptors": [
+            "medieval", "imposing", "ancient", "majestic", "fortified", "towering", "stone", "historic"
+        ],
+        "features": [
+            "high towers", "massive walls", "iron gates", "drawbridge",
+            "great hall", "throne room", "spiral staircases", "archer slits",
+            "banners and tapestries", "suits of armor", "gothic architecture", "gargoyles"
+        ],
+        "modifiers": [
+            "European", "Japanese", "haunted", "abandoned", "royal", "fairy tale", "fantasy"
+        ]
+    },
+    "cave": {
+        "descriptors": [
+            "dark", "mysterious", "ancient", "damp", "echoing", "shadowy", "vast", "hidden"
+        ],
+        "features": [
+            "stalactites", "stalagmites", "underground river", "crystal formations",
+            "narrow passages", "vast chambers", "ancient paintings", "mysterious shadows",
+            "glowing fungi", "bats", "dripping water", "smooth stone"
+        ],
+        "modifiers": [
+            "ice", "lava", "limestone", "coastal", "mountain", "crystal", "underwater"
+        ]
+    },
+    "ruins": {
+        "descriptors": [
+            "ancient", "crumbling", "mysterious", "forgotten", "overgrown", "weathered", "historic", "abandoned"
+        ],
+        "features": [
+            "fallen columns", "broken walls", "overgrown pathways", "moss-covered stones",
+            "ancient inscriptions", "toppled statues", "hidden chambers", "grand archways",
+            "vine-covered facades", "mysterious symbols", "stone altars", "forgotten treasures"
+        ],
+        "modifiers": [
+            "Greek", "Roman", "Egyptian", "Mayan", "Incan", "temple", "castle", "city"
+        ]
+    },
+    "garden": {
+        "descriptors": [
+            "beautiful", "manicured", "lush", "tranquil", "colorful", "fragrant", "structured", "private"
+        ],
+        "features": [
+            "blooming flowers", "trimmed hedges", "stone pathways", "bubbling fountains",
+            "ornamental trees", "garden benches", "arched trellises", "bird baths",
+            "koi ponds", "butterflies", "humming birds", "stone statues"
+        ],
+        "modifiers": [
+            "Japanese", "English", "French", "rose", "botanical", "cottage", "zen", "royal"
+        ]
+    },
+    "tundra": {
+        "descriptors": [
+            "frozen", "vast", "barren", "icy", "windswept", "frigid", "snow-covered", "desolate"
+        ],
+        "features": [
+            "snow-covered ground", "ice formations", "low shrubs", "frozen lakes",
+            "exposed rocks", "patchy snow", "distant mountains", "vast skies",
+            "arctic wildlife", "frost patterns", "frozen streams", "hardy plants"
+        ],
+        "modifiers": [
+            "Arctic", "Antarctic", "alpine", "high altitude", "polar", "northern"
+        ]
+    },
+    "swamp": {
+        "descriptors": [
+            "murky", "misty", "mysterious", "humid", "ancient", "tangled", "eerie", "primordial"
+        ],
+        "features": [
+            "still waters", "cypress trees", "hanging moss", "twisted roots",
+            "floating vegetation", "water lilies", "croaking frogs", "insects buzzing",
+            "fallen logs", "bird calls", "misty air", "algae-covered stones"
+        ],
+        "modifiers": [
+            "bayou", "mangrove", "cypress", "tropical", "coastal", "freshwater"
+        ]
+    },
+    "underwater": {
+        "descriptors": [
+            "mysterious", "serene", "colorful", "flowing", "ethereal", "tranquil", "silent", "mesmerizing"
+        ],
+        "features": [
+            "coral reefs", "schools of fish", "swaying seaweed", "rippling sand",
+            "colorful sea anemones", "darting fish", "mysterious caves", "underwater currents",
+            "sunlight streaming", "ancient shipwrecks", "jellyfish", "sea turtles"
+        ],
+        "modifiers": [
+            "tropical", "deep sea", "ocean", "reef", "kelp forest", "freshwater", "abyssal"
+        ]
+    }
+} 

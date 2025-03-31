@@ -1,0 +1,282 @@
+"""
+Base classes for ComfyUI workflows
+"""
+
+import json
+import uuid
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+
+class WorkflowError(Exception):
+    """Exception raised for errors in a workflow."""
+
+    pass
+
+
+class NodeOutput:
+    """Represents an output from a node in a workflow"""
+
+    def __init__(self, node_id: int, output_index: int = 0):
+        """Initialize a node output
+
+        Args:
+            node_id: The ID of the node
+            output_index: The index of the output
+        """
+        self.node_id = node_id
+        self.output_index = output_index
+
+    def to_json(self) -> List[Any]:
+        """Convert to the format used by ComfyUI
+
+        Returns:
+            A list in the format [node_id, output_index]
+        """
+        return [str(self.node_id), self.output_index]
+
+
+class ComfyWorkflow:
+    """Builder for workflows which can be sent to the ComfyUI prompt API"""
+
+    def __init__(self):
+        """Initialize a ComfyUI workflow"""
+        self.nodes = {}
+        self.node_counter = 0
+
+    def add_node(self, class_type: str, inputs: Dict[str, Any]) -> int:
+        """Add a node to the workflow
+
+        Args:
+            class_type: The type of node to add
+            inputs: The inputs for the node
+
+        Returns:
+            The ID of the added node
+        """
+        self.node_counter += 1
+        node_id = self.node_counter
+
+        # Convert NodeOutput objects to the format expected by ComfyUI
+        processed_inputs = {}
+        for key, value in inputs.items():
+            if isinstance(value, NodeOutput):
+                processed_inputs[key] = value.to_json()
+            else:
+                processed_inputs[key] = value
+
+        self.nodes[str(node_id)] = {"class_type": class_type, "inputs": processed_inputs}
+
+        return node_id
+
+    def get_output(self, node_id: int, output_index: int = 0) -> NodeOutput:
+        """Get an output from a node
+
+        Args:
+            node_id: The ID of the node
+            output_index: The index of the output
+
+        Returns:
+            A NodeOutput object
+        """
+        return NodeOutput(node_id, output_index)
+
+    def to_dict(self) -> Dict[str, Dict[str, Any]]:
+        """Convert the workflow to a dictionary
+
+        Returns:
+            A dictionary representation of the workflow
+        """
+        return self.nodes
+
+    def save(self, filepath: Union[str, Path]) -> None:
+        """Save the workflow to a file
+
+        Args:
+            filepath: Path to save the workflow
+        """
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(filepath, "w") as f:
+            json.dump(self.nodes, f, indent=2)
+
+    def load(self, filepath: Union[str, Path]) -> None:
+        """Load a workflow from a file
+
+        Args:
+            filepath: Path to the workflow file
+        """
+        filepath = Path(filepath)
+
+        if not filepath.exists():
+            raise WorkflowError(f"Workflow file not found: {filepath}")
+
+        with open(filepath, "r") as f:
+            self.nodes = json.load(f)
+
+        # Set node_counter to the highest node ID
+        max_id = 0
+        for node_id in self.nodes.keys():
+            try:
+                max_id = max(max_id, int(node_id))
+            except ValueError:
+                pass
+
+        self.node_counter = max_id
+
+    # Common node builders for Stable Diffusion workflows
+
+    def load_checkpoint(self, checkpoint: str) -> NodeOutput:
+        """Add a node to load a checkpoint model
+
+        Args:
+            checkpoint: Name of the checkpoint file
+
+        Returns:
+            A NodeOutput for the loaded model
+        """
+        node_id = self.add_node("CheckpointLoaderSimple", {"ckpt_name": checkpoint})
+        return self.get_output(node_id)
+
+    def load_lora(
+        self, model: NodeOutput, lora: str, strength_model: float = 1.0, strength_clip: float = 1.0
+    ) -> Tuple[NodeOutput, NodeOutput]:
+        """Add a node to load a LoRA model
+
+        Args:
+            model: The base model to apply the LoRA to
+            lora: Name of the LoRA file
+            strength_model: Strength of the LoRA for the model
+            strength_clip: Strength of the LoRA for the CLIP
+
+        Returns:
+            A tuple of NodeOutputs (model, clip)
+        """
+        node_id = self.add_node(
+            "LoraLoader",
+            {
+                "model": model,
+                "lora_name": lora,
+                "strength_model": strength_model,
+                "strength_clip": strength_clip,
+            },
+        )
+        return self.get_output(node_id, 0), self.get_output(node_id, 1)
+
+    def load_vae(self, vae_name: str) -> NodeOutput:
+        """Add a node to load a VAE model
+
+        Args:
+            vae_name: Name of the VAE file
+
+        Returns:
+            A NodeOutput for the loaded VAE
+        """
+        node_id = self.add_node("VAELoader", {"vae_name": vae_name})
+        return self.get_output(node_id)
+
+    def clip_text_encode(self, clip: NodeOutput, text: str) -> NodeOutput:
+        """Add a node to encode text with CLIP
+
+        Args:
+            clip: The CLIP model to use
+            text: The text to encode
+
+        Returns:
+            A NodeOutput for the encoded text
+        """
+        node_id = self.add_node("CLIPTextEncode", {"clip": clip, "text": text})
+        return self.get_output(node_id)
+
+    def ksampler(
+        self,
+        model: NodeOutput,
+        positive: NodeOutput,
+        negative: NodeOutput,
+        latent: NodeOutput,
+        seed: int = 0,
+        steps: int = 40,
+        cfg: float = 3.5,
+        sampler_name: str = "euler",
+        scheduler: str = "normal",
+        denoise: float = 1.0,
+    ) -> NodeOutput:
+        """Add a KSampler node
+
+        Args:
+            model: The model to use
+            positive: Positive conditioning
+            negative: Negative conditioning
+            latent: Latent image
+            seed: Random seed
+            steps: Number of steps
+            cfg: CFG scale
+            sampler_name: Name of the sampler to use
+            scheduler: Name of the scheduler to use
+            denoise: Denoising strength
+
+        Returns:
+            A NodeOutput for the sampled latent
+        """
+        node_id = self.add_node(
+            "KSampler",
+            {
+                "model": model,
+                "positive": positive,
+                "negative": negative,
+                "latent_image": latent,
+                "seed": seed,
+                "steps": steps,
+                "cfg": cfg,
+                "sampler_name": sampler_name,
+                "scheduler": scheduler,
+                "denoise": denoise,
+            },
+        )
+        return self.get_output(node_id)
+
+    def empty_latent(
+        self, width: int = 1024, height: int = 1024, batch_size: int = 1
+    ) -> NodeOutput:
+        """Add a node to create an empty latent image
+
+        Args:
+            width: Width of the latent image
+            height: Height of the latent image
+            batch_size: Batch size
+
+        Returns:
+            A NodeOutput for the empty latent
+        """
+        node_id = self.add_node(
+            "EmptyLatentImage", {"width": width, "height": height, "batch_size": batch_size}
+        )
+        return self.get_output(node_id)
+
+    def vae_decode(self, vae: NodeOutput, latent: NodeOutput) -> NodeOutput:
+        """Add a node to decode a latent image
+
+        Args:
+            vae: The VAE to use
+            latent: The latent image to decode
+
+        Returns:
+            A NodeOutput for the decoded image
+        """
+        node_id = self.add_node("VAEDecode", {"vae": vae, "samples": latent})
+        return self.get_output(node_id)
+
+    def save_image(self, image: NodeOutput, filename_prefix: str = "cringegen") -> NodeOutput:
+        """Add a node to save an image
+
+        Args:
+            image: The image to save
+            filename_prefix: Prefix for the filename
+
+        Returns:
+            A NodeOutput for the saved image
+        """
+        node_id = self.add_node("SaveImage", {"images": image, "filename_prefix": filename_prefix})
+        return self.get_output(node_id)

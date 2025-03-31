@@ -1,0 +1,326 @@
+"""
+Unified Taxonomy System for CringeGen
+
+This module provides a centralized taxonomy system for all species, characters, and entities.
+It consolidates taxonomy information previously distributed across multiple files.
+
+Key components:
+- Species taxonomy mapping (from species_data.py)
+- Body covering types (from color_data.py)
+- Anatomical references by species type
+- Classification hierarchies
+- Species categorizations and traits
+"""
+
+from typing import Dict, List, Set, Tuple, Optional, Union
+
+# Main species taxonomy mapping (mapping species to their taxonomic group)
+SPECIES_TAXONOMY: Dict[str, str] = {
+    # Canines
+    "wolf": "canine",
+    "dog": "canine",
+    "fox": "canine",
+    "coyote": "canine",
+    "husky": "canine",
+    "jackal": "canine",
+    # Felines
+    "cat": "feline",
+    "tiger": "feline",
+    "lion": "feline",
+    "leopard": "feline",
+    "cheetah": "feline",
+    "panther": "feline",
+    "lynx": "feline",
+    "sabertooth": "feline",
+    # Equines
+    "horse": "equine",
+    "pony": "equine",
+    "zebra": "equine",
+    "donkey": "equine",
+    # Bovines
+    "bull": "bovine",
+    "cow": "bovine",
+    "buffalo": "bovine",
+    "bison": "bovine",
+    # Rodents
+    "mouse": "rodent",
+    "rat": "rodent",
+    "squirrel": "rodent",
+    "chipmunk": "rodent",
+    "red panda": "procyonid",
+    # Lagomorphs
+    "rabbit": "lagomorph",
+    "hare": "lagomorph",
+    "bunny": "lagomorph",
+    # Reptiles
+    "dragon": "reptile",
+    "lizard": "reptile",
+    "snake": "reptile",
+    "crocodile": "reptile",
+    "alligator": "reptile",
+    "kobold": "kobold",
+    # Avians
+    "bird": "avian",
+    "eagle": "avian",
+    "hawk": "avian",
+    "owl": "avian",
+    "falcon": "avian",
+    # Chiroptera
+    "bat": "chiroptera",
+    # Aquatic
+    "shark": "selachii",
+    "dolphin": "cetacean",
+    "orca": "cetacean",
+    # Miscellaneous
+    "deer": "cervid",
+    "raccoon": "procyonid",
+    "otter": "mustelid",
+    "bear": "ursid",
+    "skunk": "mephitid",
+    "hyena": "hyaenid",
+    "goat": "caprid",
+    "sheep": "ovid",
+    "kangaroo": "macropod",
+    "sergal": "sergal",
+    "protogen": "protogen",
+    "primagen": "primagen",
+    "avali": "avali",
+    "dutch angel dragon": "dutch angel dragon",
+    "wickerbeast": "wickerbeast",
+    "synth": "synth",
+}
+
+# How different species body coverings should be referenced
+BODY_COVERING_BY_TAXONOMY: Dict[str, str] = {
+    "canine": "fur",
+    "feline": "fur",
+    "equine": "coat",
+    "bovine": "hide",
+    "rodent": "fur",
+    "lagomorph": "fur",
+    "reptile": "scales",
+    "avian": "feathers",
+    "cervid": "fur",
+    "procyonid": "fur",
+    "mustelid": "fur",
+    "ursid": "fur",
+    "mephitid": "fur",
+    "hyaenid": "fur",
+    "caprid": "wool",
+    "ovid": "wool",
+    "macropod": "fur",
+    "amphibian": "skin",
+    "cetacean": "skin",
+    "insect": "exoskeleton",
+    "arachnid": "exoskeleton",
+    "default": "fur",
+    "kobold": "scales",
+    "chiroptera": "fur",
+    "selachii": "skin",
+    "sergal": "fur",
+    "protogen": "fur",
+    "primagen": "fur",
+    "avali": "feathers",
+    "dutch angel dragon": "fur",
+    "wickerbeast": "fur",
+    "synth": "synthetic",
+}
+
+# Male anatomical terms by taxonomy group
+MALE_ANATOMY: Dict[str, List[str]] = {
+    "default": ["male genitalia", "penis", "testicles"],
+    "canine": ["animal penis", "canine penis", "knot", "sheath"],
+    "feline": ["animal penis", "feline penis", "barbed penis", "sheath"],
+    "equine": ["animal penis", "equine penis", "flared penis", "sheath"],
+    "bovine": ["animal penis", "bovine penis", "sheath"],
+    "rodent": ["animal penis", "rodent penis", "sheath"],
+    "lagomorph": ["animal penis", "lagomorph penis", "sheath"],
+    "reptile": ["animal penis", "reptile penis", "hemipenes", "genital slit"],
+    "avian": ["animal penis", "avian penis", "genital slit", "cloaca"],
+    "cervid": ["animal penis", "cervid penis", "sheath"],
+    "procyonid": ["animal penis", "procyonid penis", "sheath"],
+    "mustelid": ["animal penis", "mustelid penis", "sheath"],
+    "ursid": ["animal penis", "ursine penis", "sheath"],
+    "mephitid": ["animal penis", "mephitid penis", "sheath"],
+    "hyaenid": ["animal penis", "hyaenid penis", "sheath"],
+    "caprid": ["animal penis", "caprid penis", "sheath"],
+    "ovid": ["animal penis", "ovid penis", "sheath"],
+    "macropod": ["animal penis", "macropod penis", "sheath"],
+    "sergal": ["animal penis", "tapered penis", "sheath"],
+    "protogen": ["unusual penis", "glowing penis", "sheath"],
+    "primagen": ["unusual penis", "glowing penis", "sheath"],
+    "avali": ["animal penis", "avali penis", "cloaca", "sheath"],
+    "dutch angel dragon": ["unusual penis", "dutch angel dragon penis", "sheath"],
+    "wickerbeast": ["animal penis", "wickerbeast penis", "sheath"],
+    "synth": ["unusual penis", "synth penis", "glowing penis"],
+    "kobold": ["animal penis", "reptile penis", "hemipenes", "genital slit"],
+    "chiroptera": ["animal penis", "bat penis", "sheath"],
+    "selachii": ["animal penis", "shark penis", "claspers", "genital slit"],
+    "cetacean": ["animal penis", "cetacean penis", "tapering penis", "genital slit"],
+}
+
+# Female anatomical terms by taxonomy group
+FEMALE_ANATOMY: Dict[str, List[str]] = {
+    "default": ["female genitalia", "vagina", "pussy"],
+    "canine": ["animal pussy", "canine pussy"],
+    "feline": ["animal pussy", "feline pussy"],
+    "equine": ["animal pussy", "equine pussy"],
+    "bovine": ["animal pussy", "bovine pussy"],
+    "rodent": ["animal pussy", "rodent pussy"],
+    "lagomorph": ["animal pussy", "lagomorph pussy"],
+    "reptile": ["animal pussy", "reptile pussy", "genital slit", "cloaca"],
+    "avian": ["animal pussy", "avian pussy", "cloaca"],
+    "cervid": ["animal pussy", "cervid pussy"],
+    "procyonid": ["animal pussy", "procyonid pussy"],
+    "mustelid": ["animal pussy", "mustelid pussy"],
+    "ursid": ["animal pussy", "ursine pussy"],
+    "mephitid": ["animal pussy", "mephitid pussy"],
+    "hyaenid": ["animal pussy", "hyaenid pussy"],
+    "caprid": ["animal pussy", "caprid pussy"],
+    "ovid": ["animal pussy", "ovid pussy"],
+    "macropod": ["animal pussy", "macropod pussy"],
+    "sergal": ["animal pussy", "sergal pussy", "prehensile clitoral hood"],
+    "protogen": ["unusual pussy", "glowing pussy"],
+    "primagen": ["unusual pussy", "glowing pussy"],
+    "avali": ["animal pussy", "avali pussy", "cloaca"],
+    "dutch angel dragon": ["unusual pussy", "dutch angel dragon pussy"],
+    "wickerbeast": ["animal pussy", "wickerbeast pussy"],
+    "synth": ["unusual pussy", "synth pussy", "glowing pussy"],
+    "kobold": ["animal pussy", "reptile pussy", "cloaca"],
+    "chiroptera": ["animal pussy", "bat pussy"],
+    "selachii": ["animal pussy", "shark pussy", "genital slit", "cloaca"],
+    "cetacean": ["animal pussy", "cetacean pussy", "genital slit"],
+}
+
+# Classification of popular species
+ANTHRO_SPECIES: List[str] = [
+    "wolf", "fox", "dog", "cat", "tiger", "lion", "dragon", "rabbit", "bunny", 
+    "horse", "deer", "bear", "raccoon", "squirrel", "mouse", "rat", "otter", 
+    "skunk", "bat", "bird", "owl", "eagle", "hawk", "shark", "dolphin", "lizard", 
+    "snake", "crocodile", "sergal", "protogen", "primagen", "avali", "dutch angel dragon", 
+    "wickerbeast", "synth", "goat", "sheep", "cow", "bull", "hyena", "kobold"
+]
+
+# Most commonly referenced species in prompts
+POPULAR_ANTHRO_SPECIES: List[str] = [
+    "wolf", "fox", "cat", "dog", "dragon", "rabbit", "tiger", "lion", "deer", 
+    "horse", "raccoon", "otter", "bear", "sergal", "protogen"
+]
+
+# Fantasy species that are not conventional Earth animals
+FANTASY_SPECIES: List[str] = [
+    "dragon", "sergal", "protogen", "primagen", "avali", "dutch angel dragon", 
+    "wickerbeast", "synth", "kobold", "griffin", "gryphon", "wyvern", "unicorn", 
+    "pegasus", "kitsune", "chimera", "manticore", "cockatrice", "basilisk", 
+    "hydra", "cerberus", "phoenix"
+]
+
+# Common species for character generation
+COMMON_SPECIES: List[str] = [
+    "wolf", "fox", "dog", "cat", "tiger", "lion", "rabbit", "dragon", 
+    "horse", "deer", "raccoon", "otter", "sergal", "protogen"
+]
+
+# Rare or less common species
+RARE_SPECIES: List[str] = [
+    "jackal", "coyote", "leopard", "panther", "lynx", "cheetah", "ocelot", 
+    "hyena", "bear", "badger", "ferret", "bat", "squirrel", "mouse", "rat",
+    "lizard", "crocodile", "snake", "shark", "dolphin", "orca", "eagle", 
+    "hawk", "owl", "crow", "raven", "goat", "sheep", "bull", "cow", "zebra",
+    "donkey", "kangaroo", "koala", "red panda", "moth", "butterfly", "bee"
+]
+
+# Fantastical species (expanded from FANTASY_SPECIES)
+FANTASTICAL_SPECIES: List[str] = [
+    "dragon", "wyvern", "griffon", "gryphon", "manticore", "chimera", "hydra",
+    "unicorn", "pegasus", "kitsune", "phoenix", "basilisk", "cockatrice",
+    "sergal", "protogen", "primagen", "avali", "dutch angel dragon", 
+    "wickerbeast", "synth", "kobold", "angel", "demon", "elemental",
+    "werewolf", "vampire", "naga", "lamia", "harpy", "mermaid", "centaur",
+    "satyr", "minotaur", "sphinx", "cerberus"
+]
+
+# Pokémon species for character generation
+POKEMON_SPECIES: List[str] = [
+    "pikachu", "eevee", "lucario", "zoroark", "charizard", "mewtwo", 
+    "gardevoir", "sylveon", "umbreon", "lopunny", "blaziken", "incineroar",
+    "zeraora", "braixen", "delphox", "lugia", "absol", "arcanine", "ninetales",
+    "zangoose", "midnight lycanroc", "mew", "espeon", "leafeon", "flareon", 
+    "jolteon", "vaporeon", "glaceon", "greninja", "goodra"
+]
+
+# Combine all species lists
+ALL_SPECIES: List[str] = list(set(
+    COMMON_SPECIES + RARE_SPECIES + FANTASTICAL_SPECIES + POKEMON_SPECIES
+))
+
+# Species-to-adjective mappings
+SPECIES_TO_ADJECTIVES: Dict[str, List[str]] = {
+    "wolf": ["lupine", "wolfish", "feral", "predatory", "pack-oriented"],
+    "fox": ["vulpine", "clever", "sly", "agile", "curious"],
+    "dog": ["canine", "loyal", "playful", "devoted", "friendly"],
+    "cat": ["feline", "graceful", "aloof", "elegant", "independent"],
+    "tiger": ["striped", "powerful", "fearsome", "regal", "intense"],
+    "lion": ["leonine", "majestic", "proud", "noble", "commanding"],
+    "dragon": ["draconic", "mighty", "ancient", "mystical", "fierce"],
+    "rabbit": ["lapine", "quick", "timid", "alert", "nimble"],
+    "horse": ["equine", "strong", "graceful", "swift", "spirited"],
+    "deer": ["cervine", "gentle", "alert", "nimble", "watchful"],
+    "raccoon": ["opportunistic", "clever", "dexterous", "resourceful", "adaptable"],
+    "otter": ["playful", "sleek", "aquatic", "energetic", "social"],
+    "sergal": ["fierce", "predatory", "long-snouted", "unique", "tribal"],
+    "protogen": ["cyber", "digital", "technological", "augmented", "synthetic"],
+    "bat": ["nocturnal", "echolocating", "flying", "keen-eared", "upside-down"],
+    "bird": ["avian", "feathered", "winged", "aerial", "hollow-boned"],
+    "lizard": ["reptilian", "scaly", "cold-blooded", "sun-loving", "darting"],
+    "snake": ["serpentine", "slithering", "venomous", "coiling", "hypnotic"],
+}
+
+# Species-to-color mappings for natural coloration
+SPECIES_TO_COLORS: Dict[str, List[str]] = {
+    "wolf": ["gray", "black", "white", "brown", "timber", "arctic white", "russet"],
+    "fox": ["red", "orange", "russet", "silver", "black", "white", "gold"],
+    "dog": ["brown", "black", "white", "tan", "gold", "gray", "spotted", "brindle"],
+    "cat": ["black", "white", "gray", "orange", "calico", "tabby", "siamese", "tortoiseshell"],
+    "tiger": ["orange", "black", "white", "golden", "blue-gray"],
+    "lion": ["tawny", "golden", "light brown", "white", "black mane"],
+    "dragon": ["red", "blue", "green", "black", "white", "gold", "silver", "copper", "bronze"],
+    "rabbit": ["white", "brown", "black", "gray", "tan", "spotted"],
+    "horse": ["bay", "chestnut", "black", "white", "gray", "dappled", "palomino", "sorrel"],
+    "deer": ["brown", "tan", "fawn", "white-tailed", "spotted"],
+    "raccoon": ["gray", "black", "brown", "masked"],
+    "otter": ["brown", "dark brown", "russet", "gray"],
+    "sergal": ["gray", "white", "black", "tan", "blue-gray"],
+    "protogen": ["blue", "black", "white", "neon", "chrome", "metallic", "glowing"],
+    "bat": ["black", "brown", "gray", "tan", "russet"],
+    "bird": ["blue", "red", "yellow", "green", "black", "white", "brown", "iridescent"],
+    "lizard": ["green", "brown", "gray", "blue", "red", "spotted", "striped"],
+    "snake": ["green", "brown", "black", "red", "yellow", "banded", "patterned"],
+}
+
+# Taxonomy high-level grouping
+TAXONOMY_GROUPS: Dict[str, List[str]] = {
+    "mammal": [
+        "canine", "feline", "equine", "bovine", "rodent", "lagomorph", 
+        "cervid", "procyonid", "mustelid", "ursid", "mephitid", "hyaenid", 
+        "caprid", "ovid", "macropod", "chiroptera", "cetacean"
+    ],
+    "reptile": ["reptile", "kobold"],
+    "avian": ["avian", "avali"],
+    "aquatic": ["selachii", "cetacean"],
+    "synthetic": ["protogen", "primagen", "synth"],
+    "unique": ["sergal", "dutch angel dragon", "wickerbeast"]
+}
+
+# Species descriptor sets (for text generation)
+ANTHRO_DESCRIPTOR_SET: Dict[str, List[str]] = {
+    "general": ["anthropomorphic", "anthro", "furry", "anthro animal"],
+    "anatomy": [
+        "bipedal", "digitigrade", "plantigrade", "quadrupedal", 
+        "humanoid", "semi-anthro", "feral", "taur"
+    ],
+    "body_features": [
+        "fluffy", "furry", "scaly", "feathered", 
+        "soft fur", "sleek fur", "thick fur", "smooth scales"
+    ]
+} 

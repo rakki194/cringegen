@@ -1,0 +1,46 @@
+[flake8]
+# Allow slightly longer lines than the default 79 character limit
+max-line-length = 120
+
+# E203: Whitespace before ':' (black formats differently than flake8 expects)
+# F541: f-string missing placeholders (we're allowing f-strings without placeholders)
+extend-ignore = E203, F541
+
+# Directories and files to exclude from checking
+exclude = .git,__pycache__,build,dist,deps
+
+# Per-file-specific ignores - the comments explain why each is needed
+per-file-ignores =
+    # F401: Module imported but unused - common in __init__.py for re-exports
+    # F403: 'from module import *' used - common in __init__.py for re-exports
+    __init__.py:F401,F403
+    
+    # E402: Module level import not at top of file - sometimes needed for circular imports
+    # F401: Module imported but unused - imports may be used indirectly
+    # F841: Local variable assigned but never used - sometimes used for debugging
+    */lora_metadata/autocomplete.py:E402,F401,F841
+    
+    # F401: Module imported but unused - imports may be needed for type hints
+    # F841: Local variable assigned but never used - workflow outputs sometimes stored but not used
+    # E501: Line too long - complex workflow parameters require longer lines
+    */workflows/*.py:F401,F841,E501
+    
+    # F401: Module imported but unused - typically for type annotations
+    */prompt_generation/*.py:F401
+    
+    # F401: Module imported but unused - API module with large import surface
+    # F811: Redefinition of unused name - import shadowing for compatibility
+    */utils/comfy_api.py:F401,F811
+    
+    # F401: Module imported but unused - utility module with imports for type hints
+    */utils/file_utils.py:F401
+    
+    # F401: Module imported but unused - specialized imports for safetensors handling
+    */utils/extract_activation.py:F401
+    
+    # F401: Module imported but unused - used for type hints in utility module
+    # E713: Test for membership should be 'not in' - legacy code pattern
+    # W291: Trailing whitespace - insignificant in data processing code
+    # E722: Do not use bare 'except' - acceptable in data extraction for graceful failures
+    # E501: Line too long - complex SQL queries and data processing code requires longer lines
+    */utils/lora_metadata/extractor.py:F401,E713,W291,E722,E501 
