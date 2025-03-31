@@ -1,7 +1,7 @@
 #!/usr/bin/env rust-script
 //! ```cargo
 //! [dependencies]
-//! imx = "0.1.17"
+//! imx = { path = "./imx" }
 //! serde = { version = "1.0", features = ["derive"] }
 //! serde_json = "1.0"
 //! anyhow = "1.0"
@@ -51,6 +51,10 @@ fn run(config_path: &str) -> anyhow::Result<()> {
         font_size: f32,
         #[serde(default)]
         debug_mode: bool,
+        #[serde(default = "default_spacing")]
+        horizontal_spacing: i32,
+        #[serde(default = "default_spacing")]
+        vertical_spacing: i32,
     }
 
     fn default_alignment() -> String {
@@ -67,6 +71,10 @@ fn run(config_path: &str) -> anyhow::Result<()> {
 
     fn default_font_size() -> f32 {
         40.0
+    }
+
+    fn default_spacing() -> i32 {
+        0
     }
 
     fn string_to_alignment(s: &str) -> LabelAlignment {
@@ -120,9 +128,30 @@ fn run(config_path: &str) -> anyhow::Result<()> {
         config.left_padding as u32
     };
 
+    // Ensure spacing values are non-negative
+    let horizontal_spacing_u32 = if config.horizontal_spacing < 0 {
+        println!(
+            "Warning: negative horizontal_spacing value ({}), using 0 instead",
+            config.horizontal_spacing
+        );
+        0u32
+    } else {
+        config.horizontal_spacing as u32
+    };
+
+    let vertical_spacing_u32 = if config.vertical_spacing < 0 {
+        println!(
+            "Warning: negative vertical_spacing value ({}), using 0 instead",
+            config.vertical_spacing
+        );
+        0u32
+    } else {
+        config.vertical_spacing as u32
+    };
+
     // Create plot config - note that font_size is ignored as it's not in the current API
     println!("Creating plot config...");
-    let plot_config = PlotConfig {
+    let mut plot_config = PlotConfig {
         images,
         output: PathBuf::from(&config.output),
         rows: rows_u32,
@@ -133,7 +162,15 @@ fn run(config_path: &str) -> anyhow::Result<()> {
         top_padding: top_padding_u32,
         left_padding: left_padding_u32,
         debug_mode: config.debug_mode,
+        font_size: Some(config.font_size),
+        horizontal_spacing: Some(horizontal_spacing_u32),
+        vertical_spacing: Some(vertical_spacing_u32),
     };
+
+    println!(
+        "Setting horizontal spacing: {}, vertical spacing: {}",
+        horizontal_spacing_u32, vertical_spacing_u32
+    );
 
     // Create the plot
     println!("Creating plot...");

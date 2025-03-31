@@ -132,6 +132,12 @@ def add_xyplot_command(subparsers, parent_parser):
         "--font-size", type=float, default=40.0, help="Font size for labels"
     )
     xyplot_parser.add_argument(
+        "--horizontal-spacing", type=int, default=0, help="Horizontal spacing between images (pixels)"
+    )
+    xyplot_parser.add_argument(
+        "--vertical-spacing", type=int, default=0, help="Vertical spacing between images (pixels)"
+    )
+    xyplot_parser.add_argument(
         "--debug-mode", action="store_true", help="Enable debug mode for layout visualization"
     )
 
@@ -523,6 +529,8 @@ def create_xy_grid(
     label_alignment: str = "center",
     debug_mode: bool = False,
     font_size: float = 40.0,
+    horizontal_spacing: int = 0,
+    vertical_spacing: int = 0,
 ) -> str:
     """Create an XY grid using the imx Rust library
 
@@ -536,6 +544,8 @@ def create_xy_grid(
         label_alignment: Alignment for labels (start, center, end)
         debug_mode: Enable debug visualization
         font_size: Font size for labels (ignored in current imx version)
+        horizontal_spacing: Horizontal spacing between images in pixels
+        vertical_spacing: Vertical spacing between images in pixels
 
     Returns:
         Path to the output grid image
@@ -553,6 +563,8 @@ def create_xy_grid(
             "top_padding": 60,
             "left_padding": 80,
             # font_size is ignored in current imx version
+            "horizontal_spacing": horizontal_spacing,
+            "vertical_spacing": vertical_spacing,
             "debug_mode": debug_mode,
         }
         json.dump(config, temp)
@@ -698,6 +710,34 @@ def generate_xyplot(args):
     Args:
         args: Command line arguments
     """
+    # Store the command for metadata
+    try:
+        command = f"cringegen xyplot"
+        # Add all arguments to the command
+        for arg_name, arg_value in vars(args).items():
+            # Skip function and private attributes
+            if arg_name == 'func' or arg_name.startswith('_'):
+                continue
+            # Skip default comfy_url and comfy_output_dir (typically long and not useful for reproducibility)
+            if arg_name in ['comfy_url', 'comfy_output_dir'] and arg_value is not None:
+                continue
+            
+            if arg_value is True:
+                command += f" --{arg_name.replace('_', '-')}"
+            elif arg_value is False or arg_value is None:
+                continue
+            else:
+                # Quote values with spaces
+                if isinstance(arg_value, str) and ' ' in arg_value:
+                    command += f" --{arg_name.replace('_', '-')} \"{arg_value}\""
+                else:
+                    command += f" --{arg_name.replace('_', '-')} {arg_value}"
+        
+        logger.info(f"Command to be saved in metadata: {command}")
+    except Exception as e:
+        logger.warning(f"Error reconstructing command for metadata: {e}")
+        command = "cringegen xyplot (command reconstruction failed)"
+
     # Check if ComfyUI server is running
     if not check_comfy_server(args.comfy_url):
         logger.error("ComfyUI server is not running or not accessible")
@@ -789,10 +829,46 @@ def generate_xyplot(args):
         args.label_alignment,
         args.debug_mode,
         args.font_size,
+        args.horizontal_spacing,
+        args.vertical_spacing,
     )
 
     if grid_path:
         logger.info(f"XY plot grid saved to {grid_path}")
+        
+        # Add command to image metadata
+        try:
+            # Add metadata to the image using exiftool
+            metadata_cmd = [
+                "exiftool",
+                "-overwrite_original",
+                f"-Comment={command}",
+                grid_path
+            ]
+            result = subprocess.run(metadata_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logger.info("Successfully added command to image metadata")
+            else:
+                logger.warning(f"Failed to add metadata to image: {result.stderr}")
+                
+                # Try using ImageMagick's convert as a fallback
+                convert_cmd = [
+                    "convert", 
+                    grid_path, 
+                    "-set", 
+                    "comment", 
+                    command, 
+                    grid_path
+                ]
+                result = subprocess.run(convert_cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    logger.info("Successfully added command to image metadata using ImageMagick")
+                else:
+                    logger.warning(f"Failed to add metadata using ImageMagick: {result.stderr}")
+        except Exception as e:
+            logger.warning(f"Error adding metadata to image: {e}")
+        
         # If show option is enabled, open the grid image with imv
         if hasattr(args, "show") and args.show:
             logger.info("Opening XY plot grid with imv")

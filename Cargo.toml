@@ -7,7 +7,12 @@ description = "XY Plot support for CringeGen"
 license = "MIT"
 
 [dependencies]
-imx = "0.1.20"
+imx = { path = "./imx" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
+
+
+[[bin]]
+name = "imx-plot"
+path = "imx-plot.rs"
