@@ -6,7 +6,7 @@ import json
 import uuid
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 
 
 class WorkflowError(Exception):
@@ -280,3 +280,63 @@ class ComfyWorkflow:
         """
         node_id = self.add_node("SaveImage", {"images": image, "filename_prefix": filename_prefix})
         return self.get_output(node_id)
+
+def get_workflow_template(workflow_type: str) -> Optional[Callable]:
+    """Get a function that creates a workflow template based on the workflow type
+    
+    Args:
+        workflow_type: Type of workflow to create (e.g., "furry", "nsfw", "character")
+        
+    Returns:
+        A function that creates a workflow template, or None if the workflow type is unknown
+    """
+    if workflow_type == "furry":
+        from .furry import create_basic_furry_workflow
+        
+        def furry_workflow_wrapper(args):
+            """Wrapper to convert args to proper parameters for create_basic_furry_workflow"""
+            import random
+            checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "bluePencilXL_v101.safetensors"
+            lora = args.lora if hasattr(args, "lora") and args.lora else None
+            lora_strength = args.lora_strength if hasattr(args, "lora_strength") else 0.35
+            prompt = args.prompt if hasattr(args, "prompt") and args.prompt else "a cute furry character"
+            negative_prompt = args.negative_prompt if hasattr(args, "negative_prompt") else "worst quality, low quality"
+            
+            # Generate a seed if not provided or -1
+            if hasattr(args, "seed") and args.seed != -1:
+                seed = args.seed
+            else:
+                seed = random.randint(0, 2**32 - 1)
+                
+            # Other parameters
+            steps = args.steps if hasattr(args, "steps") else 20
+            cfg = args.cfg if hasattr(args, "cfg") else None
+            width = args.width if hasattr(args, "width") else 1024
+            height = args.height if hasattr(args, "height") else 1024
+            sampler = args.sampler if hasattr(args, "sampler") else None
+            scheduler = args.scheduler if hasattr(args, "scheduler") else None
+            
+            return create_basic_furry_workflow(
+                checkpoint=checkpoint,
+                lora=lora,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                width=width,
+                height=height,
+                seed=seed,
+                steps=steps,
+                cfg=cfg,
+                lora_strength=lora_strength,
+                sampler=sampler,
+                scheduler=scheduler
+            )
+            
+        return furry_workflow_wrapper
+    elif workflow_type == "nsfw":
+        from ..commands.nsfw import create_nsfw_workflow
+        return create_nsfw_workflow
+    elif workflow_type == "character":
+        from ..commands.character import create_character_workflow
+        return create_character_workflow
+    else:
+        return None

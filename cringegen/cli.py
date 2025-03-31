@@ -14,6 +14,7 @@ from .commands.nsfw import add_nsfw_command
 from .commands.random_nsfw import add_random_nsfw_command
 from .commands.utils import add_utils_commands
 from .commands.character import add_character_command
+from .commands.xyplot import add_xyplot_command
 from .utils.logger import configure_cli_logging, get_logger
 
 # Configure logging
@@ -63,6 +64,7 @@ def main():
     add_llm_commands(subparsers, parent_parser)
     add_utils_commands(subparsers, parent_parser)
     add_character_command(subparsers, parent_parser)
+    add_xyplot_command(subparsers, parent_parser)
 
     # Parse arguments
     args = parser.parse_args()

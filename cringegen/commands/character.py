@@ -240,3 +240,93 @@ def main(
 
 # Need to import sys for the --list argument handling
 import sys 
+
+def create_character_workflow(args):
+    """Create a base character workflow template for XY plotting
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        A workflow dictionary
+    """
+    import random
+    
+    # Create a basic workflow
+    from ..workflows.base import ComfyWorkflow
+    workflow = ComfyWorkflow()
+    
+    # Add checkpoint loader
+    checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "bluePencilXL_v101.safetensors"
+    model_output = workflow.load_checkpoint(checkpoint)
+    
+    # Add LoRA if specified
+    if hasattr(args, "lora") and args.lora:
+        model_output, clip_output = workflow.load_lora(
+            model_output, 
+            args.lora, 
+            args.lora_strength if hasattr(args, "lora_strength") else 1.0, 
+            args.lora_strength if hasattr(args, "lora_strength") else 1.0
+        )
+    else:
+        # Extract clip from model output if no LoRA
+        clip_output = workflow.get_output(1, 1)
+    
+    # Create prompt - use character name if specified or a default prompt
+    if hasattr(args, "prompt") and args.prompt:
+        positive_prompt = args.prompt
+    elif hasattr(args, "name") and args.name:
+        # Generate character prompt
+        positive_prompt = generate_canon_character_prompt(
+            character_name=args.name.lower(),
+            nsfw=hasattr(args, "nsfw") and args.nsfw,
+            include_appearance=not (hasattr(args, "no_appearance") and args.no_appearance),
+            include_accessories=not (hasattr(args, "no_accessories") and args.no_accessories),
+            holding_sword=hasattr(args, "holding_sword") and args.holding_sword
+        )
+    else:
+        # Default prompt if no character name
+        positive_prompt = "a detailed character portrait, high quality, best quality"
+    
+    # Create negative prompt
+    if hasattr(args, "negative_prompt") and args.negative_prompt:
+        negative_prompt = args.negative_prompt
+    else:
+        negative_prompt = "worst quality, low quality, medium quality, deleted, lowres, bad anatomy, bad hands, watermark"
+    
+    # Encode prompts
+    positive_conditioning = workflow.clip_text_encode(clip_output, positive_prompt)
+    negative_conditioning = workflow.clip_text_encode(clip_output, negative_prompt)
+    
+    # Create latent image
+    width = args.width if hasattr(args, "width") else 1024
+    height = args.height if hasattr(args, "height") else 1024
+    latent = workflow.empty_latent(width, height)
+    
+    # Set up sampler
+    seed = args.seed if hasattr(args, "seed") and args.seed != -1 else random.randint(0, 2**32 - 1)
+    steps = args.steps if hasattr(args, "steps") else 40
+    cfg = args.cfg if hasattr(args, "cfg") else 7.0
+    sampler = args.sampler if hasattr(args, "sampler") else "euler_ancestral"
+    scheduler = args.scheduler if hasattr(args, "scheduler") else "normal"
+    
+    # Add sampler
+    latent_sampled = workflow.ksampler(
+        model_output, 
+        positive_conditioning, 
+        negative_conditioning, 
+        latent, 
+        seed, 
+        steps, 
+        cfg, 
+        sampler, 
+        scheduler
+    )
+    
+    # Add VAE decoder
+    image = workflow.vae_decode(workflow.get_output(1, 2), latent_sampled)
+    
+    # Add image saving
+    workflow.save_image(image, "xyplot")
+    
+    return workflow.to_dict() 
