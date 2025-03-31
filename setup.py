@@ -46,4 +46,4 @@ setup(
             "cringegen-completions=cringegen.completion_cli.completion_cli:main",
         ],
     },
-) 
+)

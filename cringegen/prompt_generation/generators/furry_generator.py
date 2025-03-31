@@ -24,6 +24,7 @@ from ..nlp.species_utils import enhance_prompt_with_anatomy
 # Create logger
 logger = logging.getLogger(__name__)
 
+
 class FurryPromptGenerator(PromptGenerator):
     """Generator for SFW furry content"""
 

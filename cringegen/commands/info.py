@@ -14,12 +14,12 @@ from ..utils.comfy_api import (
     get_available_schedulers,
     get_compatible_checkpoints,
     get_compatible_loras,
-    get_lora_directory
+    get_lora_directory,
 )
 from ..utils.file_utils import (
     copy_latest_images_from_comfyui,
     rsync_latest_images_from_comfyui,
-    open_images_with_imv
+    open_images_with_imv,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,20 +51,20 @@ def add_info_commands(subparsers, parent_parser):
     )
     list_loras_parser.add_argument("--pattern", type=str, help="Pattern to filter LoRAs by name")
     list_loras_parser.add_argument(
-        "--show-categories", 
-        action="store_true", 
-        help="Show the category of each LoRA (style, character, concept, kink)"
+        "--show-categories",
+        action="store_true",
+        help="Show the category of each LoRA (style, character, concept, kink)",
     )
     list_loras_parser.add_argument(
-        "--category", 
-        type=str, 
+        "--category",
+        type=str,
         choices=["style", "character", "concept", "kink", "all"],
-        help="Filter LoRAs by category"
+        help="Filter LoRAs by category",
     )
     list_loras_parser.add_argument(
         "--no-cache",
         action="store_true",
-        help="Disable metadata caching (slower but avoids potential issues)"
+        help="Disable metadata caching (slower but avoids potential issues)",
     )
     list_loras_parser.set_defaults(func=list_loras)
 
@@ -201,7 +201,7 @@ def list_loras(args):
     """List available LoRAs"""
     from ..utils.lora_metadata.analyzer import analyze_lora_type, analyze_multiple_loras
     from ..utils.comfy_api import get_lora_directory
-    
+
     loras = get_available_loras()
     if loras:
         # Apply pattern filter if specified
@@ -210,15 +210,15 @@ def list_loras(args):
             filtered_loras = [lora for lora in loras if args.pattern.lower() in lora.lower()]
         else:
             filtered_loras = loras
-        
+
         # Show categories if requested
         if args.show_categories or args.category:
             # Get the LoRA directory
             lora_dir = get_lora_directory()
-            
+
             # Create a dictionary to store LoRA categories
             categorized_loras = {}
-            
+
             # Analyze each LoRA to determine its category
             for lora in filtered_loras:
                 try:
@@ -227,50 +227,51 @@ def list_loras(args):
                         lora_path = os.path.join(lora_dir, f"{lora}.safetensors")
                     else:
                         lora_path = os.path.join(lora_dir, lora)
-                    
+
                     # Analyze the LoRA to determine its type
                     analysis = analyze_lora_type(lora_path, use_cache=not args.no_cache)
                     category = analysis.get("type", "unknown")
                     confidence = analysis.get("confidence", 0.0)
-                    
+
                     # Store the category and confidence
                     categorized_loras[lora] = (category, confidence)
                 except Exception as e:
                     logger.warning(f"Error analyzing LoRA {lora}: {e}")
                     categorized_loras[lora] = ("unknown", 0.0)
-            
+
             # Filter by category if specified
             if args.category and args.category != "all":
                 # Keep only LoRAs of the specified category
                 filtered_loras = [
-                    lora for lora in filtered_loras 
+                    lora
+                    for lora in filtered_loras
                     if lora in categorized_loras and categorized_loras[lora][0] == args.category
                 ]
-            
+
             # Group LoRAs by category
             loras_by_category = {
                 "style": [],
                 "character": [],
                 "concept": [],
                 "kink": [],
-                "unknown": []
+                "unknown": [],
             }
-            
+
             for lora in filtered_loras:
                 if lora in categorized_loras:
                     category, _ = categorized_loras[lora]
                     loras_by_category[category].append(lora)
-            
+
             # Display LoRAs grouped by category
             logger.info("Available LoRAs by category:")
-            
+
             for category, category_loras in loras_by_category.items():
                 if category_loras:
                     logger.info(f"\n{category.upper()} LoRAs ({len(category_loras)}):")
                     for lora in sorted(category_loras):
                         confidence = categorized_loras[lora][1]
                         logger.info(f"  - {lora} (confidence: {confidence:.2f})")
-            
+
             total_count = len(filtered_loras)
             logger.info(f"\nFound {total_count} LoRAs matching criteria.")
         else:
@@ -343,7 +344,7 @@ def copy_images_from_comfyui_cmd(args):
         if not args.ssh_host:
             logger.error("SSH host is required when using --remote")
             return
-        
+
         logger.info(f"Using rsync over SSH to copy images from {args.ssh_host}")
         copied = rsync_latest_images_from_comfyui(
             args.ssh_host,
@@ -352,21 +353,19 @@ def copy_images_from_comfyui_cmd(args):
             limit=args.count,
             ssh_port=args.ssh_port,
             ssh_user=args.ssh_user,
-            ssh_key=args.ssh_key
+            ssh_key=args.ssh_key,
         )
     else:
         # Local copy
         copied = copy_latest_images_from_comfyui(
-            args.comfy_output_dir, 
-            args.output_dir, 
-            limit=args.count
+            args.comfy_output_dir, args.output_dir, limit=args.count
         )
-        
+
     if copied:
         logger.info(f"Copied {len(copied)} images to {args.output_dir}:")
         for image in copied:
             logger.info(f"  - {os.path.basename(image)}")
-            
+
         # Open images with imv if requested
         if args.show:
             open_images_with_imv(copied)

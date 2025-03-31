@@ -33,6 +33,7 @@ from .extractor import DB_PATH, extract_lora_metadata, get_lora_path
 
 logger = get_logger(__name__)
 
+
 def analyze_lora_type(lora_path_or_name: str, use_cache: bool = True) -> Dict[str, Any]:
     """
     Analyze a LoRA file and determine its type (style, character, or concept).
@@ -95,6 +96,7 @@ def analyze_lora_type(lora_path_or_name: str, use_cache: bool = True) -> Dict[st
 
     return result
 
+
 def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str]]:
     """Determine the type of a LoRA based on its metadata
 
@@ -107,34 +109,32 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
     lora_name = metadata.get("name", "").lower()
     lora_filename = metadata.get("filename", "").lower()
     lora_basename = os.path.basename(lora_filename).lower() if lora_filename else ""
-    
+
     # First check for explicit kink-related keywords in the filename or name
     kink_terms = ["fetish", "kink", "fart", "bdsm", "bondage", "latex", "paw_fetish", "foot_fetish"]
     for term in kink_terms:
         if term in lora_basename or term in lora_name:
             evidence = [f"Matched kink-related term in name: {term}"]
             return "kink", 1.0, evidence
-            
+
     # Check for specific kink loras by name or basename
     for kink_lora in SPECIFIC_KINK_LORAS:
-        if (kink_lora in lora_basename or 
-            kink_lora in lora_name or 
-            kink_lora in lora_filename):
+        if kink_lora in lora_basename or kink_lora in lora_name or kink_lora in lora_filename:
             evidence = [f"Matched specific kink LoRA name: {kink_lora}"]
             return "kink", 1.0, evidence
-    
+
     # Check for specific character loras by name
     for character_lora in SPECIFIC_CHARACTER_LORAS:
         if character_lora in lora_basename or character_lora in lora_name:
             evidence = [f"Matched specific character LoRA name: {character_lora}"]
             return "character", 1.0, evidence
-    
+
     # Check for specific concept loras by name
     for concept_lora in SPECIFIC_CONCEPT_LORAS:
         if concept_lora in lora_basename or concept_lora in lora_name:
             evidence = [f"Matched specific concept LoRA name: {concept_lora}"]
             return "concept", 1.0, evidence
-    
+
     # Extract keywords from metadata
     keywords = set()
     evidence = []
@@ -144,9 +144,7 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
         keywords.update(re.findall(r"\b\w+\b", lora_name.replace("_", " ").replace("-", " ")))
         evidence.append(f"Name: {lora_name}")
     if lora_basename:
-        keywords.update(
-            re.findall(r"\b\w+\b", lora_basename.replace("_", " ").replace("-", " "))
-        )
+        keywords.update(re.findall(r"\b\w+\b", lora_basename.replace("_", " ").replace("-", " ")))
         evidence.append(f"Basename: {lora_basename}")
 
     # Process activation text if available
@@ -175,7 +173,9 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
                     keywords.update(re.findall(r"\b\w+\b", tag_str.lower().replace("_", " ")))
                 except:
                     pass
-        evidence.append(f"Tags: {', '.join(str(t) for t in tags[:5])}{'...' if len(tags) > 5 else ''}")
+        evidence.append(
+            f"Tags: {', '.join(str(t) for t in tags[:5])}{'...' if len(tags) > 5 else ''}"
+        )
 
     # Process description
     description = metadata.get("description", "")
@@ -203,10 +203,15 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
     if total_matches == 0:
         # If no matches, fall back to pattern recognition in the name/filename
         pattern_evidence = []
-        
+
         # Check for kink-related patterns first
         kink_patterns = [
-            (r"(.+)_(?:fetish|kink)", r"(?:fetish|kink)_(.+)", r"(.+)-(?:fetish|kink)", r"(?:fetish|kink)-(.+)")
+            (
+                r"(.+)_(?:fetish|kink)",
+                r"(?:fetish|kink)_(.+)",
+                r"(.+)-(?:fetish|kink)",
+                r"(?:fetish|kink)-(.+)",
+            )
         ]
         for pattern_group in kink_patterns:
             for pattern in pattern_group:
@@ -216,7 +221,7 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
                     pattern_evidence.append(f"Kink pattern in filename: {pattern}")
             if pattern_evidence:
                 return "kink", 0.7, pattern_evidence
-        
+
         # Check for character-based patterns
         character_patterns = [
             (r"(.+)_(?:character|person|oc)", r"(?:character|person|oc)_(.+)"),
@@ -247,8 +252,14 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
 
         # Check for concept-based patterns
         concept_patterns = [
-            (r"(.+)_(?:fetish|action|pose|activity|concept)", r"(?:fetish|action|pose|activity|concept)_(.+)"),
-            (r"(.+)-(?:fetish|action|pose|activity|concept)", r"(?:fetish|action|pose|activity|concept)-(.+)"),
+            (
+                r"(.+)_(?:fetish|action|pose|activity|concept)",
+                r"(?:fetish|action|pose|activity|concept)_(.+)",
+            ),
+            (
+                r"(.+)-(?:fetish|action|pose|activity|concept)",
+                r"(?:fetish|action|pose|activity|concept)-(.+)",
+            ),
         ]
         for pattern_group in concept_patterns:
             for pattern in pattern_group:
@@ -273,7 +284,9 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
         evidence.append(f"Kink keywords: {kink_matches}")
 
     # Calculate confidence
-    confidence = max(style_matches, character_matches, concept_matches, kink_matches) / total_matches
+    confidence = (
+        max(style_matches, character_matches, concept_matches, kink_matches) / total_matches
+    )
     confidence = min(max(confidence, 0.3), 1.0)  # Clamp between 0.3 and 1.0
 
     # Determine type based on most matches
@@ -285,6 +298,7 @@ def _determine_lora_type(metadata: Dict[str, Any]) -> Tuple[str, float, List[str
         return "character", confidence, evidence
     else:
         return "concept", confidence, evidence
+
 
 def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
     """Generate recommendations for a LoRA
@@ -305,7 +319,7 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
     lora_name = metadata.get("name", "")
     lora_filename = metadata.get("filename", "")
     lora_basename = os.path.basename(lora_filename) if lora_filename else ""
-    
+
     # Common tips for all LoRA types
     recommendations["tips"].append(
         "Start with a low strength (0.5-0.7) and adjust as needed for optimal results."
@@ -328,20 +342,24 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
         recommendations["tips"].append(
             "Try different checkpoints to see which ones work best with this style."
         )
-        
+
         # Suggest combining with character or concept LoRAs
         recommendations["complementary_loras"].append(
-            {"type": "character", "suggestion": "Try combining with a character LoRA for consistent styling"}
+            {
+                "type": "character",
+                "suggestion": "Try combining with a character LoRA for consistent styling",
+            }
         )
         recommendations["complementary_loras"].append(
-            {"type": "concept", "suggestion": "Concept LoRAs can enhance specific elements in this style"}
+            {
+                "type": "concept",
+                "suggestion": "Concept LoRAs can enhance specific elements in this style",
+            }
         )
 
     elif lora_type == "character":
         # Character LoRA recommendations
-        recommendations["usage_examples"].append(
-            f"--lora {lora_basename} --lora-strength 0.8"
-        )
+        recommendations["usage_examples"].append(f"--lora {lora_basename} --lora-strength 0.8")
         recommendations["usage_examples"].append(
             f"--checkpoint CHECKPOINT_NAME --lora {lora_basename} --lora-strength 0.9"
         )
@@ -351,13 +369,19 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
         recommendations["tips"].append(
             "Be specific in your prompt about the character's poses, expressions, and setting."
         )
-        
+
         # Suggest combining with style or concept LoRAs
         recommendations["complementary_loras"].append(
-            {"type": "style", "suggestion": "Style LoRAs can give this character a unique artistic look"}
+            {
+                "type": "style",
+                "suggestion": "Style LoRAs can give this character a unique artistic look",
+            }
         )
         recommendations["complementary_loras"].append(
-            {"type": "concept", "suggestion": "Add concept LoRAs for specific poses, activities, or settings"}
+            {
+                "type": "concept",
+                "suggestion": "Add concept LoRAs for specific poses, activities, or settings",
+            }
         )
 
     elif lora_type == "kink":
@@ -374,7 +398,7 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
         recommendations["tips"].append(
             "Use specific kink-related terms in your prompt to enhance the effect."
         )
-        
+
         # Special recommendation for fart fetish
         if "fart" in lora_basename.lower() or "fart_fetish" in lora_basename.lower():
             recommendations["tips"].append(
@@ -383,17 +407,18 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
             recommendations["tips"].append(
                 "The noobaiXLVpredv10.safetensors checkpoint works particularly well with this kink LoRA."
             )
-        
+
         # Suggest combining with character LoRAs
         recommendations["complementary_loras"].append(
-            {"type": "character", "suggestion": "Character LoRAs can be combined for specific kink scenarios"}
+            {
+                "type": "character",
+                "suggestion": "Character LoRAs can be combined for specific kink scenarios",
+            }
         )
 
     else:  # concept
         # Concept LoRA recommendations
-        recommendations["usage_examples"].append(
-            f"--lora {lora_basename} --lora-strength 0.6"
-        )
+        recommendations["usage_examples"].append(f"--lora {lora_basename} --lora-strength 0.6")
         recommendations["usage_examples"].append(
             f"--checkpoint CHECKPOINT_NAME --lora {lora_basename} --lora-strength 0.7"
         )
@@ -403,23 +428,30 @@ def _generate_recommendations(lora_type: str, metadata: Dict[str, Any]) -> Dict[
         recommendations["tips"].append(
             "Be explicit in your prompt about the specific concept elements you want to emphasize."
         )
-        
+
         # Check for specific concept types and provide tailored recommendations
         for concept in ["realistic", "fetish", "holding_object", "space", "landscape"]:
             if concept in lora_basename.lower():
                 recommendations["tips"].append(
                     f"This is a {concept}-focused concept LoRA. Emphasize {concept}-related terms in your prompt."
                 )
-        
+
         # Suggest combining with other LoRA types
         recommendations["complementary_loras"].append(
-            {"type": "style", "suggestion": "Style LoRAs can enhance the overall aesthetic of this concept"}
+            {
+                "type": "style",
+                "suggestion": "Style LoRAs can enhance the overall aesthetic of this concept",
+            }
         )
         recommendations["complementary_loras"].append(
-            {"type": "character", "suggestion": "Add character LoRAs to place specific characters in this concept"}
+            {
+                "type": "character",
+                "suggestion": "Add character LoRAs to place specific characters in this concept",
+            }
         )
 
     return recommendations
+
 
 def _get_cached_analysis(lora_path: str) -> Optional[Dict[str, Any]]:
     """
@@ -441,9 +473,7 @@ def _get_cached_analysis(lora_path: str) -> Optional[Dict[str, Any]]:
         cursor = conn.cursor()
 
         # Get the cached analysis
-        cursor.execute(
-            "SELECT analysis FROM lora_analysis WHERE lora_path = ?", (lora_path,)
-        )
+        cursor.execute("SELECT analysis FROM lora_analysis WHERE lora_path = ?", (lora_path,))
         result = cursor.fetchone()
 
         # Close connection
@@ -461,6 +491,7 @@ def _get_cached_analysis(lora_path: str) -> Optional[Dict[str, Any]]:
         logger.warning(f"Error retrieving cached analysis: {e}")
         return None
 
+
 def _ensure_db_schema():
     """
     Ensure the database schema is correct.
@@ -470,40 +501,44 @@ def _ensure_db_schema():
         # Connect to database
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
+
         # Check if the table exists with the correct schema
         cursor.execute("PRAGMA table_info(lora_analysis)")
         columns = cursor.fetchall()
-        
+
         # Column names from the schema
-        expected_columns = {'lora_path', 'analysis', 'updated_at'}
-        
+        expected_columns = {"lora_path", "analysis", "updated_at"}
+
         # Extract column names from the result
         existing_columns = {col[1] for col in columns}
-        
+
         # If the table doesn't exist or has incorrect columns, recreate it
         if not columns or existing_columns != expected_columns:
             # Drop the table if it exists
             cursor.execute("DROP TABLE IF EXISTS lora_analysis")
-            
+
             # Create the table with the correct schema
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE lora_analysis (
                     lora_path TEXT PRIMARY KEY,
                     analysis TEXT,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
-            
+            """
+            )
+
             conn.commit()
             logger.info("Created or reset lora_analysis table with correct schema")
-        
+
         conn.close()
     except Exception as e:
         logger.warning(f"Error ensuring DB schema: {e}")
 
+
 # Ensure the DB schema is correct on module import
 _ensure_db_schema()
+
 
 def _cache_analysis_result(result: Dict[str, Any]) -> None:
     """Cache LoRA analysis result in database
@@ -551,6 +586,7 @@ def _cache_analysis_result(result: Dict[str, Any]) -> None:
         logger.warning(f"Error caching analysis result: {e}")
         # Continue execution without caching
 
+
 def analyze_multiple_loras(
     lora_dir: str, pattern: str = "*.safetensors", force_refresh: bool = False
 ) -> Dict[str, Dict[str, Any]]:
@@ -586,6 +622,7 @@ def analyze_multiple_loras(
 
     return results
 
+
 def get_loras_by_type(
     lora_dir: str, lora_type: str, min_confidence: float = 0.5, pattern: str = "*.safetensors"
 ) -> List[Dict[str, Any]]:
@@ -610,6 +647,7 @@ def get_loras_by_type(
         for lora in all_loras.values()
         if lora["type"] == lora_type and lora["confidence"] >= min_confidence
     ]
+
 
 def suggest_lora_combinations(
     lora_path_or_name: str, lora_dir: str, max_suggestions: int = 5
