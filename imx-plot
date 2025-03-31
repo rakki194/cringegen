@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     // Create plot config
     let plot_config = PlotConfig {
         images,
-        output: PathBuf::from(config.output),
+        output: PathBuf::from(&config.output),
         rows: rows_u32,
         row_labels: config.row_labels,
         column_labels: config.column_labels,
