@@ -44,6 +44,11 @@ def main():
         default="http://127.0.0.1:8188",
         help="URL of the ComfyUI server (default: http://127.0.0.1:8188)",
     )
+    parent_parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Open generated images with imv after copying",
+    )
 
     # Create parser
     parser = argparse.ArgumentParser(description="CringeGen CLI")

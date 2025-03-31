@@ -29,7 +29,8 @@ from ..utils.file_utils import (
     copy_image_from_comfyui, 
     copy_latest_images_from_comfyui,
     rsync_image_from_comfyui,
-    rsync_latest_images_from_comfyui
+    rsync_latest_images_from_comfyui,
+    open_images_with_imv
 )
 from ..workflows.furry import create_nsfw_furry_workflow
 from ..utils.lora_metadata.analyzer import analyze_lora_type, analyze_multiple_loras, get_loras_by_type
@@ -524,6 +525,9 @@ def weighted_random_strength():
 
 def generate_random_nsfw(args):
     """Generate a random NSFW furry prompt with randomized style LoRAs"""
+    # To keep track of all copied images for --show flag
+    copied_images = []
+    
     # Set up seed if provided
     if args.seed == -1:
         seed = random.randint(1, 1000000)
@@ -740,6 +744,9 @@ def generate_random_nsfw(args):
                             
                         if success:
                             logger.info(f"Copied image to {args.output_dir}")
+                            # If successful, add to the list of copied images
+                            copied_path = os.path.join(args.output_dir, f"random_nsfw_{curr_seed}{os.path.splitext(image_path)[1]}")
+                            copied_images.append(copied_path)
                         else:
                             # If copying via API path failed, try looking for the most recent image
                             logger.info("Trying to copy the most recent image instead...")
@@ -769,6 +776,8 @@ def generate_random_nsfw(args):
                                 
                             if copied:
                                 logger.info(f"Copied most recent image to {args.output_dir}")
+                                # Add to the list of copied images
+                                copied_images.extend(copied)
                             else:
                                 logger.warning("Failed to find or copy any images")
                     else:
@@ -800,6 +809,8 @@ def generate_random_nsfw(args):
                             
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
+                            # Add to the list of copied images
+                            copied_images.extend(copied)
                         else:
                             logger.warning("No image was generated or image path is empty")
                 except Exception as e:
@@ -832,8 +843,14 @@ def generate_random_nsfw(args):
                             
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
+                            # Add to the list of copied images
+                            copied_images.extend(copied)
                     except Exception as fallback_e:
                         logger.error(f"Fallback copy also failed: {fallback_e}")
                         logger.warning("Could not copy any images")
 
+    # Open images with imv if requested and we have any
+    if args.show and copied_images:
+        open_images_with_imv(copied_images)
+                                
     return prompts

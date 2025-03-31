@@ -5,6 +5,7 @@ Furry generation commands for CringeGen
 import logging
 import random
 import time
+import os
 
 from ..prompt_generation.generators.furry_generator import FurryPromptGenerator
 from ..utils.comfy_api import (
@@ -22,7 +23,8 @@ from ..utils.file_utils import (
     copy_image_from_comfyui,
     copy_latest_images_from_comfyui,
     rsync_image_from_comfyui,
-    rsync_latest_images_from_comfyui
+    rsync_latest_images_from_comfyui,
+    open_images_with_imv
 )
 from ..workflows.furry import create_basic_furry_workflow
 
@@ -173,17 +175,19 @@ def add_furry_command(subparsers, parent_parser):
     furry_parser.add_argument(
         "--ssh-host",
         type=str,
+        default="otter_den",
         help="SSH hostname or IP address for remote ComfyUI instance",
     )
     furry_parser.add_argument(
         "--ssh-port",
         type=int,
-        default=22,
+        default=1487,
         help="SSH port for remote ComfyUI instance",
     )
     furry_parser.add_argument(
         "--ssh-user",
         type=str,
+        default="kade",
         help="SSH username for remote ComfyUI instance",
     )
     furry_parser.add_argument(
@@ -192,12 +196,21 @@ def add_furry_command(subparsers, parent_parser):
         help="Path to SSH private key file for remote ComfyUI instance",
     )
     
+    furry_parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Open generated images with imv",
+    )
+    
     furry_parser.set_defaults(func=generate_furry)
     return furry_parser
 
 
 def generate_furry(args):
     """Generate a furry prompt and optionally an image"""
+    # To keep track of all copied images for --show flag
+    copied_images = []
+    
     # Set up seed if provided
     if args.seed == -1:
         seed = random.randint(1, 1000000)
@@ -407,6 +420,9 @@ def generate_furry(args):
                         
                         if success:
                             logger.info(f"Copied image to {args.output_dir}")
+                            # If successful, add to the list of copied images
+                            copied_path = os.path.join(args.output_dir, f"furry_{curr_seed}{os.path.splitext(image_filename)[1]}")
+                            copied_images.append(copied_path)
                         else:
                             logger.warning("Failed to copy image, trying alternate methods...")
                             # Try with latest images as fallback
@@ -437,6 +453,8 @@ def generate_furry(args):
                                 
                             if copied:
                                 logger.info(f"Copied most recent image to {args.output_dir}")
+                                # Add to the list of copied images
+                                copied_images.extend(copied)
                             else:
                                 logger.warning("All image copy attempts failed")
                     else:
@@ -474,6 +492,8 @@ def generate_furry(args):
                             
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
+                            # Add to the list of copied images
+                            copied_images.extend(copied)
                         else:
                             logger.warning("No image found to copy")
                             
@@ -506,8 +526,13 @@ def generate_furry(args):
                             
                         if copied:
                             logger.info(f"Copied most recent image to {args.output_dir}")
+                            # Add to the list of copied images
+                            copied_images.extend(copied)
                     except Exception as fallback_e:
                         logger.error(f"Fallback copy also failed: {fallback_e}")
-                        logger.warning("Could not copy any images")
 
+        # Open images with imv if requested and we have any
+        if args.show and copied_images:
+            open_images_with_imv(copied_images)
+                        
     return prompts

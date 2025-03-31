@@ -18,7 +18,8 @@ from ..utils.comfy_api import (
 )
 from ..utils.file_utils import (
     copy_latest_images_from_comfyui,
-    rsync_latest_images_from_comfyui
+    rsync_latest_images_from_comfyui,
+    open_images_with_imv
 )
 
 logger = logging.getLogger(__name__)
@@ -138,23 +139,30 @@ def add_info_commands(subparsers, parent_parser):
     copy_images_parser.add_argument(
         "--ssh-host",
         type=str,
+        default="otter_den",
         help="SSH hostname or IP address for remote ComfyUI instance",
     )
     copy_images_parser.add_argument(
         "--ssh-port",
         type=int,
-        default=22,
+        default=1487,
         help="SSH port for remote ComfyUI instance",
     )
     copy_images_parser.add_argument(
         "--ssh-user",
         type=str,
+        default="kade",
         help="SSH username for remote ComfyUI instance",
     )
     copy_images_parser.add_argument(
         "--ssh-key",
         type=str,
         help="Path to SSH private key file for remote ComfyUI instance",
+    )
+    copy_images_parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Open images with imv after copying",
     )
     copy_images_parser.set_defaults(func=copy_images_from_comfyui_cmd)
 
@@ -363,5 +371,9 @@ def copy_images_from_comfyui_cmd(args):
         logger.info(f"Copied {len(copied)} images to {args.output_dir}:")
         for image in copied:
             logger.info(f"  - {os.path.basename(image)}")
+            
+        # Open images with imv if requested
+        if args.show:
+            open_images_with_imv(copied)
     else:
         logger.warning("No images copied.")

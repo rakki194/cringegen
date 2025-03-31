@@ -146,7 +146,7 @@ def rsync_image_from_comfyui(
     remote_dir: str, 
     dest_dir: str, 
     output_prefix: str = None,
-    ssh_port: int = 22,
+    ssh_port: int = 1487,
     ssh_user: str = None,
     ssh_key: str = None
 ) -> Optional[str]:
@@ -158,7 +158,7 @@ def rsync_image_from_comfyui(
         remote_dir: Remote directory containing the image
         dest_dir: Local destination directory
         output_prefix: Optional prefix for output filename
-        ssh_port: SSH port (default: 22)
+        ssh_port: SSH port (default: 1487)
         ssh_user: SSH username (default: current user)
         ssh_key: Path to SSH private key file (default: use system default)
 
@@ -256,7 +256,7 @@ def rsync_latest_images_from_comfyui(
     remote_dir: str, 
     dest_dir: str, 
     limit: int = 5,
-    ssh_port: int = 22,
+    ssh_port: int = 1487,
     ssh_user: str = None,
     ssh_key: str = None
 ) -> List[str]:
@@ -267,7 +267,7 @@ def rsync_latest_images_from_comfyui(
         remote_dir: Remote directory containing the images
         dest_dir: Local destination directory
         limit: Maximum number of images to copy
-        ssh_port: SSH port (default: 22)
+        ssh_port: SSH port (default: 1487)
         ssh_user: SSH username (default: current user)
         ssh_key: Path to SSH private key file (default: use system default)
 
@@ -287,7 +287,7 @@ def rsync_latest_images_from_comfyui(
     ssh_cmd = ["ssh"]
     
     # Add SSH options
-    if ssh_port != 22:
+    if ssh_port != 1487:
         ssh_cmd.extend(["-p", str(ssh_port)])
     
     if ssh_key:
@@ -377,3 +377,50 @@ def rsync_latest_images_from_comfyui(
     except Exception as e:
         logger.error(f"Error getting file list from remote server: {e}")
         return []
+
+
+def open_images_with_imv(image_paths: List[str]) -> bool:
+    """Open images with imv image viewer.
+
+    Args:
+        image_paths: List of paths to images to open
+
+    Returns:
+        True if successful, False otherwise
+    """
+    if not image_paths:
+        logger.warning("No images to open with imv")
+        return False
+    
+    try:
+        # Check if imv is installed
+        which_result = subprocess.run(
+            ["which", "imv"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False
+        )
+        
+        if which_result.returncode != 0:
+            logger.error("imv is not installed. Please install imv to use the --show option.")
+            return False
+        
+        # Build command to open images with imv
+        cmd = ["imv"]
+        cmd.extend(image_paths)
+        
+        logger.info(f"Opening {len(image_paths)} images with imv")
+        
+        # Run in background
+        subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error opening images with imv: {e}")
+        return False
