@@ -257,7 +257,7 @@ def create_character_workflow(args):
     workflow = ComfyWorkflow()
     
     # Add checkpoint loader
-    checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "bluePencilXL_v101.safetensors"
+    checkpoint = args.checkpoint if hasattr(args, "checkpoint") and args.checkpoint else "noobaiXLVpredv10.safetensors"
     model_output = workflow.load_checkpoint(checkpoint)
     
     # Add LoRA if specified
