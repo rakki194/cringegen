@@ -129,6 +129,9 @@ def add_xyplot_command(subparsers, parent_parser):
         help="Alignment for axis labels",
     )
     xyplot_parser.add_argument(
+        "--font-size", type=float, default=40.0, help="Font size for labels"
+    )
+    xyplot_parser.add_argument(
         "--debug-mode", action="store_true", help="Enable debug mode for layout visualization"
     )
 
@@ -519,6 +522,7 @@ def create_xy_grid(
     y_label: str,
     label_alignment: str = "center",
     debug_mode: bool = False,
+    font_size: float = 40.0,
 ) -> str:
     """Create an XY grid using the imx Rust library
 
@@ -531,6 +535,7 @@ def create_xy_grid(
         y_label: Label for Y axis
         label_alignment: Alignment for labels (start, center, end)
         debug_mode: Enable debug visualization
+        font_size: Font size for labels (ignored in current imx version)
 
     Returns:
         Path to the output grid image
@@ -547,6 +552,7 @@ def create_xy_grid(
             "row_label_alignment": label_alignment,
             "top_padding": 60,
             "left_padding": 80,
+            # font_size is ignored in current imx version
             "debug_mode": debug_mode,
         }
         json.dump(config, temp)
@@ -782,6 +788,7 @@ def generate_xyplot(args):
         args.y_param,
         args.label_alignment,
         args.debug_mode,
+        args.font_size,
     )
 
     if grid_path:
