@@ -33,10 +33,10 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["tool belt", "wrench"],
     personality=["intelligent", "loyal", "shy", "inventive"],
     model_tags={
-        "e621": "miles_\"tails\"_prower",
-        "danbooru": "miles_prower",
-        "gelbooru": "tails_(sonic)",
-        "rule34": "miles_\"tails\"_prower",
+        "e621": "miles \"tails\" prower",
+        "danbooru": "miles prower",
+        "gelbooru": "tails \\(sonic\\)",
+        "rule34": "miles \"tails\" prower",
     },
     appearance_traits=[
         "yellow fur", 

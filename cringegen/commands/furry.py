@@ -196,12 +196,6 @@ def add_furry_command(subparsers, parent_parser):
         help="Path to SSH private key file for remote ComfyUI instance",
     )
     
-    furry_parser.add_argument(
-        "--show",
-        action="store_true",
-        help="Open generated images with imv",
-    )
-    
     furry_parser.set_defaults(func=generate_furry)
     return furry_parser
 

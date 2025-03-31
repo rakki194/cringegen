@@ -295,17 +295,19 @@ def add_nsfw_command(subparsers, parent_parser):
     nsfw_parser.add_argument(
         "--ssh-host",
         type=str,
+        default="otter_den",
         help="SSH hostname or IP address for remote ComfyUI instance",
     )
     nsfw_parser.add_argument(
         "--ssh-port",
         type=int,
-        default=22,
+        default=1487,
         help="SSH port for remote ComfyUI instance",
     )
     nsfw_parser.add_argument(
         "--ssh-user",
         type=str,
+        default="kade",
         help="SSH username for remote ComfyUI instance",
     )
     nsfw_parser.add_argument(

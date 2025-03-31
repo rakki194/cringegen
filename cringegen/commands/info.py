@@ -159,11 +159,6 @@ def add_info_commands(subparsers, parent_parser):
         type=str,
         help="Path to SSH private key file for remote ComfyUI instance",
     )
-    copy_images_parser.add_argument(
-        "--show",
-        action="store_true",
-        help="Open images with imv after copying",
-    )
     copy_images_parser.set_defaults(func=copy_images_from_comfyui_cmd)
 
     return subparsers

@@ -4,6 +4,9 @@ Character Template Example
 Copy this file and rename it to your character's name (all lowercase, use underscores for spaces).
 For example, for "Nick Wilde", name the file "nick_wilde.py".
 
+NOTE: Escape all parentheses with \\ (backslash) when using them in the model_tags.
+NOTE: Replace all underscores with spaces in the model_tags!
+
 This is a template file and is not loaded as an actual character.
 """
 

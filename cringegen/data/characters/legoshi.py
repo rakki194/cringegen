@@ -33,10 +33,10 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["school bag", "scars"],
     personality=["shy", "gentle", "introspective", "protective", "conflicted"],
     model_tags={
-        "e621": "legoshi_(beastars)",
-        "danbooru": "legosi_(beastars)",
-        "gelbooru": "legoshi_(beastars)",
-        "rule34": "legoshi_(beastars)",
+        "e621": "legoshi \\(beastars\\)",
+        "danbooru": "legosi \\(beastars\\)",
+        "gelbooru": "legoshi \\(beastars\\)",
+        "rule34": "legoshi \\(beastars\\)",
     },
     appearance_traits=[
         "gray fur", 

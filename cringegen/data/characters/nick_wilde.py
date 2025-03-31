@@ -33,10 +33,10 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["sunglasses"],
     personality=["sarcastic", "cunning", "street-smart", "loyal"],
     model_tags={
-        "e621": "nick_wilde",
-        "danbooru": "nick_wilde",
-        "gelbooru": "nick_wilde_(zootopia)",
-        "rule34": "nick_wilde",
+        "e621": "nick wilde",
+        "danbooru": "nick wilde",
+        "gelbooru": "nick wilde \\(zootopia\\)",
+        "rule34": "nick wilde",
     },
     appearance_traits=[
         "red fur", 

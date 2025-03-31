@@ -33,10 +33,10 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["bow and arrow", "quiver", "feather in hat"],
     personality=["heroic", "charming", "witty", "compassionate", "daring"],
     model_tags={
-        "e621": "robin_hood_(disney)",
-        "danbooru": "robin_hood_(disney)",
-        "gelbooru": "robin_hood_(disney)",
-        "rule34": "robin_hood_(disney)",
+        "e621": "robin hood \\(disney\\)",
+        "danbooru": "robin hood \\(disney\\)",
+        "gelbooru": "robin hood \\(disney\\)",
+        "rule34": "robin hood \\(disney\\)",
     },
     appearance_traits=[
         "red fur", 

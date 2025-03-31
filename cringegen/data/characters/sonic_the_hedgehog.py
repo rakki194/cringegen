@@ -33,10 +33,10 @@ CHARACTER_TEMPLATE = CharacterTemplate(
     accessories=["gold ring"],
     personality=["cocky", "heroic", "impatient", "freedom-loving"],
     model_tags={
-        "e621": "sonic_the_hedgehog",
-        "danbooru": "sonic_the_hedgehog",
-        "gelbooru": "sonic_the_hedgehog",
-        "rule34": "sonic_the_hedgehog",
+        "e621": "sonic the hedgehog",
+        "danbooru": "sonic the hedgehog",
+        "gelbooru": "sonic the hedgehog",
+        "rule34": "sonic the hedgehog",
     },
     appearance_traits=[
         "blue fur", 
