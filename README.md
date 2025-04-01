@@ -9,6 +9,9 @@ A toolkit for generating prompts and workflows for Stable Diffusion models in Co
 - Brainstorm prompt variations and enhancements with LLM assistance
 - Create and customize ComfyUI workflows
 - Modular CLI architecture for extensibility and maintainability
+- Smart resolution optimization for different model architectures
+- Automatic SDXL model detection with tailored recommendations
+- Multi-LoRA support with variable weights
 
 ## XY Plot Generation
 
@@ -16,11 +19,114 @@ cringegen includes powerful XY plot generation capabilities for visualizing the 
 
 ```bash
 # Create an XY plot varying detail-daemon and split-sigmas
-cringegen xyplot --workflow nsfw --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
   --prompt "score_9, score_8_up, female anthro wolf, bedroom, seductive pose" \
   --x-param detail_daemon --x-values false,true \
   --y-param split_sigmas --y-values 0,7.0 \
   --split-first-sampler euler --remote
+```
+
+### Multiple LoRAs with Variable Weights
+
+You can now use multiple LoRAs with different weights in your XY plots:
+
+```bash
+# Create an XY plot with different LoRA combinations
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, score_8_up, anthro male fox, detailed background, bedroom" \
+  --x-param seed --x-values "1111,2222" \
+  --y-param loras --y-values "pony/by_wolfy-nail-v3s3000.safetensors;pony/by_wolfy-nail-v3s3000.safetensors,pony/cotw-v1s400.safetensors:0.4" \
+  --width 1024 --height 1024 --remote
+```
+
+The new `loras` parameter accepts values in these formats:
+
+- Single LoRA: `lora_name.safetensors`
+- Single LoRA with custom weight: `lora_name.safetensors:0.4`
+- Multiple LoRAs: `lora1.safetensors,lora2.safetensors`
+- Multiple LoRAs with weights: `lora1.safetensors:0.3,lora2.safetensors:0.5`
+
+You can also compare different LoRA strengths across all combinations:
+
+```bash
+# Compare different LoRA strength values
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, anthro male fox, detailed background" \
+  --x-param loras --x-values "pony/by_wolfy-nail-v3s3000.safetensors,pony/cotw-v1s400.safetensors:0.4;pony/by_latrans-v3s1200.safetensors:0.3" \
+  --y-param lora_weight --y-values "0.2,0.35,0.5" \
+  --remote
+```
+
+### Comprehensive XYplot Examples
+
+Here are more examples of different parameter combinations you can explore:
+
+```bash
+# Compare different DeepShrink factors
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, anthro female wolf, forest background" \
+  --x-param deepshrink_factor --x-values "1.5,2.0,2.5,3.0" \
+  --y-param deepshrink_end --y-values "0.2,0.35,0.5" \
+  --deepshrink --remote
+
+# Compare PAG scales and detail daemon
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, anthro fox, mountain background" \
+  --x-param pag_scale --x-values "1.0,2.0,3.0,4.0" \
+  --y-param detail_amount --y-values "0.05,0.1,0.2" \
+  --pag --detail_daemon --remote
+
+# Compare samplers and scheduler combinations
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, anthro raccoon, urban setting" \
+  --x-param sampler --x-values "euler,dpm_2,dpm_2_ancestral,ddim" \
+  --y-param scheduler --y-values "normal,karras,exponential" \
+  --remote
+
+# Advanced split-sigma variations
+cringegen xyplot --workflow furry --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, anthro dragon, cave setting, treasure" \
+  --x-param split_first_sampler --x-values "euler,euler_ancestral,ddim" \
+  --y-param split_second_sampler --y-values "dpm_2,dpm_2_ancestral,ddim" \
+  --split-sigmas 7.0 --remote
+```
+
+### Smart Resolution Optimization
+
+cringegen now automatically detects model architectures and provides optimal resolution recommendations:
+
+```bash
+# SDXL model with optimal resolution
+cringegen xyplot --workflow furry --checkpoint sdxl_base.safetensors \
+  --prompt "score_9, anthro fox" \
+  --x-param cfg --x-values "4.0,7.0" \
+  --y-param steps --y-values "20,30,40" \
+  --width 1024 --height 1024 --remote
+
+# SD 1.5 model with optimal resolution
+cringegen xyplot --workflow furry --checkpoint stable_diffusion_1_5.safetensors \
+  --prompt "score_9, anthro fox" \
+  --x-param cfg --x-values "4.0,7.0" \
+  --y-param steps --y-values "20,30,40" \
+  --width 512 --height 512 --remote
+
+# SDXL with optimal non-square aspect ratio
+cringegen xyplot --workflow furry --checkpoint sdxl_base.safetensors \
+  --prompt "score_9, anthro fox, landscape" \
+  --x-param cfg --x-values "4.0,7.0" \
+  --y-param steps --y-values "20,30,40" \
+  --width 1152 --height 896 --remote
+```
+
+When using DeepShrink, resolution checks are automatically bypassed:
+
+```bash
+# Using DeepShrink bypasses resolution checks
+cringegen xyplot --workflow furry --checkpoint sdxl_base.safetensors \
+  --prompt "score_9, anthro fox" \
+  --x-param seed --x-values "1111,2222" \
+  --y-param deepshrink_factor --y-values "1.5,2.0,2.5" \
+  --width 768 --height 768 --deepshrink --remote
 ```
 
 ### Advanced Sampling Control

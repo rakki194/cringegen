@@ -1127,271 +1127,174 @@ def handle_detail_exponent_param(workflow: Dict[str, Any], value: str, args) -> 
 
 
 def dump_workflow_to_file(workflow: Dict[str, Any], filename: str):
-    """Dumps the workflow JSON to a file for debugging
+    """Dump a workflow to a file for debugging.
     
     Args:
         workflow: The workflow to dump
-        filename: The filename to save to
+        filename: The filename to use
     """
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    
     with open(filename, 'w') as f:
-        json.dump(workflow, f, indent=2)
-    logger.info(f"Dumped workflow JSON to {filename}")
+        json.dump(workflow, f, indent=4)
 
 
 def generate_single_image(
     workflow: Dict[str, Any], x_param: str, x_value: str, y_param: str, y_value: str, args
 ) -> str:
-    """Generate a single image with specified parameters
+    """Generate a single image for the XY plot.
 
     Args:
-        workflow: Base workflow template
-        x_param: X-axis parameter type
-        x_value: X-axis parameter value
-        y_param: Y-axis parameter type
-        y_value: Y-axis parameter value
-        args: Command arguments
+        workflow: The base workflow to modify
+        x_param: The X parameter being varied
+        x_value: The value for the X parameter
+        y_param: The Y parameter being varied
+        y_value: The value for the Y parameter
+        args: The parsed arguments
 
     Returns:
-        Path to the generated image
+        Path to the generated image file
     """
-    # Special case for when using seed as a parameter
-    # We need to handle the non-seed parameter first to ensure the workflow is correctly configured
-    # before applying the seed
+    # Sanitize values for file paths
+    x_value_safe = sanitize_path(x_value)
+    y_value_safe = sanitize_path(y_value)
     
-    if x_param == "seed" and y_param != "seed":
-        # Handle the non-seed parameter first, then apply seed
-        modified_workflow = param_handlers[y_param](workflow, y_value, args)
-        # Then apply seed directly (not through param handler)
-        seed_value = int(x_value)
-        for node_id, node in modified_workflow.items():
-            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                node["inputs"]["seed"] = seed_value
-                logger.debug(f"Set seed to {seed_value} in node {node_id}")
-            elif node["class_type"] == "RandomNoise":
-                node["inputs"]["noise_seed"] = seed_value
-                logger.debug(f"Set noise_seed to {seed_value} in RandomNoise node {node_id}")
-    
-    elif y_param == "seed" and x_param != "seed":
-        # Handle the non-seed parameter first, then apply seed
-        modified_workflow = param_handlers[x_param](workflow, x_value, args)
-        # Then apply seed directly
-        seed_value = int(y_value)
-        for node_id, node in modified_workflow.items():
-            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                node["inputs"]["seed"] = seed_value
-                logger.debug(f"Set seed to {seed_value} in node {node_id}")
-            elif node["class_type"] == "RandomNoise":
-                node["inputs"]["noise_seed"] = seed_value
-                logger.debug(f"Set noise_seed to {seed_value} in RandomNoise node {node_id}")
-    
+    # Log what we're generating
+    logger.info(f"Generating image {args.index_count}/{args.total_count}: {x_param}={x_value}, {y_param}={y_value}")
+
+    # Create a copy of the workflow for modification
+    modified_workflow = json.loads(json.dumps(workflow))
+
+    # Apply the X parameter handler
+    if x_param in param_handlers:
+        modified_workflow = param_handlers[x_param](modified_workflow, x_value, args)
     else:
-        # Normal case: Apply X parameter
-        modified_workflow = param_handlers[x_param](workflow, x_value, args)
+        logger.warning(f"No handler for X parameter: {x_param}")
 
-        # Apply Y parameter (if different from X)
-        if y_param != x_param:
-            modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
+    # Apply the Y parameter handler
+    if y_param in param_handlers:
+        modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
+    else:
+        logger.warning(f"No handler for Y parameter: {y_param}")
 
-    # Set image dimensions
-    for node_id, node in modified_workflow.items():
-        if node["class_type"] == "EmptyLatentImage":
-            node["inputs"]["width"] = args.width
-            node["inputs"]["height"] = args.height
-            
-    # Handle regular seed when seed is not a parameter
-    if x_param != "seed" and y_param != "seed":
-        # Regular seed handling logic when seed is not a parameter
-        if args.seed is not None:
-            # Use global seed from args
-            seed_value = args.seed
-            for node_id, node in modified_workflow.items():
-                if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                    node["inputs"]["seed"] = seed_value
-                    logger.debug(f"Using global seed {seed_value} for KSampler")
-                elif node["class_type"] == "RandomNoise":
-                    node["inputs"]["noise_seed"] = seed_value
-                    logger.debug(f"Using global seed {seed_value} for RandomNoise")
-        else:
-            # Generate a deterministic seed based on position
-            if isinstance(x_value, str) and isinstance(y_value, str):
-                x_hash = sum(ord(c) for c in str(x_value))
-                y_hash = sum(ord(c) for c in str(y_value))
-                
-                combined_seed = (x_hash * 100) + y_hash
-                combined_seed = combined_seed % 2147483647  # max 32-bit signed int
-                
-                for node_id, node in modified_workflow.items():
-                    if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                        node["inputs"]["seed"] = combined_seed
-                        logger.debug(f"Using position-based seed {combined_seed} for KSampler")
-                    elif node["class_type"] == "RandomNoise":
-                        node["inputs"]["noise_seed"] = combined_seed
-                        logger.debug(f"Using position-based seed {combined_seed} for RandomNoise")
-
-    # Final verification to ensure seed is never None in any sampler or noise node
-    for node_id, node in modified_workflow.items():
-        if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-            if node["inputs"]["seed"] is None:
-                logger.warning(f"Seed is still None in KSampler node {node_id} after all processing - using random seed")
-                node["inputs"]["seed"] = int(time.time()) % 2147483647  # Use current time as seed
-        elif node["class_type"] == "RandomNoise":
-            if node["inputs"]["noise_seed"] is None:
-                logger.warning(f"Seed is still None in RandomNoise node {node_id} after all processing - using random seed")
-                node["inputs"]["noise_seed"] = int(time.time()) % 2147483647  # Use current time as seed
-
-    # Dump the final workflow to a file for debugging (one per grid position)
-    if hasattr(args, "dump_workflows") and args.dump_workflows:
+    # Dump the workflow if requested
+    if args.dump_workflows:
         debug_dir = os.path.join(args.output_dir, "debug")
-        os.makedirs(debug_dir, exist_ok=True)
-        debug_filename = os.path.join(debug_dir, f"workflow_{x_param}_{x_value}_{y_param}_{y_value}.json")
+        debug_filename = os.path.join(
+            debug_dir, f"workflow_{x_param}_{x_value_safe}_{y_param}_{y_value_safe}.json"
+        )
         dump_workflow_to_file(modified_workflow, debug_filename)
+
+    # Determine the output filename
+    output_filename = os.path.join(
+        args.output_dir, f"xy_{x_value_safe}_{y_value_safe}.png"
+    )
+
+    # Create a blank image in case generation fails
+    blank_filename = os.path.join(
+        args.output_dir, f"blank_{x_value_safe}_{y_value_safe}.png"
+    )
+
+    try:
+        # Queue the prompt for generation
+        prompt_result = queue_prompt(modified_workflow)
         
-    # Extract and log key parameters for debugging
-    seed_value = None
-    sampler_name = None
-    scheduler = None
-    for node_id, node in modified_workflow.items():
-        if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-            seed_value = node["inputs"].get("seed")
-            sampler_name = node["inputs"].get("sampler_name")
-            scheduler = node["inputs"].get("scheduler")
-            break
+        if 'prompt_id' not in prompt_result:
+            logger.error(f"Failed to queue prompt, no prompt_id returned: {prompt_result}")
+            return blank_filename
             
-    logger.info(f"Position [{x_param}={x_value}, {y_param}={y_value}] → Seed: {seed_value}, Sampler: {sampler_name}")
-
-    # Queue the workflow
-    prompt_id_response = queue_prompt(modified_workflow, args.comfy_url)
-    if not prompt_id_response:
-        logger.error("Failed to queue prompt for XY plot image")
-        return None
-
-    # Extract the actual prompt_id string from the response
-    if isinstance(prompt_id_response, dict) and "prompt_id" in prompt_id_response:
-        prompt_id = prompt_id_response["prompt_id"]
-    else:
-        prompt_id = str(prompt_id_response)
-
-    # Poll for generation status with a reasonable timeout
-    max_poll_time = 300  # 5 minutes max
-    poll_interval = 2  # Check every 2 seconds
-    start_time = time.time()
-
-    logger.info(f"Monitoring generation status for prompt {prompt_id}")
-
-    # Poll until completed or timeout
-    last_progress = 0
-    while time.time() - start_time < max_poll_time:
-        status = check_generation_status(prompt_id, args.comfy_url)
-
-        # Print progress updates only when progress changes significantly
-        if status["status"] == "pending":
-            if time.time() - start_time > 10:  # Only log after 10 seconds of waiting
-                logger.info(f"Generation pending... ({int(time.time() - start_time)}s elapsed)")
-        elif status["status"] == "processing":
-            current_progress = int(status["progress"] * 100)
-            if current_progress >= last_progress + 10 or (time.time() - start_time) % 10 < 2:
-                logger.info(
-                    f"Generation in progress: {current_progress}% ({int(time.time() - start_time)}s elapsed)"
-                )
+        prompt_id = prompt_result['prompt_id']
+        logger.info(f"Queued prompt with ID: {prompt_id}")
+        
+        # Track the generation status with a more responsive approach
+        start_time = time.time()
+        max_wait_time = 300  # 5 minutes max wait
+        last_progress = 0
+        last_progress_time = time.time()
+        
+        while time.time() - start_time < max_wait_time:
+            # Check the current status
+            status_result = check_generation_status(prompt_id)
+            
+            current_status = status_result.get('status', 'unknown')
+            current_progress = status_result.get('progress', 0.0)
+            
+            # Report progress if it changed significantly (at least 10%)
+            if current_progress >= last_progress + 0.1:
+                logger.info(f"Progress for {x_param}={x_value}, {y_param}={y_value}: {current_progress:.0%}")
                 last_progress = current_progress
-        elif status["status"] == "completed":
-            logger.info(f"Generation completed in {int(time.time() - start_time)}s!")
-            break
-        elif status["status"] == "error":
-            logger.error(f"Generation error: {status['error']}")
-            return None
-
-        # Wait before polling again
-        time.sleep(poll_interval)
-
-    # Check if we timed out
-    if time.time() - start_time >= max_poll_time:
-        logger.warning(f"Generation timed out after {max_poll_time}s")
-        return None
-
-    # Get the image filename
-    if status and status["status"] == "completed" and status["images"]:
-        image_filename = status["images"][0]["filename"]
-        image_subfolder = status["images"][0].get("subfolder", "")
-        logger.info(f"Found image: {image_filename}")
-        
-        # On remote systems, we need to ensure we're getting the right image
-        # Instead of relying on filenames which may be reused, use the prompt_id
-        # to get the exact file associated with this request
-        if args.remote:
-            # Create a unique identifier for this image based on prompt_id
-            unique_id = prompt_id[:8]  # First part of UUID is unique enough
+                last_progress_time = time.time()
             
-            # Create a temporary directory to store the exact file
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # First try to get the exact file using the prompt_id
-                temp_filename = f"temp_{unique_id}_{image_filename}"
+            # If completed, we can proceed
+            if current_status == 'completed':
+                logger.info(f"Generation completed for {x_param}={x_value}, {y_param}={y_value} in {time.time() - start_time:.1f}s")
+                break
                 
-                # Run a command to copy the exact file with the right timestamp
-                if image_subfolder:
-                    full_remote_path = f"{args.comfy_output_dir}/{image_subfolder}/{image_filename}"
-                else:
-                    full_remote_path = f"{args.comfy_output_dir}/{image_filename}"
+            # If it's taking too long without progress, log a warning but keep waiting
+            if time.time() - last_progress_time > 60:  # No progress for 1 minute
+                logger.warning(f"No progress update for 1 minute (current: {current_progress:.0%})")
+                last_progress_time = time.time()  # Reset to avoid spamming logs
+            
+            # If there's an error, report it and stop waiting
+            if current_status == 'error':
+                logger.error(f"Error in generation: {status_result.get('error', 'Unknown error')}")
+                return blank_filename
                 
-                # Use SSH to get file listing with timestamps to find the most recent matching file
-                ssh_cmd = [
-                    "ssh",
-                    "-p", str(args.ssh_port),
-                    f"{args.ssh_user}@{args.ssh_host}",
-                    f"ls -lt --time-style=full-iso {full_remote_path}"
-                ]
-                
-                logger.debug(f"Running SSH command to get file details: {' '.join(ssh_cmd)}")
-                result = subprocess.run(ssh_cmd, capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    logger.debug(f"SSH command output: {result.stdout}")
-                    
-                    # Add a small delay before rsync to ensure file is fully written
-                    time.sleep(1)
-                    
-                    # Now we can rsync the file with confidence it's the right one
-                    if args.remote:
-                        local_path = rsync_image_from_comfyui(
-                            image_filename,
-                            args.ssh_host,
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            f"xy_{x_value}_{y_value}",
-                            args.ssh_port,
-                            args.ssh_user,
-                            args.ssh_key,
-                            subfolder=image_subfolder
-                        )
-                    else:
-                        local_path = copy_image_from_comfyui(
-                            image_filename, args.comfy_output_dir, args.output_dir, f"xy_{x_value}_{y_value}",
-                            subfolder=image_subfolder
-                        )
-                else:
-                    logger.warning(f"Failed to get file details via SSH: {result.stderr}")
-                    if args.remote:
-                        local_path = rsync_image_from_comfyui(
-                            image_filename,
-                            args.ssh_host,
-                            args.comfy_output_dir,
-                            args.output_dir,
-                            f"xy_{x_value}_{y_value}",
-                            args.ssh_port,
-                            args.ssh_user,
-                            args.ssh_key,
-                            subfolder=image_subfolder
-                        )
-                    else:
-                        local_path = copy_image_from_comfyui(
-                            image_filename, args.comfy_output_dir, args.output_dir, f"xy_{x_value}_{y_value}",
-                            subfolder=image_subfolder
-                        )
-    else:
-        logger.error("No images were generated")
-        return None
+            # Short sleep to avoid hammering the server
+            time.sleep(1 if current_status == 'pending' else 0.5)
+            
+        # If we exited the loop due to timeout
+        if time.time() - start_time >= max_wait_time:
+            logger.warning(f"Timed out waiting for generation after {max_wait_time}s")
+            return blank_filename
 
-    return local_path
+        # Get the path to the generated image
+        image_paths = get_image_path(prompt_id)
+        if not image_paths:
+            logger.warning(f"Failed to find generated image for {x_param}={x_value}, {y_param}={y_value}")
+            return blank_filename
+            
+        # Use the first image path returned
+        image_path = image_paths[0] if isinstance(image_paths, list) else image_paths
+
+        # Create output directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+
+        # Get the image from ComfyUI (locally or remotely)
+        if args.remote:
+            # Use rsync to get the image from the remote server
+            success = rsync_image_from_comfyui(
+                image_path, 
+                args.ssh_host,
+                args.comfy_output_dir, 
+                os.path.dirname(output_filename),
+                os.path.basename(output_filename),
+                args.ssh_port, 
+                args.ssh_user, 
+                getattr(args, 'ssh_key', None)  # Handle missing ssh_key attribute
+            )
+            
+            if not success:
+                logger.warning(f"Failed to rsync image from remote server")
+                return blank_filename
+        else:
+            # Copy the image from the local ComfyUI server
+            copy_image_from_comfyui(image_path, output_filename, args.comfy_output_dir)
+
+        # Check if the image was successfully copied
+        if os.path.exists(output_filename):
+            logger.info(f"Successfully saved image to {output_filename}")
+            return output_filename
+        else:
+            logger.warning(
+                f"Failed to generate image for {x_param}={x_value}, {y_param}={y_value}"
+            )
+            return blank_filename
+
+    except Exception as e:
+        logger.error(f"Error generating image: {str(e)}")
+        return blank_filename
 
 
 def create_xy_grid(
@@ -1593,8 +1496,35 @@ def create_grid_with_imagemagick(
         return output_path
 
 
+def sanitize_path(path: str) -> str:
+    """Sanitize a path for use in filenames.
+    
+    Args:
+        path: The path to sanitize
+        
+    Returns:
+        Sanitized path
+    """
+    # Replace characters that cause issues in paths
+    path = path.replace('/', '_')
+    path = path.replace('\\', '_')
+    path = path.replace(':', '_')
+    path = path.replace(';', '_')
+    path = path.replace(',', '_')
+    path = path.replace(' ', '_')
+    path = path.replace('\t', '_')
+    path = path.replace('\n', '_')
+    path = path.replace('\r', '_')
+    
+    # Replace multiple underscores with a single one
+    while '__' in path:
+        path = path.replace('__', '_')
+        
+    return path
+
+
 def generate_xyplot(args):
-    """Generate an XY plot with varying parameters
+    """Generate an XY plot varying two parameters.
 
     Args:
         args: Command line arguments
@@ -1635,9 +1565,17 @@ def generate_xyplot(args):
     # Ensure output directory exists
     ensure_dir_exists(args.output_dir)
 
-    # Split parameter values
-    x_values = [x.strip() for x in args.x_values.split(",")]
-    y_values = [y.strip() for y in args.y_values.split(",")]
+    # Extract X and Y values from comma-separated or semicolon-separated strings
+    x_values = args.x_values.replace(";", ",").split(",")
+    y_values = args.y_values.replace(";", ",").split(",")
+
+    # Clean up values (remove leading/trailing whitespace)
+    x_values = [x.strip() for x in x_values]
+    y_values = [y.strip() for y in y_values]
+
+    # Remove any empty values
+    x_values = [x for x in x_values if x]
+    y_values = [y for y in y_values if y]
 
     logger.info(f"Generating XY plot with {len(x_values)}x{len(y_values)} grid")
     logger.info(f"X axis ({args.x_param}): {x_values}")
@@ -1670,15 +1608,23 @@ def generate_xyplot(args):
 
     # Generate images for each parameter combination
     image_paths = []
-    total_images = len(x_values) * len(y_values)
-    current_image = 0
-
+    
+    # Add total count of images to generate for progress tracking
+    args.total_count = len(x_values) * len(y_values)
+    args.index_count = 0
+    
+    # Generate images for each position in the grid
     for y_idx, y_value in enumerate(y_values):
         row_images = []
         for x_idx, x_value in enumerate(x_values):
-            current_image += 1
+            args.index_count += 1
+            
+            # Sanitize values for safe filenames
+            x_value_safe = sanitize_path(x_value)
+            y_value_safe = sanitize_path(y_value)
+            
             logger.info(
-                f"Generating image {current_image}/{total_images}: {args.x_param}={x_value}, {args.y_param}={y_value}"
+                f"Generating image {args.index_count}/{args.total_count}: {args.x_param}={x_value}, {args.y_param}={y_value}"
             )
 
             image_path = generate_single_image(
@@ -1698,99 +1644,121 @@ def generate_xyplot(args):
                     row_images.append(default_image)
                 else:
                     # Create a blank image as placeholder
-                    blank_path = os.path.join(args.output_dir, f"blank_{x_value}_{y_value}.png")
+                    blank_path = os.path.join(args.output_dir, f"blank_{x_value_safe}_{y_value_safe}.png")
+                    # Create directory if needed
+                    os.makedirs(os.path.dirname(blank_path), exist_ok=True)
                     subprocess.run(
                         ["convert", "-size", f"{args.width}x{args.height}", "xc:white", blank_path]
                     )
                     row_images.append(blank_path)
 
-        image_paths.extend(row_images)
+        image_paths.append(row_images)
+
+    # Flatten the image paths list
+    flat_image_paths = [path for row in image_paths for path in row]
 
     # Create the grid
     output_path = os.path.join(args.output_dir, f"{args.output_name}.png")
-    grid_path = create_xy_grid(
-        image_paths,
-        x_values,
-        y_values,
-        output_path,
-        args.x_param,
-        args.y_param,
-        args.label_alignment,
-        args.debug_mode,
-        args.font_size,
-        args.horizontal_spacing,
-        args.vertical_spacing,
-    )
-
-    if grid_path:
-        logger.info(f"XY plot grid saved to {grid_path}")
-        
-        # Add command to image metadata
-        try:
-            # Check if exiftool is available
-            exiftool_available = False
-            try:
-                result = subprocess.run(["which", "exiftool"], capture_output=True, text=True)
-                exiftool_available = result.returncode == 0
-            except Exception:
-                exiftool_available = False
-                
-            if exiftool_available:
-                # Add metadata to the image using exiftool
-                metadata_cmd = [
-                    "exiftool",
-                    "-overwrite_original",
-                    f"-Comment={command}",
-                    grid_path
-                ]
-                result = subprocess.run(metadata_cmd, capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    logger.info("Successfully added command to image metadata using exiftool")
-                else:
-                    logger.warning(f"Failed to add metadata with exiftool: {result.stderr}")
-                    raise Exception("exiftool failed")
-            else:
-                # Exiftool not available
-                logger.warning("exiftool not found, falling back to ImageMagick")
-                raise Exception("exiftool not found")
-                
-        except Exception as e:
-            logger.info(f"Falling back to ImageMagick for metadata: {str(e)}")
+    
+    try:
+        # Try to create the grid using imx-plot
+        grid_path = create_xy_grid(
+            flat_image_paths,
+            x_values,
+            y_values,
+            output_path,
+            args.x_param,
+            args.y_param,
+            args.label_alignment,
+            args.debug_mode,
+            args.font_size,
+            args.horizontal_spacing,
+            args.vertical_spacing,
+        )
+    
+        if grid_path:
+            logger.info(f"XY plot grid saved to {grid_path}")
             
-            # Try using ImageMagick's convert as a fallback
+            # Add command to image metadata
             try:
-                # Check if convert is available
-                convert_available = False
+                # Check if exiftool is available
+                exiftool_available = False
                 try:
-                    result = subprocess.run(["which", "convert"], capture_output=True, text=True)
-                    convert_available = result.returncode == 0
+                    result = subprocess.run(["which", "exiftool"], capture_output=True, text=True)
+                    exiftool_available = result.returncode == 0
                 except Exception:
-                    convert_available = False
+                    exiftool_available = False
                     
-                if convert_available:
-                    # Use ImageMagick to add metadata
-                    convert_cmd = [
-                        "convert", 
-                        grid_path, 
-                        "-set", 
-                        "comment", 
-                        command, 
+                if exiftool_available:
+                    # Add metadata to the image using exiftool
+                    metadata_cmd = [
+                        "exiftool",
+                        "-overwrite_original",
+                        f"-Comment={command}",
                         grid_path
                     ]
-                    result = subprocess.run(convert_cmd, capture_output=True, text=True)
+                    result = subprocess.run(metadata_cmd, capture_output=True, text=True)
+                    
                     if result.returncode == 0:
-                        logger.info("Successfully added command to image metadata using ImageMagick")
+                        logger.info("Successfully added command to image metadata using exiftool")
                     else:
-                        logger.warning(f"Failed to add metadata using ImageMagick: {result.stderr}")
+                        logger.warning(f"Failed to add metadata with exiftool: {result.stderr}")
+                        raise Exception("exiftool failed")
                 else:
-                    logger.warning("Neither exiftool nor ImageMagick convert are available for adding metadata")
-            except Exception as e2:
-                logger.warning(f"Error adding metadata using ImageMagick: {e2}")
-        
-        # If show option is enabled, open the grid image with imv
-        if hasattr(args, "show") and args.show:
-            logger.info("Opening XY plot grid with imv")
-            open_images_with_imv([grid_path])
-    else:
-        logger.error("Failed to create XY plot grid")
+                    # Exiftool not available
+                    logger.warning("exiftool not found, falling back to ImageMagick")
+                    raise Exception("exiftool not found")
+                    
+            except Exception as e:
+                logger.info(f"Falling back to ImageMagick for metadata: {str(e)}")
+                
+                # Try using ImageMagick's convert as a fallback
+                try:
+                    # Check if convert is available
+                    convert_available = False
+                    try:
+                        result = subprocess.run(["which", "convert"], capture_output=True, text=True)
+                        convert_available = result.returncode == 0
+                    except Exception:
+                        convert_available = False
+                        
+                    if convert_available:
+                        # Use ImageMagick to add metadata
+                        convert_cmd = [
+                            "convert", 
+                            grid_path, 
+                            "-set", 
+                            "comment", 
+                            command, 
+                            grid_path
+                        ]
+                        result = subprocess.run(convert_cmd, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            logger.info("Successfully added command to image metadata using ImageMagick")
+                        else:
+                            logger.warning(f"Failed to add metadata using ImageMagick: {result.stderr}")
+                    else:
+                        logger.warning("Neither exiftool nor ImageMagick convert are available for adding metadata")
+                except Exception as e2:
+                    logger.warning(f"Error adding metadata using ImageMagick: {e2}")
+            
+            # If show option is enabled, open the grid image with imv
+            if hasattr(args, "show") and args.show:
+                logger.info("Opening XY plot grid with imv")
+                open_images_with_imv([grid_path])
+            return grid_path
+    except Exception as e:
+        logger.warning(f"Failed to create grid with imx-plot: {str(e)}")
+
+    # If imx-plot failed, fall back to ImageMagick
+    logger.info("Falling back to ImageMagick...")
+    try:
+        imagemagick_path = create_grid_with_imagemagick(
+            flat_image_paths, x_values, y_values, output_path, args.x_param, args.y_param
+        )
+        if imagemagick_path:
+            logger.info(f"Created XY plot grid at {imagemagick_path}")
+            return imagemagick_path
+    except Exception as e:
+        logger.error(f"Failed to create XY plot grid: {str(e)}")
+        raise
