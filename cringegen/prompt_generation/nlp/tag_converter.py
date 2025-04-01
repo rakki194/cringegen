@@ -150,39 +150,527 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
         "other": [],
     }
 
+    # Import species taxonomy data for proper categorization
+    from cringegen.data.taxonomy import SPECIES_TAXONOMY
+
+    # Import art styles data
+    from cringegen.data.styles import ART_STYLES
+
+    # Flatten the art styles dictionary for easier lookup
+    all_art_styles = []
+    for style_category, styles in ART_STYLES.items():
+        all_art_styles.extend(styles)
+
+    # Common clothing items that might not be in the basic list
+    additional_clothing = [
+        "robe",
+        "robes",
+        "jeans",
+        "shorts",
+        "hoodie",
+        "sweatshirt",
+        "sweater",
+        "t-shirt",
+        "tshirt",
+        "blouse",
+        "tank top",
+        "bikini",
+        "swimsuit",
+        "costume",
+        "armor",
+        "attire",
+        "garment",
+        "lingerie",
+        "panties",
+        "bra",
+        "underwear",
+        "boxers",
+        "briefs",
+        "socks",
+        "stockings",
+        "leggings",
+        "tights",
+        "pantyhose",
+        "kilt",
+        "skort",
+        "camisole",
+    ]
+
+    # Common accessories
+    accessories = [
+        "necklace",
+        "pendant",
+        "ring",
+        "bracelet",
+        "earring",
+        "crown",
+        "tiara",
+        "glasses",
+        "sunglasses",
+        "monocle",
+        "watch",
+        "wristband",
+        "anklet",
+        "choker",
+        "collar",
+        "piercing",
+        "tattoo",
+        "mask",
+        "scarf",
+        "bandana",
+        "headband",
+        "ribbon",
+        "bow",
+        "hairpin",
+        "barrette",
+        "brooch",
+        "badge",
+        "pin",
+        "button",
+        "patch",
+        "emblem",
+        "sword",
+        "dagger",
+        "knife",
+        "staff",
+        "wand",
+        "gun",
+        "pistol",
+        "rifle",
+        "bow",
+        "arrow",
+        "shield",
+        "backpack",
+        "bag",
+        "purse",
+        "satchel",
+        "briefcase",
+        "luggage",
+        "pouch",
+        "wallet",
+        "phone",
+        "smartphone",
+        "laptop",
+        "tablet",
+        "camera",
+        "headphones",
+        "earbuds",
+        "glowing staff",
+        "magical staff",
+        "robotic arm",
+        "cybernetic implant",
+    ]
+
+    # Common expressions
+    expressions = [
+        "happy",
+        "sad",
+        "angry",
+        "excited",
+        "surprised",
+        "shocked",
+        "afraid",
+        "scared",
+        "terrified",
+        "worried",
+        "anxious",
+        "nervous",
+        "confused",
+        "puzzled",
+        "thoughtful",
+        "pensive",
+        "bored",
+        "tired",
+        "sleepy",
+        "exhausted",
+        "relaxed",
+        "calm",
+        "peaceful",
+        "serene",
+        "content",
+        "satisfied",
+        "proud",
+        "smug",
+        "cocky",
+        "arrogant",
+        "shy",
+        "embarrassed",
+        "ashamed",
+        "guilty",
+        "innocent",
+        "hopeful",
+        "desperate",
+        "determined",
+        "confident",
+        "uncertain",
+        "doubtful",
+        "suspicious",
+        "trusting",
+        "loving",
+        "hateful",
+        "jealous",
+        "envious",
+        "disgusted",
+        "amused",
+        "entertained",
+        "interested",
+        "bored",
+        "indifferent",
+        "neutral",
+        "blank",
+        "empty",
+        "grinning",
+        "smiling",
+        "frowning",
+        "grimacing",
+        "squinting",
+        "winking",
+        "blinking",
+        "laughing",
+        "crying",
+        "sobbing",
+        "screaming",
+        "yelling",
+        "whispering",
+        "shouting",
+        "sighing",
+        "gasping",
+        "panting",
+        "breathing",
+        "sneezing",
+        "coughing",
+        "yawning",
+        "snoring",
+        "sleeping",
+        "dreaming",
+        "thinking",
+        "wondering",
+        "contemplating",
+        "meditating",
+        "concentrating",
+        "studying",
+        "observing",
+        "watching",
+        "staring",
+        "glaring",
+        "glancing",
+        "peering",
+        "peeking",
+        "squinting",
+        "blinking",
+        "closing eyes",
+    ]
+
+    # Anthro-specific terms
+    anthro_terms = [
+        "anthro",
+        "anthropomorphic",
+        "furry",
+        "kemono",
+        "fursona",
+        "anthro_",
+        "anthromorphic",
+    ]
+
+    # List of art styles to prevent them from being classified as actions
+    art_style_exact_matches = [
+        "oil painting",
+        "watercolor",
+        "acrylic painting",
+        "digital painting",
+        "ink drawing",
+        "pencil drawing",
+        "charcoal drawing",
+        "pastel drawing",
+    ]
+
+    # List of settings to ensure proper categorization
+    setting_exact_matches = [
+        "ancient library",
+        "ruined temple",
+        "modern office",
+        "cozy bedroom",
+        "dark alley",
+        "spaceship interior",
+        "medieval tavern",
+        "fantasy village",
+        "sci-fi laboratory",
+        "abandoned warehouse",
+        "hidden cave",
+        "underground bunker",
+        "floating island",
+        "crystal cave",
+        "bustling marketplace",
+        "throne room",
+        "space station",
+        "cyberpunk city",
+        "futuristic metropolis",
+        "desert oasis",
+        "mountain peak",
+        "forest clearing",
+        "jungle temple",
+        "arctic research station",
+    ]
+
+    # List of physical features that shouldn't be classified as settings
+    physical_features = [
+        "battle scars",
+        "scars",
+        "marks",
+        "tattoos",
+        "birthmarks",
+        "freckles",
+        "spots",
+        "stripes",
+        "patterns",
+        "markings",
+        "mane",
+        "long ears",
+        "short ears",
+        "long tail",
+        "short tail",
+        "bushy tail",
+        "large eyes",
+        "small eyes",
+        "long hair",
+        "short hair",
+        "curly hair",
+        "straight hair",
+        "muscular",
+        "slim",
+        "slender",
+        "fit",
+        "athletic",
+        "buff",
+        "toned",
+        "heavy set",
+        "chubby",
+        "big",
+        "small",
+        "tall",
+        "short",
+        "average height",
+        "petite",
+        "thicc",
+        "thick",
+    ]
+
     for tag in tags:
-        tag_lower = tag.lower()
+        tag_lower = tag.lower().strip()
+        tag_words = tag_lower.split()
+
+        # Check for exact matches first
+        if tag_lower in art_style_exact_matches:
+            categories["style"].append(tag)
+            continue
+
+        if tag_lower in setting_exact_matches:
+            categories["setting"].append(tag)
+            continue
+
+        if tag_lower in additional_clothing or "top" in tag_lower or "shirt" in tag_lower:
+            categories["clothing"].append(tag)
+            continue
+
+        if tag_lower in physical_features or tag_lower in ["battle scars", "battle scarred"]:
+            # Features like "battle scars" or "long ears" go to other, not setting
+            if "scars" in tag_lower or "scarred" in tag_lower:
+                categories["other"].append(tag)
+            else:
+                categories["other"].append(tag)
+            continue
+
+        # Check for anthro species combinations (e.g., "anthro fox", "female anthro wolf")
+        is_anthro = any(anthro in tag_lower for anthro in anthro_terms)
+        contains_species = any(species in tag_lower for species in SPECIES_TAXONOMY)
+
+        # Handle anthro species specifically
+        if is_anthro and contains_species:
+            # Extract the species part
+            for species in SPECIES_TAXONOMY:
+                if species in tag_lower:
+                    # Add to both subject and species
+                    categories["subject"].append(tag)
+                    if species not in categories["species"]:
+                        categories["species"].append(species)
+                    break
+            continue
+
+        # Check if tag is a known species
+        is_species = tag_lower in SPECIES_TAXONOMY
+
+        # Check if tag contains color + species (e.g., "red fox", "blue dragon")
+        colors = [
+            "red",
+            "blue",
+            "green",
+            "yellow",
+            "purple",
+            "black",
+            "white",
+            "orange",
+            "brown",
+            "pink",
+            "gray",
+            "grey",
+            "cyan",
+            "magenta",
+            "teal",
+            "silver",
+            "gold",
+            "bronze",
+            "copper",
+            "ruby",
+            "emerald",
+            "sapphire",
+            "amber",
+            "turquoise",
+            "indigo",
+            "violet",
+            "crimson",
+            "scarlet",
+            "navy",
+            "maroon",
+            "olive",
+            "ivory",
+            "cream",
+            "beige",
+            "tan",
+            "chocolate",
+            "coffee",
+            "slate",
+            "charcoal",
+            "ash",
+            "ebony",
+            "onyx",
+            "obsidian",
+            "jet",
+            "raven",
+            "midnight",
+            "aqua",
+            "azure",
+            "cerulean",
+            "cobalt",
+            "lime",
+            "mint",
+            "peach",
+            "coral",
+            "salmon",
+            "lavender",
+            "lilac",
+            "plum",
+            "mauve",
+            "fuchsia",
+            "rose",
+            "rust",
+            "cinnamon",
+            "caramel",
+            "honey",
+            "lemon",
+            "vanilla",
+            "snow",
+        ]
+
+        is_color_species = False
+        if len(tag_words) > 1:
+            last_word = tag_words[-1]
+            if last_word in SPECIES_TAXONOMY:
+                color_part = " ".join(tag_words[:-1])
+                if any(color in color_part for color in colors):
+                    # It's a color + species combination
+                    is_color_species = True
+                    categories["color"].append(color_part)
+                    # Add to both subject and species
+                    categories["subject"].append(last_word)
+                    categories["species"].append(last_word)
+                    continue
+
+        # Check if tag is a known art style or contains art style terms
+        style_terms = [
+            "style",
+            "art",
+            "painting",
+            "illustration",
+            "drawing",
+            "sketch",
+            "render",
+            "artwork",
+            "aesthetic",
+            "concept",
+            "visual",
+            "graphic",
+            "design",
+        ]
+
+        is_art_style = tag_lower in all_art_styles
+        contains_art_style = any(term in tag_lower for term in style_terms)
+        digital_art_terms = [
+            "digital",
+            "cgi",
+            "3d",
+            "rendered",
+            "computer generated",
+            "photo manipulation",
+        ]
+        is_digital_art = any(term in tag_lower for term in digital_art_terms)
+
+        # Check for popular art styles not in the predefined list
+        additional_styles = [
+            "anime",
+            "manga",
+            "cartoon",
+            "comic",
+            "pixel art",
+            "8-bit",
+            "16-bit",
+            "cel shaded",
+            "chibi",
+            "realistic",
+            "photorealistic",
+            "hyperrealistic",
+            "surrealistic",
+            "impressionist",
+            "expressionist",
+            "cubist",
+            "minimalist",
+            "abstract",
+            "fantasy",
+            "sci-fi",
+            "cyberpunk",
+            "steampunk",
+            "dieselpunk",
+            "biopunk",
+            "solarpunk",
+            "atompunk",
+            "vaporwave",
+            "retrowave",
+            "synthwave",
+        ]
+
+        is_additional_style = any(style in tag_lower for style in additional_styles)
 
         # Check quality tags first
         if any(prefix in tag_lower for prefix in TAG_PREFIXES):
             categories["quality"].append(tag)
             continue
 
-        # Check for color descriptors
-        if any(
-            color in tag_lower
-            for color in [
-                "red",
-                "blue",
-                "green",
-                "yellow",
-                "purple",
-                "black",
-                "white",
-                "orange",
-                "brown",
-                "pink",
-                "gray",
-                "grey",
-                "cyan",
-                "magenta",
-                "teal",
-            ]
+        # Check for color descriptors with special handling for "X fur" patterns
+        if (
+            "fur" in tag_lower
+            or "skin" in tag_lower
+            or "scales" in tag_lower
+            or "feathers" in tag_lower
         ):
+            if any(color in tag_lower for color in colors):
+                categories["color"].append(tag)
+                continue
+
+        # General color check
+        if any(color in tag_lower for color in colors) and "style" not in tag_lower:
             categories["color"].append(tag)
             continue
 
-        # Check for clothing items
+        # Check for clothing items - expanded list
         if any(
             item in tag_lower
             for item in [
@@ -204,43 +692,270 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
                 "tie",
                 "belt",
                 "socks",
-                "underwear",
             ]
-        ):
+        ) or any(item in tag_lower for item in additional_clothing):
             categories["clothing"].append(tag)
             continue
 
-        # Check for setting/location
-        if any(
-            item in tag_lower
-            for item in [
-                "room",
-                "forest",
-                "beach",
-                "city",
-                "mountain",
-                "field",
-                "house",
-                "building",
-                "street",
-                "park",
-                "lake",
-                "river",
-                "ocean",
-                "sky",
-                "space",
-                "indoor",
-                "outdoor",
-                "landscape",
-                "scenery",
-                "background",
-            ]
-        ):
+        # Check for accessories
+        if any(item in tag_lower for item in accessories):
+            categories["accessory"].append(tag)
+            continue
+
+        # Check for expressions
+        if any(expr in tag_lower for expr in expressions) or "expression" in tag_lower:
+            categories["expression"].append(tag)
+            continue
+
+        # Check for setting/location - expand this list
+        setting_terms = [
+            "room",
+            "forest",
+            "beach",
+            "city",
+            "mountain",
+            "field",
+            "house",
+            "building",
+            "street",
+            "park",
+            "lake",
+            "river",
+            "ocean",
+            "sky",
+            "space",
+            "indoor",
+            "outdoor",
+            "landscape",
+            "scenery",
+            "background",
+            "castle",
+            "ruins",
+            "temple",
+            "church",
+            "cathedral",
+            "mosque",
+            "shrine",
+            "palace",
+            "mansion",
+            "cottage",
+            "cabin",
+            "apartment",
+            "office",
+            "school",
+            "university",
+            "hospital",
+            "restaurant",
+            "café",
+            "bar",
+            "club",
+            "shop",
+            "store",
+            "mall",
+            "market",
+            "bazaar",
+            "plaza",
+            "square",
+            "garden",
+            "park",
+            "meadow",
+            "prairie",
+            "savanna",
+            "desert",
+            "tundra",
+            "arctic",
+            "jungle",
+            "rainforest",
+            "swamp",
+            "marsh",
+            "bog",
+            "cave",
+            "cavern",
+            "grotto",
+            "waterfall",
+            "stream",
+            "brook",
+            "creek",
+            "pond",
+            "pool",
+            "spring",
+            "oasis",
+            "coast",
+            "shore",
+            "cliff",
+            "canyon",
+            "gorge",
+            "valley",
+            "hill",
+            "volcano",
+            "island",
+            "peninsula",
+            "cape",
+            "bay",
+            "gulf",
+            "strait",
+            "channel",
+            "dock",
+            "harbor",
+            "port",
+            "pier",
+            "bridge",
+            "dam",
+            "lighthouse",
+            "tower",
+            "skyscraper",
+            "monument",
+            "statue",
+            "fountain",
+            "arch",
+            "gate",
+            "wall",
+            "fence",
+            "path",
+            "trail",
+            "road",
+            "highway",
+            "railway",
+            "station",
+            "airport",
+            "spaceport",
+            "vehicle",
+            "car",
+            "truck",
+            "train",
+            "subway",
+            "trolley",
+            "tram",
+            "bus",
+            "bicycle",
+            "motorcycle",
+            "boat",
+            "ship",
+            "yacht",
+            "submarine",
+            "aircraft",
+            "airplane",
+            "helicopter",
+            "rocket",
+            "spaceship",
+            "ufo",
+            "satellite",
+        ]
+
+        if any(item in tag_lower for item in setting_terms) or "background" in tag_lower:
             categories["setting"].append(tag)
             continue
 
-        # Default to other category
-        categories["other"].append(tag)
+        # Check for art style - expanded check
+        if is_art_style or is_digital_art or contains_art_style or is_additional_style:
+            categories["style"].append(tag)
+            # Don't continue here - some tags might be both style and subject
+
+        # Check for species - add to both subject and species if it's a primary subject
+        if is_species:
+            categories["species"].append(tag)
+            # If it's just the species name (like "fox"), it's also a subject
+            if len(tag_lower.split()) == 1:
+                categories["subject"].append(tag)
+            continue
+
+        # Check for action words
+        action_words = [
+            "running",
+            "walking",
+            "jumping",
+            "flying",
+            "swimming",
+            "climbing",
+            "sitting",
+            "standing",
+            "lying",
+            "sleeping",
+            "fighting",
+            "battling",
+            "dancing",
+            "singing",
+            "playing",
+            "reading",
+            "writing",
+            "drawing",
+            "painting",
+            "eating",
+            "drinking",
+            "cooking",
+            "baking",
+            "cleaning",
+            "washing",
+            "drying",
+            "ironing",
+            "sewing",
+            "knitting",
+            "crocheting",
+            "hunting",
+            "fishing",
+            "gardening",
+            "farming",
+            "harvesting",
+            "planting",
+            "gathering",
+            "collecting",
+            "searching",
+            "finding",
+            "seeking",
+            "looking",
+            "watching",
+            "observing",
+            "studying",
+            "learning",
+            "teaching",
+            "working",
+            "resting",
+            "relaxing",
+            "meditating",
+            "exercising",
+            "training",
+            "competing",
+        ]
+
+        if (
+            any(word in tag_lower for word in action_words)
+            and tag_lower not in art_style_exact_matches
+        ):
+            categories["action"].append(tag)
+            continue
+
+        # Check for pose descriptors
+        pose_words = [
+            "pose",
+            "posing",
+            "stance",
+            "position",
+            "posture",
+            "kneeling",
+            "crouching",
+            "squatting",
+            "bending",
+            "leaning",
+            "stretching",
+            "flexing",
+            "slouching",
+            "reclining",
+            "prone",
+            "supine",
+            "upright",
+            "bent",
+            "twisted",
+            "arched",
+        ]
+
+        if any(word in tag_lower for word in pose_words):
+            categories["pose"].append(tag)
+            continue
+
+        # If we haven't continued yet, and the tag wasn't added to any category,
+        # add it to the "other" category
+        if tag not in [item for sublist in categories.values() for item in sublist]:
+            categories["other"].append(tag)
 
     return categories
 
