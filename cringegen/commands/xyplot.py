@@ -14,6 +14,7 @@ import time
 import pprint
 from typing import List, Dict, Any, Tuple, Optional, Callable
 import re
+import pathlib
 
 from ..utils.comfy_api import (
     check_comfy_server,
@@ -440,15 +441,31 @@ def handle_lora_weight_param(workflow: Dict[str, Any], value: str, args) -> Dict
 
     # Convert value to float
     weight_value = float(value)
-
-    # Find the correct LoRA node
+    
+    # Check if we're varying both loras and lora_weight
+    varying_both = args.x_param == "loras" and args.y_param == "lora_weight" or \
+                   args.y_param == "loras" and args.x_param == "lora_weight"
+    
+    # If we're varying both, we need special handling
+    if varying_both:
+        # The loras parameter handler will handle setting up the nodes and connections
+        # Let's store the desired weight in args so that loras handler can use it
+        args._current_lora_weight = weight_value
+        logger.debug(f"Setting _current_lora_weight to {weight_value} for combined loras+weight variation")
+        return workflow_copy
+    
+    # Normal case: find all LoraLoader nodes and set their weights
+    lora_nodes_found = False
     for node_id, node in workflow_copy.items():
         if node["class_type"] == "LoraLoader":
             node["inputs"]["strength_model"] = weight_value
             node["inputs"]["strength_clip"] = weight_value
-            logger.debug(f"Set LoRA weight to {weight_value}")
-            break
-
+            logger.debug(f"Set LoRA weight to {weight_value} in node {node_id}")
+            lora_nodes_found = True
+    
+    if not lora_nodes_found:
+        logger.warning(f"No LoraLoader nodes found to set weight {weight_value}")
+        
     return workflow_copy
 
 
@@ -464,6 +481,14 @@ def handle_loras_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, 
     """
     # Get a copy of the workflow
     workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Check if we have a common weight to apply from lora_weight parameter
+    global_weight = getattr(args, '_current_lora_weight', None)
+    varying_both = (args.x_param == "loras" and args.y_param == "lora_weight") or \
+                   (args.y_param == "loras" and args.x_param == "lora_weight")
+    
+    if varying_both and global_weight is not None:
+        logger.debug(f"Using global weight {global_weight} from lora_weight parameter")
     
     # Parse the comma-separated lora:weight pairs
     lora_entries = []
@@ -484,22 +509,32 @@ def handle_loras_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, 
                 lora_name, weight_str = pair.split(":", 1)
                 loras.append(lora_name.strip())
                 try:
-                    lora_weights.append(float(weight_str.strip()))
+                    # If we're varying both loras and lora_weight, and this weight
+                    # is explicitly set, we'll keep it. Otherwise, use the global weight.
+                    if varying_both and global_weight is not None:
+                        # Log the choice between explicit and global weight
+                        logger.debug(f"Using explicit weight {weight_str} for LoRA {lora_name} over global weight {global_weight}")
+                    weight = float(weight_str.strip())
+                    lora_weights.append(weight)
                 except ValueError:
                     logger.warning(f"Invalid weight '{weight_str}' for LoRA '{lora_name}', using default 0.35")
-                    lora_weights.append(0.35)
+                    # Use global weight if available, otherwise default
+                    weight = global_weight if varying_both and global_weight is not None else 0.35
+                    lora_weights.append(weight)
             else:
-                # No weight specified, use default 0.35
+                # No weight specified, use global weight if available or default 0.35
                 loras.append(pair.strip())
-                lora_weights.append(0.35)
+                weight = global_weight if varying_both and global_weight is not None else 0.35
+                lora_weights.append(weight)
     
-    # Remove any existing LoRA nodes
-    nodes_to_remove = []
-    for node_id, node in workflow_copy.items():
-        if node["class_type"] == "LoraLoader":
-            nodes_to_remove.append(node_id)
+    logger.debug(f"Processed LoRAs: {loras} with weights: {lora_weights}")
     
-    # Find the CheckpointLoaderSimple node to get the original model and clip outputs
+    # No LoRAs to add
+    if not loras:
+        logger.warning("No LoRAs specified, using base model only")
+        return workflow_copy
+    
+    # Find the checkpoint loader node to get the original model and clip outputs
     checkpoint_node_id = None
     for node_id, node in workflow_copy.items():
         if node["class_type"] == "CheckpointLoaderSimple":
@@ -510,19 +545,53 @@ def handle_loras_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, 
         logger.error("Could not find CheckpointLoaderSimple node in workflow")
         return workflow_copy
     
-    # We can't actually remove nodes from the workflow, but we can keep track of model and clip outputs
-    model_out = [checkpoint_node_id, 0]
+    # Initialize model and clip outputs from the checkpoint
+    model_out = [checkpoint_node_id, 0]  # [node_id, output_index]
     clip_out = [checkpoint_node_id, 1]
     
-    # Now add the new LoRA nodes with the specified weights
-    next_node_id = max(int(nid) for nid in workflow_copy.keys()) + 1
+    # Track nodes we've already processed to avoid duplicating changes
+    processed_nodes = set()
     
+    # First check if any patch nodes like DeepShrink were applied to the model
+    # We need to find the latest model modification in the chain
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] in ["PatchModelAddDownscale_v2", "PerturbedAttention", "ModelSamplingDiscrete"]:
+            # Check if this node gets its input directly or indirectly from the checkpoint
+            input_source = None
+            if "model" in node["inputs"] and isinstance(node["inputs"]["model"], list):
+                input_source = node["inputs"]["model"][0]
+            
+            # If it's connected to the checkpoint or a previously processed node
+            if input_source == checkpoint_node_id or input_source in processed_nodes:
+                # Update model output to this node
+                model_out = [node_id, 0]
+                processed_nodes.add(node_id)
+    
+    logger.debug(f"Starting with model output from node {model_out[0]} (after model patches)")
+    
+    # Find and remove existing LoRA nodes
+    lora_node_ids = []
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "LoraLoader":
+            lora_node_ids.append(node_id)
+    
+    # If there are existing LoRA nodes, remove their references
+    if lora_node_ids:
+        logger.debug(f"Removing {len(lora_node_ids)} existing LoRA nodes: {lora_node_ids}")
+    
+    # Create new LoRA nodes
+    next_node_id = max([int(nid) for nid in workflow_copy.keys()]) + 1
+    lora_nodes_added = []
+    
+    # Add each LoRA in sequence
     for i, (lora_name, weight) in enumerate(zip(loras, lora_weights)):
-        if not lora_name or not lora_name.strip():
+        if not lora_name:
             continue
             
-        # Add a new LoRA node
+        # Create new node ID for this LoRA
         new_node_id = str(next_node_id + i)
+        
+        # Add LoRA node
         workflow_copy[new_node_id] = {
             "class_type": "LoraLoader",
             "inputs": {
@@ -534,23 +603,59 @@ def handle_loras_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, 
             }
         }
         
-        # Update model and clip outputs for next LoRA
+        # Update model and clip outputs for the next node in the chain
         model_out = [new_node_id, 0]
         clip_out = [new_node_id, 1]
+        lora_nodes_added.append(new_node_id)
+        
+        logger.debug(f"Added LoraLoader node {new_node_id} for {lora_name} with weight {weight}")
     
-    # Now update all nodes that were previously using outputs from the old LoRA nodes
+    if lora_nodes_added:
+        logger.debug(f"Added {len(lora_nodes_added)} LoRA nodes: {lora_nodes_added}")
+        logger.debug(f"Final model output from node {model_out[0]} and clip output from node {clip_out[0]}")
+    
+    # Now update all node connections to use the new model and clip outputs
+    nodes_updated = 0
+    
+    # First identify the important nodes that need the model or clip connections
+    updated_nodes = set()
     for node_id, node in workflow_copy.items():
-        for input_name, input_value in node["inputs"].items():
-            if isinstance(input_value, list) and len(input_value) == 2:
-                # If this input was connected to an output of a removed LoRA node
-                if input_value[0] in nodes_to_remove:
-                    # Check if it was using model (0) or clip (1) output
-                    if input_value[1] == 0:  # Model output
-                        node["inputs"][input_name] = model_out
-                    elif input_value[1] == 1:  # CLIP output
-                        node["inputs"][input_name] = clip_out
+        # Skip the nodes we just added
+        if node_id in lora_nodes_added:
+            continue
+            
+        # Process CLIPTextEncode, KSampler, and CFGGuider nodes
+        if node["class_type"] in ["CLIPTextEncode", "KSampler", "KSamplerAdvanced", "CFGGuider"]:
+            # Update clip connections for CLIPTextEncode
+            if node["class_type"] == "CLIPTextEncode" and "clip" in node["inputs"]:
+                # Only update if it was previously using the original clip or a removed LoRA
+                if isinstance(node["inputs"]["clip"], list) and (
+                    node["inputs"]["clip"][0] == checkpoint_node_id or 
+                    node["inputs"]["clip"][0] in lora_node_ids
+                ):
+                    node["inputs"]["clip"] = clip_out
+                    updated_nodes.add(node_id)
+                    nodes_updated += 1
+                    
+            # Update model connections for other nodes
+            if "model" in node["inputs"] and isinstance(node["inputs"]["model"], list):
+                # Only update if it was previously using the original model or a removed LoRA
+                if (node["inputs"]["model"][0] == checkpoint_node_id or 
+                    node["inputs"]["model"][0] in lora_node_ids or
+                    node["inputs"]["model"][0] in processed_nodes):
+                    node["inputs"]["model"] = model_out
+                    updated_nodes.add(node_id)
+                    nodes_updated += 1
     
-    logger.debug(f"Set multiple LoRAs: {', '.join([f'{lora}:{weight}' for lora, weight in zip(loras, lora_weights)])}")
+    logger.debug(f"Updated {nodes_updated} node connections to use the new LoRA outputs")
+    
+    # Check if any SamplerCustomAdvanced node is using a CFGGuider that we updated
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "SamplerCustomAdvanced" and "guider" in node["inputs"]:
+            guider = node["inputs"]["guider"]
+            if isinstance(guider, list) and guider[0] in updated_nodes:
+                logger.debug(f"SamplerCustomAdvanced node {node_id} is already using updated CFGGuider {guider[0]}")
+    
     return workflow_copy
 
 
@@ -1177,6 +1282,14 @@ def generate_single_image(
         modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
     else:
         logger.warning(f"No handler for Y parameter: {y_param}")
+        
+    # Add a unique image name to the SaveImage node to prevent caching/reuse
+    unique_prefix = f"xy_{x_param}_{x_value_safe}_{y_param}_{y_value_safe}_{int(time.time())}"
+    for node_id, node in modified_workflow.items():
+        if node["class_type"] == "SaveImage":
+            # Set a unique filename_prefix based on the current parameters
+            node["inputs"]["filename_prefix"] = unique_prefix
+            logger.debug(f"Set unique filename_prefix to {unique_prefix} in SaveImage node")
 
     # Dump the workflow if requested
     if args.dump_workflows:
@@ -1186,7 +1299,7 @@ def generate_single_image(
         )
         dump_workflow_to_file(modified_workflow, debug_filename)
 
-    # Determine the output filename
+    # Determine the output filename - ensure we don't have duplicate extensions
     output_filename = os.path.join(
         args.output_dir, f"xy_{x_value_safe}_{y_value_safe}.png"
     )
@@ -1249,11 +1362,41 @@ def generate_single_image(
             logger.warning(f"Timed out waiting for generation after {max_wait_time}s")
             return blank_filename
 
-        # Get the path to the generated image
+        # Get the path to the generated image - with a slight delay to ensure the image is available
+        time.sleep(1)  # Short delay to ensure ComfyUI has finished writing the image
         image_paths = get_image_path(prompt_id)
         if not image_paths:
             logger.warning(f"Failed to find generated image for {x_param}={x_value}, {y_param}={y_value}")
-            return blank_filename
+            # Try to find image by prefix instead (in case get_image_path fails)
+            time.sleep(1)  # Give it a little more time
+            if args.remote:
+                # For remote sessions, use SSH to list files that match our prefix
+                ssh_cmd = ["ssh", "-p", str(args.ssh_port), f"{args.ssh_user}@{args.ssh_host}",
+                          f"find {args.comfy_output_dir} -name '{unique_prefix}*' -type f -print -quit"]
+                try:
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True)
+                    if result.returncode == 0 and result.stdout.strip():
+                        image_paths = [os.path.basename(result.stdout.strip())]
+                        logger.info(f"Found image by unique prefix: {image_paths[0]}")
+                    else:
+                        logger.warning(f"Failed to find image with prefix {unique_prefix}")
+                        return blank_filename
+                except Exception as e:
+                    logger.error(f"Error finding image by prefix: {e}")
+                    return blank_filename
+            else:
+                # For local sessions, try to find the file directly
+                try:
+                    matching_files = list(pathlib.Path(args.comfy_output_dir).glob(f"{unique_prefix}*"))
+                    if matching_files:
+                        image_paths = [os.path.basename(str(matching_files[0]))]
+                        logger.info(f"Found image by unique prefix: {image_paths[0]}")
+                    else:
+                        logger.warning(f"Failed to find image with prefix {unique_prefix}")
+                        return blank_filename
+                except Exception as e:
+                    logger.error(f"Error finding image by prefix: {e}")
+                    return blank_filename
             
         # Use the first image path returned
         image_path = image_paths[0] if isinstance(image_paths, list) else image_paths
@@ -1263,21 +1406,27 @@ def generate_single_image(
 
         # Get the image from ComfyUI (locally or remotely)
         if args.remote:
+            # Extract the basename without extension for cleaner output
+            basename, _ = os.path.splitext(os.path.basename(output_filename))
+            
             # Use rsync to get the image from the remote server
-            success = rsync_image_from_comfyui(
+            dest_path = rsync_image_from_comfyui(
                 image_path, 
                 args.ssh_host,
                 args.comfy_output_dir, 
                 os.path.dirname(output_filename),
-                os.path.basename(output_filename),
+                basename,  # Use the basename without extension as a prefix
                 args.ssh_port, 
                 args.ssh_user, 
                 getattr(args, 'ssh_key', None)  # Handle missing ssh_key attribute
             )
             
-            if not success:
+            if not dest_path:
                 logger.warning(f"Failed to rsync image from remote server")
                 return blank_filename
+                
+            # Update output_filename to the actual path returned by rsync
+            output_filename = dest_path
         else:
             # Copy the image from the local ComfyUI server
             copy_image_from_comfyui(image_path, output_filename, args.comfy_output_dir)
@@ -1287,9 +1436,7 @@ def generate_single_image(
             logger.info(f"Successfully saved image to {output_filename}")
             return output_filename
         else:
-            logger.warning(
-                f"Failed to generate image for {x_param}={x_value}, {y_param}={y_value}"
-            )
+            logger.warning(f"Failed to save image to {output_filename}")
             return blank_filename
 
     except Exception as e:
