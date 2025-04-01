@@ -10,7 +10,7 @@ from pathlib import Path
 repo_root = Path(__file__).parent.parent.parent
 sys.path.append(str(repo_root))
 
-from cringegen.utils.logger import (
+from ..utils.logger import (
     get_optimal_resolution,
     get_optimal_resolution_suggestions,
     is_optimal_resolution,

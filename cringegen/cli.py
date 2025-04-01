@@ -15,6 +15,9 @@ from .commands.random_nsfw import add_random_nsfw_command
 from .commands.utils import add_utils_commands
 from .commands.character import add_character_command
 from .commands.xyplot import add_xyplot_command
+from .commands.model_detect import add_subparser as add_model_detect_command
+from .commands.noobai import add_subparser as add_noobai_command
+from .commands.llm_noobai_nsfw import add_subparser as add_llm_noobai_nsfw_command
 from .utils.logger import configure_cli_logging, get_logger
 
 # Configure logging
@@ -65,6 +68,9 @@ def main():
     add_utils_commands(subparsers, parent_parser)
     add_character_command(subparsers, parent_parser)
     add_xyplot_command(subparsers, parent_parser)
+    add_model_detect_command(subparsers, parent_parser)
+    add_noobai_command(subparsers, parent_parser)
+    add_llm_noobai_nsfw_command(subparsers, parent_parser)
 
     # Parse arguments
     args = parser.parse_args()

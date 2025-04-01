@@ -217,6 +217,11 @@ def is_sdxl_model(checkpoint_name: str) -> bool:
     ]
     
     checkpoint_lower = checkpoint_name.lower()
+    
+    # Special case for NoobAI models - specifically check for XL in the name
+    if ("noob" in checkpoint_lower or "noobai" in checkpoint_lower) and ("xl" in checkpoint_lower or "XL" in checkpoint_name):
+        return True
+        
     return any(pattern in checkpoint_lower for pattern in sdxl_patterns)
 
 
@@ -238,9 +243,19 @@ def get_model_info(checkpoint_name: str) -> tuple[str, str]:
     
     # SDXL detection - more comprehensive patterns
     xl_pattern = re.compile(r'(xl|XL)')
-    if any(pattern in checkpoint_lower for pattern in [
+    
+    # Special case for NoobAI models - they are SDXL
+    if ("noob" in checkpoint_lower or "noobai" in checkpoint_lower):
+        if "xl" in checkpoint_lower or "XL" in checkpoint_name:
+            architecture = "sdxl"
+        else:
+            # Assume SD1.5 for non-XL NoobAI models
+            architecture = "sd15"
+    
+    # Other SDXL detection patterns
+    elif any(pattern in checkpoint_lower for pattern in [
         "sdxl", "sd-xl", "sd_xl", "stablediffusionxl", "stable-diffusion-xl"
-    ]) or xl_pattern.search(checkpoint_name) or "noob" in checkpoint_lower:
+    ]) or xl_pattern.search(checkpoint_name):
         architecture = "sdxl"
     
     # SD3.5 detection
@@ -277,7 +292,7 @@ def get_model_info(checkpoint_name: str) -> tuple[str, str]:
         "epicrealism": ["epicrealism"],
         "illustrious": ["illustrious"],
         "juggernaut": ["juggernaut"],
-        "noob": ["noob", "realnoob"],
+        "noob": ["noob", "realnoob", "noobai"],
         "pony": ["pony"],
         "zavychroma": ["zavychroma"],
         "chroma": ["chroma"],

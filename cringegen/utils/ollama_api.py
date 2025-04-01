@@ -237,14 +237,22 @@ class OllamaAPIClient:
             with requests.post(f"{self.base_url}{endpoint}", json=payload, stream=True) as response:
                 response.raise_for_status()
 
+                # Print a leading newline for cleaner output
+                print("")
+                
                 for line in response.iter_lines():
                     if line:
                         chunk = json.loads(line)
                         chunk_text = chunk.get("response", "")
                         full_response += chunk_text
+                        
+                        # Print the chunk text directly to the console without a newline
+                        print(chunk_text, end="", flush=True)
 
                         # Check if done
                         if chunk.get("done", False):
+                            # Print a final newline when done
+                            print("")
                             break
 
             elapsed_time = time.time() - start_time

@@ -7,25 +7,25 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Import from centralized taxonomy module
-from cringegen.data.taxonomy import (
+from ...data.taxonomy import (
     FEMALE_ANATOMY,
     MALE_ANATOMY,
     SPECIES_TAXONOMY,
 )
 
 # Import from centralized characters module
-from cringegen.data.character_taxonomy import (
+from ...data.character_taxonomy import (
     ANIME_CHARACTER_TYPES,
     ANIME_CHARACTER_FEATURES,
 )
 
 # Import from centralized colors module
-from cringegen.data.colors import (
+from ...data.colors import (
     SPECIES_COLORS,
 )
 
 # Import from centralized styles module
-from cringegen.data.styles import (
+from ...data.styles import (
     ART_STYLES,
     FILM_TV_STYLES,
     ANIME_ART_STYLES,

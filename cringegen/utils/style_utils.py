@@ -10,7 +10,7 @@ from typing import Dict, List, Set, Tuple, Any, Optional, Union
 import random
 from collections import defaultdict
 
-from cringegen.data.style_taxonomy import (
+from ..data.style_taxonomy import (
     STYLE_MEDIUM,
     STYLE_MOVEMENTS,
     STYLE_GENRES,
@@ -25,7 +25,7 @@ from cringegen.data.style_taxonomy import (
     get_styles_by_attribute,
 )
 
-from cringegen.data.styles import (
+from ..data.styles import (
     ART_STYLES,
     FILM_TV_STYLES,
     GAME_ART_STYLES,

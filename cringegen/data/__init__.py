@@ -134,6 +134,18 @@ from .style_taxonomy import (
     get_styles_by_attribute,
 )
 
+# Import model taxonomy
+from . import model_taxonomy
+
+# Export the taxonomy functions
+from .model_taxonomy import (
+    get_model_architecture_defaults,
+    get_model_family_prefix,
+    get_optimal_resolution_for_model,
+    get_combined_prefix,
+    get_generation_parameters,
+)
+
 # For backward compatibility
 ALL_LORAS.update(LEGACY_LORAS)
 

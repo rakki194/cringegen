@@ -47,6 +47,18 @@ from .prompt_utils import (
     clean_prompt,
 )
 
+# Import model utilities
+from . import model_utils
+
+# Export model utility functions
+from .model_utils import (
+    ModelOptimizer,
+    detect_model,
+    optimize_prompt,
+    get_model_optimal_parameters,
+    get_model_optimal_resolution,
+)
+
 __all__ = [
     # Style utilities
     "get_style_suggestions",
@@ -79,4 +91,10 @@ __all__ = [
     "parse_prompt_template",
     "combine_prompt_segments",
     "clean_prompt",
+    # Model utilities
+    "ModelOptimizer",
+    "detect_model",
+    "optimize_prompt",
+    "get_model_optimal_parameters",
+    "get_model_optimal_resolution",
 ]

@@ -10,7 +10,7 @@ A toolkit for generating prompts and workflows for Stable Diffusion models in Co
 - Create and customize ComfyUI workflows
 - Modular CLI architecture for extensibility and maintainability
 - Smart resolution optimization for different model architectures
-- Automatic SDXL model detection with tailored recommendations
+- Automatic model detection with tailored optimizations
 - Multi-LoRA support with variable weights
 
 ## XY Plot Generation
@@ -755,3 +755,144 @@ cringegen --lora ch<TAB>               # Completes with available LoRAs starting
 cringegen --checkpoint sd<TAB>         # Completes with available checkpoints
 cringegen --lora kenket-v1 --prompt m<TAB>  # Completes with keywords relevant to the kenket LoRA
 ```
+
+## Model Detection and Optimization
+
+cringegen includes an intelligent model detection system that automatically:
+
+- Identifies the model architecture (SD 1.5, SDXL, SSD-1B, SD3, etc.)
+- Detects the model family (NoobAI, Juggernaut, Deliberate, etc.)
+- Applies optimal parameters for each model type
+- Suggests ideal resolutions based on model architecture
+- Injects model-specific prompt prefixes when needed
+
+### Using the Model Detection Tool
+
+```bash
+# Basic model analysis
+cringegen model-detect "your_model_name.safetensors"
+
+# With resolution check and prompt optimization
+cringegen model-detect "juggernaut-xl-v9.safetensors" --width 768 --height 1024 \
+  --prompt "a majestic lion, detailed fur"
+
+# JSON output for scripting
+cringegen model-detect "your_model.safetensors" --json
+```
+
+### Automatic Optimization in Generation Commands
+
+All generation commands now support model-specific optimizations with these flags:
+
+```bash
+# Generate with automatic model-specific optimizations
+cringegen nsfw-furry --checkpoint "noobai-xl-v1.0.safetensors" \
+  --auto-optimize --prompt "your prompt here"
+
+# Use only prompt prefix injection without parameter optimization
+cringegen nsfw-furry --checkpoint "noobai-xl-v1.0.safetensors" \
+  --prompt "your prompt here"
+
+# Disable automatic prefix injection
+cringegen nsfw-furry --checkpoint "noobai-xl-v1.0.safetensors" \
+  --no-prefix-injection --prompt "your prompt here"
+```
+
+The optimization system will:
+
+1. Adjust resolution to model-optimal values (maintaining aspect ratio)
+2. Set model-specific parameters (steps, CFG, sampler, scheduler)
+3. Inject model-specific prompt prefixes (e.g., "masterpiece, best quality" for Anything models)
+4. Add appropriate negative prompts for the model type
+
+When using DeepShrink, resolution checks are automatically bypassed:
+
+```bash
+# Using DeepShrink bypasses resolution checks
+cringegen xyplot --workflow furry --checkpoint sdxl_base.safetensors \
+  --prompt "score_9, anthro fox" \
+  --x-param seed --x-values "1111,2222" \
+  --y-param deepshrink_factor --y-values "1.5,2.0,2.5" \
+  --width 768 --height 768 --deepshrink --remote
+```
+
+## NoobAI Optimized Generation
+
+The ultimate streamlined command for generating images with NoobAI models:
+
+```bash
+# Basic usage - automatically optimizes your prompt for NoobAI models
+cringegen noobai "anthro, male, fox, detailed background, forest"
+
+# The command will automatically:
+# 1. Find the best NoobAI model available
+# 2. Add optimal prefix tags: "masterpiece, best quality, newest, absurdres, highres"
+# 3. Add background enhancements: "scenery porn, amazing background, dense forest, trees"
+# 4. Apply optimal generation parameters (steps, CFG, sampler, scheduler)
+# 5. Use the best resolution for the model
+```
+
+This command is specifically optimized for NoobAI models, applying all the optimal tags and settings automatically:
+
+```bash
+# Specify a different NoobAI model
+cringegen noobai "anthro, female, wolf, beach" --checkpoint "realnoob-v3.safetensors"
+
+# With custom negative prompt (which will also be optimized)
+cringegen noobai "anthro, male, fox, city" --negative-prompt "bad quality" --copy-output
+
+# Optimal generation with automatic background detection
+cringegen noobai "anthro, female, tiger, mountain landscape" --seed 1234 --show
+
+# Using LoRAs with NoobAI models
+cringegen noobai "anthro, female, cat" --lora "your_lora.safetensors" --lora-strength 0.7
+
+# Using multiple LoRAs
+cringegen noobai "anthro, male, tiger" --loras style1.safetensors style2.safetensors --lora-weights 0.6 0.4
+```
+
+### What Makes the NoobAI Command Special
+
+1. **Auto-Detection**: Finds NoobAI models automatically
+2. **Perfect Prefixes**: Always adds optimal quality tags for NoobAI models
+3. **Background Detection**: Adds background-specific enhancements
+4. **Optimal Parameters**: Uses the best settings for NoobAI models
+5. **Resolution Optimization**: Ensures ideal image dimensions
+6. **LoRA Support**: Use one or multiple LoRAs with your favorite NoobAI models
+
+## LLM-Powered NSFW NoobAI Generation
+
+The `llm-noobai-nsfw` command combines the power of LLMs with NoobAI image generation:
+
+```bash
+# Basic usage - generates an NSFW furry prompt with qwq:latest and creates an image
+cringegen llm-noobai-nsfw --species wolf --gender male
+
+# Specify character details
+cringegen llm-noobai-nsfw --species fox --gender female --anthro --colors "red, white" --intensity explicit
+
+# Create a scene with two characters
+cringegen llm-noobai-nsfw --species wolf --gender male --species2 fox --gender2 female --duo --theme bedroom
+
+# Generate multiple variations
+cringegen llm-noobai-nsfw --species dragon --gender female --count 3 --show --remote
+
+# Use with specific kinks and outfits
+cringegen llm-noobai-nsfw --species wolf --gender male --kinks "bondage, collar" --outfit "leather harness"
+
+# Customize the LLM
+cringegen llm-noobai-nsfw --species fox --gender female --model llama3 --temperature 0.8
+
+# Generate prompt without creating the image
+cringegen llm-noobai-nsfw --species wolf --gender male --no-generate
+```
+
+### How It Works
+
+1. **Prompt Construction**: The command builds a detailed instruction for the LLM based on your specifications
+2. **LLM Generation**: Uses qwq:latest (by default) with a sophisticated system prompt to create an optimized NoobAI-specific NSFW prompt
+3. **Image Generation**: Automatically passes the generated prompt to the NoobAI generation pipeline
+4. **Optimization**: Applies all the NoobAI-specific optimizations (prefixes, resolution, parameters)
+5. **Display**: Can show the generated image or copy it to your output directory
+
+The system prompt for the LLM is specifically designed to create high-quality NSFW furry prompts that work well with NoobAI models, focusing on proper tag structure, character details, poses, settings, and appropriate NSFW elements.

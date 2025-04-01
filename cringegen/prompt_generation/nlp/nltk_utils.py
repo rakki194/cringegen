@@ -24,7 +24,7 @@ from nltk.tag import pos_tag
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 # Update imports to use new centralized data module
-from cringegen.data.character_taxonomy import ALL_ANTHRO_CHARACTERS, CHARACTER_TO_FULL_NAME
+from ...data.character_taxonomy import ALL_ANTHRO_CHARACTERS, CHARACTER_TO_FULL_NAME
 
 # Original import for reference:
 # from cringegen.data.furry_characters import ALL_ANTHRO_CHARACTERS, CHARACTER_TO_FULL_NAME

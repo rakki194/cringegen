@@ -9,7 +9,7 @@ import random
 from typing import Dict, List, Set, Tuple, Any, Optional, Union
 import re
 
-from cringegen.data.lora_taxonomy import (
+from ..data.lora_taxonomy import (
     LoRACategory,
     LoRASubcategory,
     LoRAMetadata,

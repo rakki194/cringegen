@@ -26,6 +26,7 @@ from ..utils.file_utils import (
     rsync_latest_images_from_comfyui,
     open_images_with_imv,
 )
+from ..utils.model_utils import ModelOptimizer
 from ..workflows.furry import create_nsfw_furry_workflow
 
 logger = logging.getLogger(__name__)
@@ -298,6 +299,17 @@ def add_nsfw_command(subparsers, parent_parser):
         help="Path to SSH private key file for remote ComfyUI instance",
     )
 
+    nsfw_parser.add_argument(
+        "--auto-optimize", 
+        action="store_true",
+        help="Automatically optimize parameters based on model architecture and family"
+    )
+    nsfw_parser.add_argument(
+        "--no-prefix-injection", 
+        action="store_true",
+        help="Disable automatic prefix injection for model-specific optimizations"
+    )
+
     nsfw_parser.set_defaults(func=generate_nsfw_furry)
     return nsfw_parser
 
@@ -391,6 +403,46 @@ def generate_nsfw_furry(args):
         f"Generating NSFW prompts with species={generator.species}, gender={generator.gender}"
     )
 
+    # Initialize model optimization if checkpoint is available and auto-optimize is enabled
+    model_optimizer = None
+    if args.checkpoint and (args.auto_optimize or not args.no_prefix_injection):
+        model_name = os.path.basename(args.checkpoint)
+        logger.info(f"Initializing model optimizer for: {model_name}")
+        model_optimizer = ModelOptimizer(model_name, disable_tag_injection=args.no_prefix_injection)
+        
+        # Log model detection results
+        logger.info(f"Model detected: {model_name}")
+        logger.info(f"Architecture: {model_optimizer.architecture}")
+        logger.info(f"Model family: {model_optimizer.family}")
+        
+        # Apply model-specific optimizations if auto-optimize is enabled
+        if args.auto_optimize:
+            # Check if resolution needs optimization
+            if not model_optimizer.check_resolution(args.width, args.height):
+                optimal_width, optimal_height = model_optimizer.get_optimal_resolution(args.width, args.height)
+                logger.info(f"Optimizing resolution from {args.width}×{args.height} to {optimal_width}×{optimal_height}")
+                args.width, args.height = optimal_width, optimal_height
+            
+            # Get optimal parameters
+            params = model_optimizer.get_optimized_parameters()
+            
+            # Apply parameters if not explicitly set by user
+            if not args.cfg and 'cfg' in params:
+                args.cfg = params['cfg']
+                logger.info(f"Using model-optimized CFG: {args.cfg}")
+                
+            if not args.steps and 'steps' in params:
+                args.steps = params['steps']
+                logger.info(f"Using model-optimized steps: {args.steps}")
+                
+            if not args.sampler and 'sampler' in params:
+                args.sampler = params['sampler']
+                logger.info(f"Using model-optimized sampler: {args.sampler}")
+                
+            if not args.scheduler and 'scheduler' in params:
+                args.scheduler = params['scheduler']
+                logger.info(f"Using model-optimized scheduler: {args.scheduler}")
+
     prompts = []
     for i in range(args.count):
         # Generate a unique seed for each prompt if multiple are requested
@@ -416,6 +468,25 @@ def generate_nsfw_furry(args):
             # Generate prompt with the generator
             prompt = generator.generate()
             negative_prompt = generator.get_negative_prompt()
+
+        # Apply model-specific prompt optimizations if available
+        if model_optimizer and not args.no_prefix_injection:
+            original_prompt = prompt
+            original_negative = negative_prompt
+            
+            prompt = model_optimizer.inject_model_prefix(prompt)
+            negative_prompt = model_optimizer.inject_negative_prefix(negative_prompt)
+            
+            if prompt != original_prompt:
+                logger.info(f"Model-optimized prompt: {prompt}")
+            if negative_prompt != original_negative:
+                logger.info(f"Model-optimized negative prompt: {negative_prompt}")
+        
+            # Log background detection
+            bg_type = model_optimizer.detect_background_type(original_prompt)
+            if bg_type:
+                logger.info(f"Background detected: {bg_type}")
+                logger.info(f"Applied background optimizations for {bg_type}")
 
         prompts.append((prompt, negative_prompt, curr_seed))
 

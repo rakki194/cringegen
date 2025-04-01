@@ -6,7 +6,7 @@ import random
 from typing import List, Optional
 
 # Update imports to use new centralized data module
-from cringegen.data import anatomy, accessories, colors, taxonomy
+from ...data import anatomy, accessories, colors, taxonomy
 
 # Original import for reference:
 # from cringegen.data.species_data import (
