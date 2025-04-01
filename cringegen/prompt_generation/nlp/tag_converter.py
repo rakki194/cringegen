@@ -37,6 +37,9 @@ TAG_CATEGORIES = {
     "clothing": ["clothing", "outfit", "attire", "dress", "wear", "wearing"],
     "color": ["color", "coloration", "hue", "tone", "shade"],
     "accessory": ["accessory", "accessorize", "jewelry", "decoration"],
+    "anatomical": ["genitalia", "genitals", "anatomical", "anatomy", "body part"],
+    "nsfw_rating": ["rating", "content rating", "explicitness", "maturity level"],
+    "viewer_interaction": ["viewer interaction", "gaze", "looking", "eye contact"],
 }
 
 # Reverse mapping from category words to the category
@@ -147,331 +150,182 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
         "clothing": [],
         "color": [],
         "accessory": [],
+        "anatomical": [],  # New category for genitalia and body parts
+        "nsfw_rating": [],  # New category for explicit/nsfw ratings
+        "viewer_interaction": [],  # New category for viewer interaction
         "other": [],
     }
 
     # Import species taxonomy data for proper categorization
     from cringegen.data.taxonomy import SPECIES_TAXONOMY
-
     # Import art styles data
     from cringegen.data.styles import ART_STYLES
-
+    
     # Flatten the art styles dictionary for easier lookup
     all_art_styles = []
     for style_category, styles in ART_STYLES.items():
         all_art_styles.extend(styles)
-
+    
     # Common clothing items that might not be in the basic list
     additional_clothing = [
-        "robe",
-        "robes",
-        "jeans",
-        "shorts",
-        "hoodie",
-        "sweatshirt",
-        "sweater",
-        "t-shirt",
-        "tshirt",
-        "blouse",
-        "tank top",
-        "bikini",
-        "swimsuit",
-        "costume",
-        "armor",
-        "attire",
-        "garment",
-        "lingerie",
-        "panties",
-        "bra",
-        "underwear",
-        "boxers",
-        "briefs",
-        "socks",
-        "stockings",
-        "leggings",
-        "tights",
-        "pantyhose",
-        "kilt",
-        "skort",
-        "camisole",
+        "robe", "robes", "jeans", "shorts", "hoodie", "sweatshirt", "sweater", 
+        "t-shirt", "tshirt", "blouse", "tank top", "bikini", "swimsuit",
+        "costume", "armor", "attire", "garment", "lingerie", "panties", "bra",
+        "underwear", "boxers", "briefs", "socks", "stockings", "leggings",
+        "tights", "pantyhose", "kilt", "skort", "camisole"
     ]
-
+    
     # Common accessories
     accessories = [
-        "necklace",
-        "pendant",
-        "ring",
-        "bracelet",
-        "earring",
-        "crown",
-        "tiara",
-        "glasses",
-        "sunglasses",
-        "monocle",
-        "watch",
-        "wristband",
-        "anklet",
-        "choker",
-        "collar",
-        "piercing",
-        "tattoo",
-        "mask",
-        "scarf",
-        "bandana",
-        "headband",
-        "ribbon",
-        "bow",
-        "hairpin",
-        "barrette",
-        "brooch",
-        "badge",
-        "pin",
-        "button",
-        "patch",
-        "emblem",
-        "sword",
-        "dagger",
-        "knife",
-        "staff",
-        "wand",
-        "gun",
-        "pistol",
-        "rifle",
-        "bow",
-        "arrow",
-        "shield",
-        "backpack",
-        "bag",
-        "purse",
-        "satchel",
-        "briefcase",
-        "luggage",
-        "pouch",
-        "wallet",
-        "phone",
-        "smartphone",
-        "laptop",
-        "tablet",
-        "camera",
-        "headphones",
-        "earbuds",
-        "glowing staff",
-        "magical staff",
-        "robotic arm",
-        "cybernetic implant",
+        "necklace", "pendant", "ring", "bracelet", "earring", "crown", "tiara",
+        "glasses", "sunglasses", "monocle", "watch", "wristband", "anklet",
+        "choker", "collar", "piercing", "tattoo", "mask", "scarf", "bandana",
+        "headband", "ribbon", "bow", "hairpin", "barrette", "brooch", "badge",
+        "pin", "button", "patch", "emblem", "sword", "dagger", "knife", "staff",
+        "wand", "gun", "pistol", "rifle", "bow", "arrow", "shield", "backpack",
+        "bag", "purse", "satchel", "briefcase", "luggage", "pouch", "wallet",
+        "phone", "smartphone", "laptop", "tablet", "camera", "headphones", "earbuds",
+        "glowing staff", "magical staff", "robotic arm", "cybernetic implant"
     ]
-
+    
     # Common expressions
     expressions = [
-        "happy",
-        "sad",
-        "angry",
-        "excited",
-        "surprised",
-        "shocked",
-        "afraid",
-        "scared",
-        "terrified",
-        "worried",
-        "anxious",
-        "nervous",
-        "confused",
-        "puzzled",
-        "thoughtful",
-        "pensive",
-        "bored",
-        "tired",
-        "sleepy",
-        "exhausted",
-        "relaxed",
-        "calm",
-        "peaceful",
-        "serene",
-        "content",
-        "satisfied",
-        "proud",
-        "smug",
-        "cocky",
-        "arrogant",
-        "shy",
-        "embarrassed",
-        "ashamed",
-        "guilty",
-        "innocent",
-        "hopeful",
-        "desperate",
-        "determined",
-        "confident",
-        "uncertain",
-        "doubtful",
-        "suspicious",
-        "trusting",
-        "loving",
-        "hateful",
-        "jealous",
-        "envious",
-        "disgusted",
-        "amused",
-        "entertained",
-        "interested",
-        "bored",
-        "indifferent",
-        "neutral",
-        "blank",
-        "empty",
-        "grinning",
-        "smiling",
-        "frowning",
-        "grimacing",
-        "squinting",
-        "winking",
-        "blinking",
-        "laughing",
-        "crying",
-        "sobbing",
-        "screaming",
-        "yelling",
-        "whispering",
-        "shouting",
-        "sighing",
-        "gasping",
-        "panting",
-        "breathing",
-        "sneezing",
-        "coughing",
-        "yawning",
-        "snoring",
-        "sleeping",
-        "dreaming",
-        "thinking",
-        "wondering",
-        "contemplating",
-        "meditating",
-        "concentrating",
-        "studying",
-        "observing",
-        "watching",
-        "staring",
-        "glaring",
-        "glancing",
-        "peering",
-        "peeking",
-        "squinting",
-        "blinking",
-        "closing eyes",
+        "happy", "sad", "angry", "excited", "surprised", "shocked", "afraid",
+        "scared", "terrified", "worried", "anxious", "nervous", "confused",
+        "puzzled", "thoughtful", "pensive", "bored", "tired", "sleepy",
+        "exhausted", "relaxed", "calm", "peaceful", "serene", "content",
+        "satisfied", "proud", "smug", "cocky", "arrogant", "shy", "embarrassed",
+        "ashamed", "guilty", "innocent", "hopeful", "desperate", "determined",
+        "confident", "uncertain", "doubtful", "suspicious", "trusting", "loving",
+        "hateful", "jealous", "envious", "disgusted", "amused", "entertained",
+        "interested", "bored", "indifferent", "neutral", "blank", "empty",
+        "grinning", "smiling", "frowning", "grimacing", "squinting", "winking",
+        "blinking", "laughing", "crying", "sobbing", "screaming", "yelling",
+        "whispering", "shouting", "sighing", "gasping", "panting", "breathing",
+        "sneezing", "coughing", "yawning", "snoring", "sleeping", "dreaming",
+        "thinking", "wondering", "contemplating", "meditating", "concentrating",
+        "studying", "observing", "watching", "staring", "glaring", "glancing",
+        "peering", "peeking", "squinting", "blinking", "closing eyes"
     ]
-
+    
     # Anthro-specific terms
     anthro_terms = [
-        "anthro",
-        "anthropomorphic",
-        "furry",
-        "kemono",
-        "fursona",
-        "anthro_",
-        "anthromorphic",
+        "anthro", "anthropomorphic", "furry", "kemono", "fursona", "anthro_", "anthromorphic"
     ]
-
+    
     # List of art styles to prevent them from being classified as actions
     art_style_exact_matches = [
-        "oil painting",
-        "watercolor",
-        "acrylic painting",
-        "digital painting",
-        "ink drawing",
-        "pencil drawing",
-        "charcoal drawing",
-        "pastel drawing",
+        "oil painting", "watercolor", "acrylic painting", "digital painting", 
+        "ink drawing", "pencil drawing", "charcoal drawing", "pastel drawing"
     ]
-
+    
     # List of settings to ensure proper categorization
     setting_exact_matches = [
-        "ancient library",
-        "ruined temple",
-        "modern office",
-        "cozy bedroom",
-        "dark alley",
-        "spaceship interior",
-        "medieval tavern",
-        "fantasy village",
-        "sci-fi laboratory",
-        "abandoned warehouse",
-        "hidden cave",
-        "underground bunker",
-        "floating island",
-        "crystal cave",
-        "bustling marketplace",
-        "throne room",
-        "space station",
-        "cyberpunk city",
-        "futuristic metropolis",
-        "desert oasis",
-        "mountain peak",
-        "forest clearing",
-        "jungle temple",
-        "arctic research station",
+        "ancient library", "ruined temple", "modern office", "cozy bedroom",
+        "dark alley", "spaceship interior", "medieval tavern", "fantasy village",
+        "sci-fi laboratory", "abandoned warehouse", "hidden cave", "underground bunker",
+        "floating island", "crystal cave", "bustling marketplace", "throne room",
+        "space station", "cyberpunk city", "futuristic metropolis", "desert oasis",
+        "mountain peak", "forest clearing", "jungle temple", "arctic research station"
     ]
-
+    
     # List of physical features that shouldn't be classified as settings
     physical_features = [
-        "battle scars",
-        "scars",
-        "marks",
-        "tattoos",
-        "birthmarks",
-        "freckles",
-        "spots",
-        "stripes",
-        "patterns",
-        "markings",
-        "mane",
-        "long ears",
-        "short ears",
-        "long tail",
-        "short tail",
-        "bushy tail",
-        "large eyes",
-        "small eyes",
-        "long hair",
-        "short hair",
-        "curly hair",
-        "straight hair",
-        "muscular",
-        "slim",
-        "slender",
-        "fit",
-        "athletic",
-        "buff",
-        "toned",
-        "heavy set",
-        "chubby",
-        "big",
-        "small",
-        "tall",
-        "short",
-        "average height",
-        "petite",
-        "thicc",
-        "thick",
+        "battle scars", "scars", "marks", "tattoos", "birthmarks", "freckles",
+        "spots", "stripes", "patterns", "markings", "mane", "long ears", "short ears",
+        "long tail", "short tail", "bushy tail", "large eyes", "small eyes", "long hair",
+        "short hair", "curly hair", "straight hair", "muscular", "slim", "slender",
+        "fit", "athletic", "buff", "toned", "heavy set", "chubby", "big", "small",
+        "tall", "short", "average height", "petite", "thicc", "thick"
     ]
-
+    
+    # NEW: Anatomical terms for proper categorization
+    anatomical_terms = [
+        "penis", "cock", "dick", "member", "phallus", "shaft", "testicles", "balls", "testes",
+        "genitalia", "genitals", "genital", "sheath", "knot", "knotted", "flared", 
+        "canine penis", "equine penis", "horse cock", "barbed penis", "knotted penis",
+        "vagina", "pussy", "vulva", "cunt", "slit", "cloaca", "vent",
+        "animal pussy", "canine pussy", "feline pussy", "equine pussy",
+        "anus", "butthole", "tailhole", "rear", "rump", "butt", "behind",
+        "breasts", "tits", "boobs", "chest", "mammaries", "nipples", "mammary",
+        "canine genitalia", "equine genitalia", "feline genitalia", "reptile genitalia", 
+        "avian genitalia", "dragon genitalia", "shark genitalia", "dolphin genitalia",
+        "hemipenes", "genital slit", "claspers", "ovipositor",
+        "bulge", "erection", "aroused", "arousal", "erect", "stiff", "hard", "wet",
+        "cum", "semen", "ejaculate", "precum", "pre", "seed", "sperm",
+        "fluids", "juices", "lubricant", "slick", "moist", "dripping",
+        "balls deep", "penetration", "insertion", "breeding", "mating", "copulation",
+        "masturbation", "jerking off", "masturbating", "pleasuring", "fingering",
+        "orgasm", "climax", "cumming", "squirting", "ejaculating"
+    ]
+    
+    # NEW: Presenting pose terms
+    presenting_poses = [
+        "presenting", "presenting hindquarters", "presenting sheath", "presenting genitals",
+        "presenting pussy", "presenting anus", "presenting ass", "presenting rear",
+        "spread legs", "spread pussy", "spread anus", "spread cheeks", "spread buttocks",
+        "legs spread", "legs up", "ass up", "butt up", "face down ass up", "fdau",
+        "on back", "on all fours", "doggy style", "doggy position", "mating position",
+        "mating press", "breeding position", "breeding stance", "mounting position",
+        "rear view", "from behind", "from the back", "butt view", "ass view",
+        "bent over", "bending over", "on knees", "kneeling", "prone", "prone bone"
+    ]
+    
+    # NEW: Viewer interaction terms
+    viewer_interactions = [
+        "looking at viewer", "looking back at viewer", "eye contact", "direct gaze",
+        "facing viewer", "facing camera", "towards viewer", "towards camera",
+        "watching viewer", "observing viewer", "staring at viewer", "glancing at viewer",
+        "inviting gaze", "seductive look", "teasing viewer", "teasing look",
+        "flirtatious gaze", "flirting with viewer", "beckoning viewer", "beckoning",
+        "third person view", "pov", "point of view", "first person view"
+    ]
+    
+    # NEW: NSFW rating terms
+    nsfw_ratings = [
+        "nsfw", "explicit", "adult", "mature", "18+", "adult content", "mature content",
+        "rating:explicit", "rating:questionable", "rating:mature", "rating:adult",
+        "questionable", "questionable content", "pornographic", "porn", "erotic", "lewd",
+        "xxx", "r-18", "r18", "r-rated", "x-rated", "nc-17", "not safe for work"
+    ]
+    
     for tag in tags:
         tag_lower = tag.lower().strip()
         tag_words = tag_lower.split()
-
+        
+        # NEW: Check for NSFW ratings first
+        if any(rating in tag_lower for rating in nsfw_ratings):
+            categories["nsfw_rating"].append(tag)
+            continue
+            
+        # NEW: Check for anatomical terms
+        if any(term in tag_lower for term in anatomical_terms):
+            categories["anatomical"].append(tag)
+            continue
+            
+        # NEW: Check for presenting poses
+        if any(pose in tag_lower for pose in presenting_poses):
+            categories["pose"].append(tag)
+            continue
+            
+        # NEW: Check for viewer interactions
+        if any(interaction in tag_lower for term in viewer_interactions for interaction in [term.lower()]):
+            categories["viewer_interaction"].append(tag)
+            continue
+        
         # Check for exact matches first
         if tag_lower in art_style_exact_matches:
             categories["style"].append(tag)
             continue
-
+            
         if tag_lower in setting_exact_matches:
             categories["setting"].append(tag)
             continue
-
+        
         if tag_lower in additional_clothing or "top" in tag_lower or "shirt" in tag_lower:
             categories["clothing"].append(tag)
             continue
-
+            
         if tag_lower in physical_features or tag_lower in ["battle scars", "battle scarred"]:
             # Features like "battle scars" or "long ears" go to other, not setting
             if "scars" in tag_lower or "scarred" in tag_lower:
@@ -479,11 +333,11 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
             else:
                 categories["other"].append(tag)
             continue
-
+            
         # Check for anthro species combinations (e.g., "anthro fox", "female anthro wolf")
         is_anthro = any(anthro in tag_lower for anthro in anthro_terms)
         contains_species = any(species in tag_lower for species in SPECIES_TAXONOMY)
-
+        
         # Handle anthro species specifically
         if is_anthro and contains_species:
             # Extract the species part
@@ -495,82 +349,22 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
                         categories["species"].append(species)
                     break
             continue
-
+            
         # Check if tag is a known species
         is_species = tag_lower in SPECIES_TAXONOMY
-
+        
         # Check if tag contains color + species (e.g., "red fox", "blue dragon")
-        colors = [
-            "red",
-            "blue",
-            "green",
-            "yellow",
-            "purple",
-            "black",
-            "white",
-            "orange",
-            "brown",
-            "pink",
-            "gray",
-            "grey",
-            "cyan",
-            "magenta",
-            "teal",
-            "silver",
-            "gold",
-            "bronze",
-            "copper",
-            "ruby",
-            "emerald",
-            "sapphire",
-            "amber",
-            "turquoise",
-            "indigo",
-            "violet",
-            "crimson",
-            "scarlet",
-            "navy",
-            "maroon",
-            "olive",
-            "ivory",
-            "cream",
-            "beige",
-            "tan",
-            "chocolate",
-            "coffee",
-            "slate",
-            "charcoal",
-            "ash",
-            "ebony",
-            "onyx",
-            "obsidian",
-            "jet",
-            "raven",
-            "midnight",
-            "aqua",
-            "azure",
-            "cerulean",
-            "cobalt",
-            "lime",
-            "mint",
-            "peach",
-            "coral",
-            "salmon",
-            "lavender",
-            "lilac",
-            "plum",
-            "mauve",
-            "fuchsia",
-            "rose",
-            "rust",
-            "cinnamon",
-            "caramel",
-            "honey",
-            "lemon",
-            "vanilla",
-            "snow",
-        ]
-
+        colors = ["red", "blue", "green", "yellow", "purple", "black", "white", 
+                 "orange", "brown", "pink", "gray", "grey", "cyan", "magenta", 
+                 "teal", "silver", "gold", "bronze", "copper", "ruby", "emerald", 
+                 "sapphire", "amber", "turquoise", "indigo", "violet", "crimson", 
+                 "scarlet", "navy", "maroon", "olive", "ivory", "cream", "beige", 
+                 "tan", "chocolate", "coffee", "slate", "charcoal", "ash", "ebony", 
+                 "onyx", "obsidian", "jet", "raven", "midnight", "aqua", "azure", 
+                 "cerulean", "cobalt", "lime", "mint", "peach", "coral", "salmon", 
+                 "lavender", "lilac", "plum", "mauve", "fuchsia", "rose", "rust", 
+                 "cinnamon", "caramel", "honey", "lemon", "vanilla", "snow"]
+        
         is_color_species = False
         if len(tag_words) > 1:
             last_word = tag_words[-1]
@@ -584,69 +378,23 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
                     categories["subject"].append(last_word)
                     categories["species"].append(last_word)
                     continue
-
+        
         # Check if tag is a known art style or contains art style terms
-        style_terms = [
-            "style",
-            "art",
-            "painting",
-            "illustration",
-            "drawing",
-            "sketch",
-            "render",
-            "artwork",
-            "aesthetic",
-            "concept",
-            "visual",
-            "graphic",
-            "design",
-        ]
-
+        style_terms = ["style", "art", "painting", "illustration", "drawing", "sketch", "render", 
+                      "artwork", "aesthetic", "concept", "visual", "graphic", "design"]
+                      
         is_art_style = tag_lower in all_art_styles
         contains_art_style = any(term in tag_lower for term in style_terms)
-        digital_art_terms = [
-            "digital",
-            "cgi",
-            "3d",
-            "rendered",
-            "computer generated",
-            "photo manipulation",
-        ]
+        digital_art_terms = ["digital", "cgi", "3d", "rendered", "computer generated", "photo manipulation"]
         is_digital_art = any(term in tag_lower for term in digital_art_terms)
-
+        
         # Check for popular art styles not in the predefined list
-        additional_styles = [
-            "anime",
-            "manga",
-            "cartoon",
-            "comic",
-            "pixel art",
-            "8-bit",
-            "16-bit",
-            "cel shaded",
-            "chibi",
-            "realistic",
-            "photorealistic",
-            "hyperrealistic",
-            "surrealistic",
-            "impressionist",
-            "expressionist",
-            "cubist",
-            "minimalist",
-            "abstract",
-            "fantasy",
-            "sci-fi",
-            "cyberpunk",
-            "steampunk",
-            "dieselpunk",
-            "biopunk",
-            "solarpunk",
-            "atompunk",
-            "vaporwave",
-            "retrowave",
-            "synthwave",
-        ]
-
+        additional_styles = ["anime", "manga", "cartoon", "comic", "pixel art", "8-bit", "16-bit",
+                            "cel shaded", "chibi", "realistic", "photorealistic", "hyperrealistic",
+                            "surrealistic", "impressionist", "expressionist", "cubist", "minimalist",
+                            "abstract", "fantasy", "sci-fi", "cyberpunk", "steampunk", "dieselpunk",
+                            "biopunk", "solarpunk", "atompunk", "vaporwave", "retrowave", "synthwave"]
+        
         is_additional_style = any(style in tag_lower for style in additional_styles)
 
         # Check quality tags first
@@ -655,53 +403,29 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
             continue
 
         # Check for color descriptors with special handling for "X fur" patterns
-        if (
-            "fur" in tag_lower
-            or "skin" in tag_lower
-            or "scales" in tag_lower
-            or "feathers" in tag_lower
-        ):
+        if "fur" in tag_lower or "skin" in tag_lower or "scales" in tag_lower or "feathers" in tag_lower:
             if any(color in tag_lower for color in colors):
                 categories["color"].append(tag)
                 continue
-
+                
         # General color check
         if any(color in tag_lower for color in colors) and "style" not in tag_lower:
             categories["color"].append(tag)
             continue
 
         # Check for clothing items - expanded list
-        if any(
-            item in tag_lower
-            for item in [
-                "shirt",
-                "pants",
-                "dress",
-                "skirt",
-                "hat",
-                "jacket",
-                "coat",
-                "shoes",
-                "boots",
-                "gloves",
-                "scarf",
-                "outfit",
-                "uniform",
-                "clothes",
-                "suit",
-                "tie",
-                "belt",
-                "socks",
-            ]
-        ) or any(item in tag_lower for item in additional_clothing):
+        if any(item in tag_lower for item in ["shirt", "pants", "dress", "skirt", "hat", "jacket", 
+                                             "coat", "shoes", "boots", "gloves", "scarf", "outfit", 
+                                             "uniform", "clothes", "suit", "tie", "belt", "socks"]) or \
+           any(item in tag_lower for item in additional_clothing):
             categories["clothing"].append(tag)
             continue
-
+        
         # Check for accessories
         if any(item in tag_lower for item in accessories):
             categories["accessory"].append(tag)
             continue
-
+            
         # Check for expressions
         if any(expr in tag_lower for expr in expressions) or "expression" in tag_lower:
             categories["expression"].append(tag)
@@ -709,148 +433,34 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
 
         # Check for setting/location - expand this list
         setting_terms = [
-            "room",
-            "forest",
-            "beach",
-            "city",
-            "mountain",
-            "field",
-            "house",
-            "building",
-            "street",
-            "park",
-            "lake",
-            "river",
-            "ocean",
-            "sky",
-            "space",
-            "indoor",
-            "outdoor",
-            "landscape",
-            "scenery",
-            "background",
-            "castle",
-            "ruins",
-            "temple",
-            "church",
-            "cathedral",
-            "mosque",
-            "shrine",
-            "palace",
-            "mansion",
-            "cottage",
-            "cabin",
-            "apartment",
-            "office",
-            "school",
-            "university",
-            "hospital",
-            "restaurant",
-            "café",
-            "bar",
-            "club",
-            "shop",
-            "store",
-            "mall",
-            "market",
-            "bazaar",
-            "plaza",
-            "square",
-            "garden",
-            "park",
-            "meadow",
-            "prairie",
-            "savanna",
-            "desert",
-            "tundra",
-            "arctic",
-            "jungle",
-            "rainforest",
-            "swamp",
-            "marsh",
-            "bog",
-            "cave",
-            "cavern",
-            "grotto",
-            "waterfall",
-            "stream",
-            "brook",
-            "creek",
-            "pond",
-            "pool",
-            "spring",
-            "oasis",
-            "coast",
-            "shore",
-            "cliff",
-            "canyon",
-            "gorge",
-            "valley",
-            "hill",
-            "volcano",
-            "island",
-            "peninsula",
-            "cape",
-            "bay",
-            "gulf",
-            "strait",
-            "channel",
-            "dock",
-            "harbor",
-            "port",
-            "pier",
-            "bridge",
-            "dam",
-            "lighthouse",
-            "tower",
-            "skyscraper",
-            "monument",
-            "statue",
-            "fountain",
-            "arch",
-            "gate",
-            "wall",
-            "fence",
-            "path",
-            "trail",
-            "road",
-            "highway",
-            "railway",
-            "station",
-            "airport",
-            "spaceport",
-            "vehicle",
-            "car",
-            "truck",
-            "train",
-            "subway",
-            "trolley",
-            "tram",
-            "bus",
-            "bicycle",
-            "motorcycle",
-            "boat",
-            "ship",
-            "yacht",
-            "submarine",
-            "aircraft",
-            "airplane",
-            "helicopter",
-            "rocket",
-            "spaceship",
-            "ufo",
-            "satellite",
+            "room", "forest", "beach", "city", "mountain", "field", "house", "building", 
+            "street", "park", "lake", "river", "ocean", "sky", "space", "indoor", "outdoor", 
+            "landscape", "scenery", "background", "castle", "ruins", "temple", "church", 
+            "cathedral", "mosque", "shrine", "palace", "mansion", "cottage", "cabin", 
+            "apartment", "office", "school", "university", "hospital", "restaurant", "café", 
+            "bar", "club", "shop", "store", "mall", "market", "bazaar", "plaza", "square", 
+            "garden", "park", "meadow", "prairie", "savanna", "desert", "tundra", "arctic", 
+            "jungle", "rainforest", "swamp", "marsh", "bog", "cave", "cavern", "grotto", 
+            "waterfall", "stream", "brook", "creek", "pond", "pool", "spring", "oasis", 
+            "coast", "shore", "cliff", "canyon", "gorge", "valley", "hill", "volcano", 
+            "island", "peninsula", "cape", "bay", "gulf", "strait", "channel", "dock", 
+            "harbor", "port", "pier", "bridge", "dam", "lighthouse", "tower", "skyscraper", 
+            "monument", "statue", "fountain", "arch", "gate", "wall", "fence", "path", 
+            "trail", "road", "highway", "railway", "station", "airport", "spaceport", 
+            "vehicle", "car", "truck", "train", "subway", "trolley", "tram", "bus", 
+            "bicycle", "motorcycle", "boat", "ship", "yacht", "submarine", "aircraft", 
+            "airplane", "helicopter", "rocket", "spaceship", "ufo", "satellite"
         ]
-
+        
         if any(item in tag_lower for item in setting_terms) or "background" in tag_lower:
             categories["setting"].append(tag)
             continue
-
+            
         # Check for art style - expanded check
         if is_art_style or is_digital_art or contains_art_style or is_additional_style:
             categories["style"].append(tag)
             # Don't continue here - some tags might be both style and subject
-
+        
         # Check for species - add to both subject and species if it's a primary subject
         if is_species:
             categories["species"].append(tag)
@@ -858,100 +468,32 @@ def categorize_tags(tags: List[str]) -> Dict[str, List[str]]:
             if len(tag_lower.split()) == 1:
                 categories["subject"].append(tag)
             continue
-
+            
         # Check for action words
-        action_words = [
-            "running",
-            "walking",
-            "jumping",
-            "flying",
-            "swimming",
-            "climbing",
-            "sitting",
-            "standing",
-            "lying",
-            "sleeping",
-            "fighting",
-            "battling",
-            "dancing",
-            "singing",
-            "playing",
-            "reading",
-            "writing",
-            "drawing",
-            "painting",
-            "eating",
-            "drinking",
-            "cooking",
-            "baking",
-            "cleaning",
-            "washing",
-            "drying",
-            "ironing",
-            "sewing",
-            "knitting",
-            "crocheting",
-            "hunting",
-            "fishing",
-            "gardening",
-            "farming",
-            "harvesting",
-            "planting",
-            "gathering",
-            "collecting",
-            "searching",
-            "finding",
-            "seeking",
-            "looking",
-            "watching",
-            "observing",
-            "studying",
-            "learning",
-            "teaching",
-            "working",
-            "resting",
-            "relaxing",
-            "meditating",
-            "exercising",
-            "training",
-            "competing",
-        ]
-
-        if (
-            any(word in tag_lower for word in action_words)
-            and tag_lower not in art_style_exact_matches
-        ):
+        action_words = ["running", "walking", "jumping", "flying", "swimming", "climbing", 
+                       "sitting", "standing", "lying", "sleeping", "fighting", "battling", 
+                       "dancing", "singing", "playing", "reading", "writing", "drawing", 
+                       "painting", "eating", "drinking", "cooking", "baking", "cleaning", 
+                       "washing", "drying", "ironing", "sewing", "knitting", "crocheting", 
+                       "hunting", "fishing", "gardening", "farming", "harvesting", "planting", 
+                       "gathering", "collecting", "searching", "finding", "seeking", "looking", 
+                       "watching", "observing", "studying", "learning", "teaching", "working", 
+                       "resting", "relaxing", "meditating", "exercising", "training", "competing",
+                       "looking at viewer", "looking back at viewer"]  # Added viewer interaction terms
+                       
+        if any(word in tag_lower for word in action_words) and tag_lower not in art_style_exact_matches:
             categories["action"].append(tag)
             continue
-
+            
         # Check for pose descriptors
-        pose_words = [
-            "pose",
-            "posing",
-            "stance",
-            "position",
-            "posture",
-            "kneeling",
-            "crouching",
-            "squatting",
-            "bending",
-            "leaning",
-            "stretching",
-            "flexing",
-            "slouching",
-            "reclining",
-            "prone",
-            "supine",
-            "upright",
-            "bent",
-            "twisted",
-            "arched",
-        ]
-
+        pose_words = ["pose", "posing", "stance", "position", "posture", "kneeling", "crouching", 
+                     "squatting", "bending", "leaning", "stretching", "flexing", "slouching", 
+                     "reclining", "prone", "supine", "upright", "bent", "twisted", "arched"]
+                     
         if any(word in tag_lower for word in pose_words):
             categories["pose"].append(tag)
             continue
-
+            
         # If we haven't continued yet, and the tag wasn't added to any category,
         # add it to the "other" category
         if tag not in [item for sublist in categories.values() for item in sublist]:
@@ -970,38 +512,46 @@ def generate_concise_text(categorized_tags: Dict[str, List[str]]) -> str:
     Returns:
         Concise natural language description
     """
-    description_parts = []
+    parts = []
 
-    # Add quality descriptors
+    # Add quality descriptors if any
     if categorized_tags["quality"]:
-        description_parts.append(", ".join(categorized_tags["quality"]))
+        parts.append(categorized_tags["quality"][0])  # Just use the first quality descriptor for conciseness
 
     # Add subject/species
-    subject_parts = []
     if categorized_tags["subject"]:
-        subject_parts.extend(categorized_tags["subject"])
-    if categorized_tags["species"]:
-        subject_parts.extend(categorized_tags["species"])
+        parts.append(categorized_tags["subject"][0])  # Just use the first subject
+    elif categorized_tags["species"]:
+        parts.append(categorized_tags["species"][0])  # Just use the first species if no subject
 
-    if subject_parts:
-        description_parts.append(" ".join(subject_parts))
-
-    # Add actions if any
+    # Add action or pose if any
     if categorized_tags["action"]:
-        description_parts.append(" ".join(categorized_tags["action"]))
+        parts.append(categorized_tags["action"][0])  # Just use the first action
+    elif categorized_tags["pose"]:
+        parts.append(categorized_tags["pose"][0])  # Just use the first pose if no action
 
     # Add setting if any
     if categorized_tags["setting"]:
-        location = " ".join(categorized_tags["setting"])
-        description_parts.append(f"in {location}")
+        parts.append(f"in {categorized_tags['setting'][0]}")
 
     # Add style if any
     if categorized_tags["style"]:
-        style = ", ".join(categorized_tags["style"])
-        description_parts.append(f"in {style} style")
+        parts.append(f"in {categorized_tags['style'][0]} style")
+
+    # Add NSFW content if any
+    if categorized_tags["nsfw_rating"]:
+        parts.append("NSFW")
+        
+    # Add anatomical mention if any
+    if categorized_tags["anatomical"]:
+        parts.append("explicit")
+        
+    # Add viewer interaction if any  
+    if categorized_tags["viewer_interaction"]:
+        parts.append(categorized_tags["viewer_interaction"][0])
 
     # Join all parts
-    return ", ".join(description_parts)
+    return ", ".join(parts)
 
 
 def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
@@ -1017,19 +567,15 @@ def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
     # Start with quality descriptors
     quality_desc = ""
     if categorized_tags["quality"]:
-        quality_desc = " ".join(categorized_tags["quality"]) + " of "
+        quality_desc = " ".join(categorized_tags["quality"]) + " "
 
     # Build subject description
     subject_desc = ""
     if categorized_tags["subject"]:
-        subject_desc = " ".join(categorized_tags["subject"])
-    if categorized_tags["species"]:
-        if subject_desc:
-            subject_desc += " " + " ".join(categorized_tags["species"])
-        else:
-            subject_desc = " ".join(categorized_tags["species"])
-
-    if not subject_desc:
+        subject_desc = categorized_tags["subject"][0]  # Take only the first subject to avoid repetition
+    elif categorized_tags["species"]:
+        subject_desc = categorized_tags["species"][0]  # Take only the first species if no subject
+    else:
         subject_desc = "subject"
 
     # Add features
@@ -1037,15 +583,24 @@ def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
 
     # Add colors
     if categorized_tags["color"]:
-        features.append("with " + " and ".join(categorized_tags["color"]) + " coloration")
+        if len(categorized_tags["color"]) == 1:
+            features.append("with " + categorized_tags["color"][0])
+        else:
+            features.append("with " + " and ".join(categorized_tags["color"]))
 
     # Add clothing
     if categorized_tags["clothing"]:
-        features.append("wearing " + " and ".join(categorized_tags["clothing"]))
+        if len(categorized_tags["clothing"]) == 1:
+            features.append("wearing " + categorized_tags["clothing"][0])
+        else:
+            features.append("wearing " + " and ".join(categorized_tags["clothing"]))
 
     # Add accessories
     if categorized_tags["accessory"]:
-        features.append("with " + " and ".join(categorized_tags["accessory"]))
+        if len(categorized_tags["accessory"]) == 1:
+            features.append("with " + categorized_tags["accessory"][0])
+        else:
+            features.append("with " + " and ".join(categorized_tags["accessory"]))
 
     # Add pose/action
     if categorized_tags["pose"] or categorized_tags["action"]:
@@ -1054,29 +609,58 @@ def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
             pose_action.extend(categorized_tags["pose"])
         if categorized_tags["action"]:
             pose_action.extend(categorized_tags["action"])
-        features.append(" ".join(pose_action))
+        
+        if len(pose_action) == 1:
+            features.append(pose_action[0])
+        else:
+            features.append(" and ".join(pose_action))
 
     # Add expression
     if categorized_tags["expression"]:
-        features.append("with " + " ".join(categorized_tags["expression"]) + " expression")
+        if len(categorized_tags["expression"]) == 1:
+            features.append("with a " + categorized_tags["expression"][0] + " expression")
+        else:
+            features.append("with a " + " and ".join(categorized_tags["expression"]) + " expression")
 
     # Add setting/location
     if categorized_tags["setting"]:
-        features.append("in " + " ".join(categorized_tags["setting"]))
+        if len(categorized_tags["setting"]) == 1:
+            features.append("in a " + categorized_tags["setting"][0])
+        else:
+            features.append("in " + " and ".join(categorized_tags["setting"]))
 
     # Add style
     if categorized_tags["style"]:
-        features.append("in " + " ".join(categorized_tags["style"]) + " style")
+        if len(categorized_tags["style"]) == 1:
+            features.append("in " + categorized_tags["style"][0] + " style")
+        else:
+            features.append("in " + " and ".join(categorized_tags["style"]) + " style")
+        
+    # Add anatomical features
+    if categorized_tags["anatomical"]:
+        if len(categorized_tags["anatomical"]) == 1:
+            features.append("showing " + categorized_tags["anatomical"][0])
+        else:
+            features.append("showing " + " and ".join(categorized_tags["anatomical"]))
+        
+    # Add viewer interaction
+    if categorized_tags["viewer_interaction"]:
+        features.append(categorized_tags["viewer_interaction"][0])  # Usually just one interaction
+        
+    # Add NSFW rating
+    if categorized_tags["nsfw_rating"]:
+        features.append(categorized_tags["nsfw_rating"][0])  # Usually just one rating
 
     # Add other tags
     if categorized_tags["other"]:
-        features.append(", ".join(categorized_tags["other"]))
+        for tag in categorized_tags["other"]:
+            features.append(tag)
 
     # Combine all parts
     if features:
-        return f"{quality_desc}{subject_desc} {', '.join(features)}"
+        return f"A {quality_desc}{subject_desc} {', '.join(features)}"
     else:
-        return f"{quality_desc}{subject_desc}"
+        return f"A {quality_desc}{subject_desc}"
 
 
 def generate_detailed_text(categorized_tags: Dict[str, List[str]]) -> str:
@@ -1093,40 +677,55 @@ def generate_detailed_text(categorized_tags: Dict[str, List[str]]) -> str:
     sentences = []
 
     # Quality and subject
-    quality_terms = " ".join(categorized_tags["quality"]) if categorized_tags["quality"] else "a"
-    subject_terms = []
+    quality_terms = []
+    if categorized_tags["quality"]:
+        for quality in categorized_tags["quality"]:
+            if quality.lower() in ["masterpiece", "best quality", "high quality"]:
+                quality_terms.append(f"{quality}")
+    
+    quality_text = " ".join(quality_terms) if quality_terms else ""
+    
+    # Handle subject and species intelligently
+    subject = ""
     if categorized_tags["subject"]:
-        subject_terms.extend(categorized_tags["subject"])
-    if categorized_tags["species"]:
-        subject_terms.extend(categorized_tags["species"])
-    subject = " ".join(subject_terms) if subject_terms else "subject"
-
-    opening = f"This is {quality_terms} {subject}"
+        subject = categorized_tags["subject"][0]  # Take only the first subject
+    elif categorized_tags["species"]:
+        subject = categorized_tags["species"][0]  # Take only the first species if no subject
+    else:
+        subject = "character"
 
     # Add style information to opening
+    style_text = ""
     if categorized_tags["style"]:
-        style = " ".join(categorized_tags["style"])
-        opening += f" in {style} style"
+        style = categorized_tags["style"][0]  # Take only the first style
+        style_text = f" in {style} style"
 
-    sentences.append(opening + ".")
+    # Color information
+    color_text = ""
+    if categorized_tags["color"]:
+        colors = " and ".join(categorized_tags["color"])
+        color_text = f" with {colors}"
+    
+    # Build the opening sentence
+    if quality_text:
+        opening = f"A {quality_text} artwork depicting a {subject}{color_text}{style_text}."
+    else:
+        opening = f"A detailed artwork of a {subject}{color_text}{style_text}."
+        
+    sentences.append(opening)
 
     # Add appearance details
     appearance_details = []
 
-    # Add colors
-    if categorized_tags["color"]:
-        colors = " and ".join(categorized_tags["color"])
-        appearance_details.append(f"The subject has {colors} coloration")
-
     # Add clothing
     if categorized_tags["clothing"]:
         clothing = " and ".join(categorized_tags["clothing"])
-        appearance_details.append(f"They are wearing {clothing}")
+        appearance_details.append(f"The character is wearing {clothing}.")
 
     # Add accessories
     if categorized_tags["accessory"]:
         accessories = " and ".join(categorized_tags["accessory"])
-        appearance_details.append(f"They have {accessories}")
+        appearance_details.append(f"They have {accessories}.")
 
     # Add pose/action
     if categorized_tags["pose"] or categorized_tags["action"]:
@@ -1135,25 +734,67 @@ def generate_detailed_text(categorized_tags: Dict[str, List[str]]) -> str:
             pose_action.extend(categorized_tags["pose"])
         if categorized_tags["action"]:
             pose_action.extend(categorized_tags["action"])
-        appearance_details.append(f"They are {' '.join(pose_action)}")
+        appearance_details.append(f"They are {' and '.join(pose_action)}.")
 
     # Add expression
     if categorized_tags["expression"]:
-        expression = " ".join(categorized_tags["expression"])
-        appearance_details.append(f"Their expression is {expression}")
+        expression = " and ".join(categorized_tags["expression"])
+        appearance_details.append(f"Their expression is {expression}.")
 
     # Add setting/location
     if categorized_tags["setting"]:
-        setting = " ".join(categorized_tags["setting"])
-        appearance_details.append(f"The scene is set in {setting}")
+        setting = " and ".join(categorized_tags["setting"])
+        appearance_details.append(f"The scene takes place in {setting}.")
+        
+    # Add anatomical features with appropriate phrasing
+    if categorized_tags["anatomical"]:
+        if "nsfw_rating" in categorized_tags and categorized_tags["nsfw_rating"]:
+            anatomical = " and ".join(categorized_tags["anatomical"])
+            appearance_details.append(f"The image explicitly shows {anatomical}.")
+        else:
+            anatomical = " and ".join(categorized_tags["anatomical"])
+            appearance_details.append(f"Anatomical features are visible.")
+        
+    # Add viewer interaction with natural phrasing
+    if categorized_tags["viewer_interaction"]:
+        interaction = categorized_tags["viewer_interaction"][0]
+        if "looking" in interaction.lower():
+            appearance_details.append(f"The character is {interaction}.")
+        elif "eye contact" in interaction.lower():
+            appearance_details.append(f"The character makes eye contact with the viewer.")
+        else:
+            appearance_details.append(f"There is {interaction} with the viewer.")
+        
+    # Add NSFW rating if present
+    if categorized_tags["nsfw_rating"]:
+        rating = categorized_tags["nsfw_rating"][0]
+        if "explicit" in rating.lower():
+            appearance_details.append(f"This is explicit adult content.")
+        elif "nsfw" in rating.lower():
+            appearance_details.append(f"This artwork contains NSFW elements.")
+        elif "questionable" in rating.lower():
+            appearance_details.append(f"This artwork has questionable content.")
+        else:
+            appearance_details.append(f"This has mature content.")
 
     # Add other details
     if categorized_tags["other"]:
-        others = ", ".join(categorized_tags["other"])
-        appearance_details.append(f"Additional details include {others}")
+        other_parts = []
+        for detail in categorized_tags["other"]:
+            if detail.lower() in ["muscular", "slim", "athletic", "fit"]:
+                other_parts.append(f"The character has a {detail} build.")
+            elif detail.lower() in ["evening", "morning", "night", "noon", "dawn", "dusk"]:
+                other_parts.append(f"The time is {detail}.")
+            elif detail.lower() in ["soft lighting", "harsh lighting", "dramatic lighting", "warm lighting"]:
+                other_parts.append(f"The scene has {detail}.")
+            else:
+                other_parts.append(detail)
+        
+        if other_parts:
+            appearance_details.extend(other_parts)
 
     # Add appearance details as sentences
-    sentences.extend([detail + "." for detail in appearance_details])
+    sentences.extend(appearance_details)
 
     # Join all sentences
     return " ".join(sentences)
@@ -1292,433 +933,186 @@ def natural_tags_to_text(tags: List[str]) -> str:
     # Extract key components
     quality_terms = categorized_tags.get("quality", [])
 
-    # Check for anthro/furry keywords in other categories
+    # Check for anthro/furry keywords in subject or other categories
     anthro_keywords = ["anthro", "anthropomorphic", "furry", "fursona", "kemono"]
-    species_terms = []
-    anthro_found = False
-
-    # Check if we have anthro content
-    for term in categorized_tags.get("other", []):
-        if any(keyword in term.lower() for keyword in anthro_keywords):
-            anthro_found = True
-            break
+    anthro_found = any(any(keyword in term.lower() for keyword in anthro_keywords) 
+                    for term in categorized_tags.get("subject", []) + categorized_tags.get("other", []))
 
     # Extract subject and species terms
-    subject_terms = []
-    if categorized_tags.get("subject", []):
-        subject_terms.extend(categorized_tags["subject"])
-    if categorized_tags.get("species", []):
-        species_terms.extend(categorized_tags["species"])
-
-    # Special handling for animal terms that might be subjects in furry content
-    animal_terms = [
-        "fox",
-        "wolf",
-        "cat",
-        "dog",
-        "tiger",
-        "lion",
-        "rabbit",
-        "deer",
-        "dragon",
-        "horse",
-        "raccoon",
-        "otter",
-        "bear",
-        "bird",
-        "mouse",
-    ]
-
-    found_animals = []
-    for term in list(categorized_tags.get("other", [])):
-        term_lower = term.lower()
-        for animal in animal_terms:
-            if animal in term_lower:
-                found_animals.append(term)
-                if term in categorized_tags["other"]:
-                    categorized_tags["other"].remove(term)
-                break
-
-    # If we have anthro keywords and animals, combine them
-    if anthro_found and found_animals:
-        for animal in found_animals:
-            anthro_term = f"anthro {animal}"
-            if anthro_term not in subject_terms:
-                subject_terms.append(anthro_term)
-    # Otherwise just add the animals to subjects
-    elif found_animals:
-        for animal in found_animals:
-            if animal not in subject_terms:
-                subject_terms.append(animal)
-
-    # Special handling for anime character types
-    anime_char_types = [
-        "neko",
-        "kitsune",
-        "kemonomimi",
-        "catgirl",
-        "foxgirl",
-        "wolfgirl",
-        "cat girl",
-        "fox girl",
-        "wolf girl",
-        "bunny girl",
-        "dragon girl",
-    ]
-
-    for term in list(categorized_tags.get("other", [])):
-        if any(char_type in term.lower() for char_type in anime_char_types):
-            subject_terms.append(term)
-            if term in categorized_tags["other"]:
-                categorized_tags["other"].remove(term)
+    subject_terms = categorized_tags.get("subject", [])
+    species_terms = categorized_tags.get("species", [])
 
     # Process other components
     color_terms = categorized_tags.get("color", [])
     setting_terms = categorized_tags.get("setting", [])
-
-    # Special handling for art styles
     style_terms = categorized_tags.get("style", [])
-    art_styles = [
-        "digital art",
-        "oil painting",
-        "watercolor",
-        "sketch",
-        "anime style",
-        "manga style",
-        "cartoon",
-        "realistic",
-        "photorealistic",
-        "stylized",
-        "chibi",
-        "pixel art",
-        "cel shaded",
-        "comic",
-        "illustration",
-    ]
-
-    for term in list(categorized_tags.get("other", [])):
-        if any(style in term.lower() for style in art_styles):
-            style_terms.append(term)
-            if term in categorized_tags["other"]:
-                categorized_tags["other"].remove(term)
-
-    # Create article and adjective phrase for the subject
-    article = "A"
-    if subject_terms and subject_terms[0][0].lower() in "aeiou":
-        article = "An"
-
-    # Build quality adjective string
-    quality_adj = ""
-    if quality_terms:
-        # Transform quality terms into proper adjectives
-        adj_mapping = {
-            "masterpiece": "masterfully crafted",
-            "high quality": "high-quality",
-            "best quality": "exceptional",
-            "detailed": "highly detailed",
-            "ultra detailed": "incredibly detailed",
-            "beautiful": "beautiful",
-            "professional": "professional",
-            "ultra high res": "ultra high-resolution",
-            "hires": "high-resolution",
-            "intricate": "intricately detailed",
-            "4k": "4K resolution",
-            "8k": "8K resolution",
-        }
-
-        quality_adjectives = []
-        for term in quality_terms:
-            term_lower = term.lower()
-            if term_lower in adj_mapping:
-                quality_adjectives.append(adj_mapping[term_lower])
-            else:
-                quality_adjectives.append(term_lower)
-
-        # Join adjectives properly with commas and "and"
-        if len(quality_adjectives) == 1:
-            quality_adj = quality_adjectives[0]
-        elif len(quality_adjectives) == 2:
-            quality_adj = f"{quality_adjectives[0]} and {quality_adjectives[1]}"
-        else:
-            quality_adj = ", ".join(quality_adjectives[:-1]) + f", and {quality_adjectives[-1]}"
-
-    # Build subject with color attributes
-    subject = ""
+    
+    # Determine the main subject
+    main_subject = ""
     if subject_terms:
-        # Join the subject terms
-        if len(subject_terms) == 1:
-            subject = subject_terms[0]
-        else:
-            subject = " ".join(subject_terms)
-
-        # Add color information
-        if color_terms:
-            # Process color terms to make them adjectives
-            processed_colors = []
-            for color in color_terms:
-                # Handle "X fur" pattern
-                if "fur" in color:
-                    color_parts = color.split()
-                    if len(color_parts) > 1 and color_parts[-1] == "fur":
-                        processed_colors.append(f"{'-'.join(color_parts[:-1])}-furred")
-                    else:
-                        processed_colors.append(color)
-                # Handle "X eyes" pattern
-                elif "eyes" in color:
-                    color_parts = color.split()
-                    if len(color_parts) > 1 and color_parts[-1] == "eyes":
-                        processed_colors.append(f"{'-'.join(color_parts[:-1])}-eyed")
-                    else:
-                        processed_colors.append(color)
-                # Handle "X hair" pattern
-                elif "hair" in color:
-                    color_parts = color.split()
-                    if len(color_parts) > 1 and color_parts[-1] == "hair":
-                        processed_colors.append(f"{'-'.join(color_parts[:-1])}-haired")
-                    else:
-                        processed_colors.append(color)
-                # Handle other color patterns
-                elif " " in color:
-                    processed_colors.append(f"{color}")
-                else:
-                    processed_colors.append(f"{color}")
-
-            if len(processed_colors) == 1:
-                subject = f"{processed_colors[0]} {subject}"
-            elif len(processed_colors) == 2:
-                subject = f"{processed_colors[0]} and {processed_colors[1]} {subject}"
-            else:
-                subject = (
-                    f"{', '.join(processed_colors[:-1])}, and {processed_colors[-1]} {subject}"
-                )
-    else:
-        # Default subject based on presence of anthro keywords
+        main_subject = subject_terms[0]  # Use the first subject term
+    elif species_terms:
         if anthro_found:
-            subject = "anthropomorphic character"
+            main_subject = f"anthro {species_terms[0]}"
         else:
-            subject = "character"
+            main_subject = species_terms[0]
+    else:
+        main_subject = "character"
 
-    # Build style phrase
-    style_phrase = ""
-    if style_terms:
-        style_words = []
-        for style in style_terms:
-            if (
-                "art" not in style.lower()
-                and "painting" not in style.lower()
-                and "render" not in style.lower()
-            ):
-                style_words.append(f"{style} style")
+    # Handle article properly
+    starts_with_vowel = main_subject.lower()[0] in "aeiou"
+    article = "An" if starts_with_vowel else "A"
+
+    # Transform quality terms
+    quality_adj = []
+    for term in quality_terms:
+        term_lower = term.lower()
+        if term_lower == "masterpiece":
+            quality_adj.append("masterfully crafted")
+        elif term_lower == "high quality":
+            quality_adj.append("high-quality")
+        elif term_lower == "best quality":
+            quality_adj.append("exceptional")
+        elif term_lower == "detailed" or term_lower == "highly detailed":
+            quality_adj.append("highly detailed")
+        elif term_lower == "ultra detailed":
+            quality_adj.append("incredibly detailed")
+        else:
+            quality_adj.append(term_lower)
+    
+    # Join quality adjectives
+    quality_text = ""
+    if quality_adj:
+        if len(quality_adj) == 1:
+            quality_text = quality_adj[0]
+        elif len(quality_adj) == 2:
+            quality_text = f"{quality_adj[0]} and {quality_adj[1]}"
+        else:
+            quality_text = ", ".join(quality_adj[:-1]) + f", and {quality_adj[-1]}"
+
+    # Process color information
+    color_desc = ""
+    if color_terms:
+        # Handle special color patterns
+        processed_colors = []
+        for color in color_terms:
+            color_lower = color.lower()
+            if "fur" in color_lower:
+                processed_colors.append(f"{color.replace('fur', '').strip()}-furred")
+            elif "eyes" in color_lower:
+                processed_colors.append(f"{color.replace('eyes', '').strip()}-eyed")
+            elif "hair" in color_lower:
+                processed_colors.append(f"{color.replace('hair', '').strip()}-haired")
             else:
-                style_words.append(style)
+                processed_colors.append(color)
+                
+        if processed_colors:
+            if len(processed_colors) == 1:
+                color_desc = f"{processed_colors[0]} "
+            else:
+                color_desc = f"{' and '.join(processed_colors)} "
 
-        if len(style_words) == 1:
-            style_phrase = style_words[0]
-        elif len(style_words) == 2:
-            style_phrase = f"{style_words[0]} and {style_words[1]}"
+    # Process style information
+    style_desc = ""
+    if style_terms:
+        style = style_terms[0]  # Just use the first style for clarity
+        if "style" not in style.lower() and not any(x in style.lower() for x in ["art", "painting", "drawing"]):
+            style_desc = f" in {style} style"
         else:
-            style_phrase = ", ".join(style_words[:-1]) + f", and {style_words[-1]}"
+            style_desc = f" in {style}"
 
-    # Build setting phrase
-    setting_phrase = ""
+    # Process setting information
+    setting_desc = ""
     if setting_terms:
         if len(setting_terms) == 1:
-            setting = setting_terms[0]
-            setting_phrase = f"in a {setting}"
+            setting_desc = f" in a {setting_terms[0]}"
         else:
-            setting_list = []
-            for setting in setting_terms:
-                if "background" in setting:
-                    setting = setting.replace("background", "").strip()
-                setting_list.append(setting)
+            setting_desc = f" in a {' and '.join(setting_terms)}"
 
-            if len(setting_list) == 1:
-                setting_phrase = f"in a {setting_list[0]}"
-            elif len(setting_list) == 2:
-                setting_phrase = f"in a {setting_list[0]} and {setting_list[1]}"
-            else:
-                setting_phrase = f"in a {', '.join(setting_list[:-1])}, and {setting_list[-1]}"
-
-    # Check for lighting, weather, and time in other tags
-    lighting_terms = []
-    weather_terms = []
-    time_terms = []
-
-    lighting_patterns = [
-        "lighting",
-        "illuminated",
-        "illumination",
-        "sunset",
-        "sunrise",
-        "moonlight",
-        "sunlight",
-        "dynamic lighting",
-        "soft lighting",
-        "dramatic lighting",
-        "neon lights",
-        "backlit",
-    ]
-
-    weather_patterns = [
-        "rain",
-        "rainy",
-        "snow",
-        "snowy",
-        "cloudy",
-        "foggy",
-        "mist",
-        "storm",
-        "sunny",
-        "clear sky",
-        "overcast",
-    ]
-
-    time_patterns = [
-        "day",
-        "night",
-        "twilight",
-        "dawn",
-        "dusk",
-        "morning",
-        "evening",
-        "afternoon",
-        "midnight",
-        "noon",
-    ]
-
-    # Process remaining terms in other
-    for term in list(categorized_tags.get("other", [])):
-        term_lower = term.lower()
-        # Check lighting
-        if any(light in term_lower for light in lighting_patterns):
-            lighting_terms.append(term)
-            if term in categorized_tags["other"]:
-                categorized_tags["other"].remove(term)
-        # Check weather
-        elif any(weather in term_lower for weather in weather_patterns):
-            weather_terms.append(term)
-            if term in categorized_tags["other"]:
-                categorized_tags["other"].remove(term)
-        # Check time
-        elif any(time in term_lower for time in time_patterns):
-            time_terms.append(term)
-            if term in categorized_tags["other"]:
-                categorized_tags["other"].remove(term)
-
-    # Combine all parts into a fluent caption
-    caption_parts = []
-
-    # Start with quality and subject
-    if style_phrase and quality_adj:
-        subject_phrase = f"{article} {quality_adj} {style_phrase} of a {subject}"
-    elif style_phrase:
-        subject_phrase = f"{article} {style_phrase} of a {subject}"
-    elif quality_adj:
-        subject_phrase = f"{article} {quality_adj} artwork of a {subject}"
-    else:
-        subject_phrase = f"{article} artwork of a {subject}"
-
-    # Clean up extra spaces and fix grammatical issues
-    subject_phrase = subject_phrase.replace("  ", " ")
-    subject_phrase = subject_phrase.replace(" of a a ", " of a ")
-
-    caption_parts.append(subject_phrase)
-
-    # Add setting, time, and weather details if available
-    setting_details = []
-    if setting_phrase:
-        setting_details.append(setting_phrase)
-
-    if time_terms:
-        if len(time_terms) == 1:
-            setting_details.append(f"during {time_terms[0]}")
-        else:
-            setting_details.append(f"during {' and '.join(time_terms)}")
-
-    if weather_terms:
-        if len(weather_terms) == 1:
-            setting_details.append(f"with {weather_terms[0]} weather")
-        else:
-            setting_details.append(f"with {' and '.join(weather_terms)} weather")
-
-    if lighting_terms:
-        if len(lighting_terms) == 1:
-            setting_details.append(f"with {lighting_terms[0]}")
-        else:
-            setting_details.append(f"with {' and '.join(lighting_terms)}")
-
-    if setting_details:
-        caption_parts.append(" " + ", ".join(setting_details))
-
-    # Add other details like clothing, accessories, pose
-    other_details = []
-
+    # Process clothing
+    clothing_desc = ""
     if categorized_tags.get("clothing", []):
         clothing = categorized_tags["clothing"]
         if len(clothing) == 1:
-            other_details.append(f"wearing {clothing[0]}")
-        elif len(clothing) == 2:
-            other_details.append(f"wearing {clothing[0]} and {clothing[1]}")
+            clothing_desc = f", wearing {clothing[0]}"
         else:
-            other_details.append(f"wearing {', '.join(clothing[:-1])}, and {clothing[-1]}")
+            clothing_desc = f", wearing {' and '.join(clothing)}"
 
-    if categorized_tags.get("accessory", []):
-        accessories = categorized_tags["accessory"]
-        if len(accessories) == 1:
-            other_details.append(f"with {accessories[0]}")
-        elif len(accessories) == 2:
-            other_details.append(f"with {accessories[0]} and {accessories[1]}")
-        else:
-            other_details.append(f"with {', '.join(accessories[:-1])}, and {accessories[-1]}")
-
-    if categorized_tags.get("pose", []) or categorized_tags.get("action", []):
-        pose_actions = []
-        if categorized_tags.get("pose", []):
-            pose_actions.extend(categorized_tags["pose"])
-        if categorized_tags.get("action", []):
-            pose_actions.extend(categorized_tags["action"])
-
-        if len(pose_actions) == 1:
-            other_details.append(pose_actions[0])
-        elif len(pose_actions) == 2:
-            other_details.append(f"{pose_actions[0]} and {pose_actions[1]}")
-        else:
-            other_details.append(f"{', '.join(pose_actions[:-1])}, and {pose_actions[-1]}")
-
-    # Add expression if available
+    # Process expression
+    expression_desc = ""
     if categorized_tags.get("expression", []):
-        expressions = categorized_tags["expression"]
-        if len(expressions) == 1:
-            other_details.append(f"with a {expressions[0]} expression")
+        expression = categorized_tags["expression"]
+        if len(expression) == 1:
+            expression_desc = f", with a {expression[0]} expression"
         else:
-            other_details.append(f"with a {' and '.join(expressions)} expression")
+            expression_desc = f", with a {' and '.join(expression)} expression"
 
-    # Add remaining "other" details
-    if categorized_tags.get("other", []):
-        # Filter out terms we've already handled
-        remaining_terms = []
-        for term in categorized_tags["other"]:
-            if term not in subject_terms and term not in style_terms:
-                remaining_terms.append(term)
+    # Process pose/action
+    pose_action_desc = ""
+    pose_action_terms = []
+    if categorized_tags.get("pose", []):
+        pose_action_terms.extend(categorized_tags["pose"])
+    if categorized_tags.get("action", []):
+        pose_action_terms.extend(categorized_tags["action"])
+    
+    if pose_action_terms:
+        if len(pose_action_terms) == 1:
+            pose_action_desc = f", {pose_action_terms[0]}"
+        else:
+            pose_action_desc = f", {' and '.join(pose_action_terms)}"
 
-        if remaining_terms:
-            if len(remaining_terms) == 1:
-                other_details.append(remaining_terms[0])
+    # Process viewer interaction
+    viewer_desc = ""
+    if categorized_tags.get("viewer_interaction", []):
+        interaction = categorized_tags["viewer_interaction"][0]  # Usually just one
+        viewer_desc = f", {interaction}"
+
+    # Process anatomical features
+    anatomical_desc = ""
+    if categorized_tags.get("anatomical", []):
+        anatomical_terms = categorized_tags["anatomical"]
+        if categorized_tags.get("nsfw_rating", []):  # If NSFW
+            if len(anatomical_terms) == 1:
+                anatomical_desc = f", showing {anatomical_terms[0]}"
             else:
-                other_details.append(", ".join(remaining_terms))
+                anatomical_desc = f", showing {', '.join(anatomical_terms[:-1])}, and {anatomical_terms[-1]}"
+        else:
+            if len(anatomical_terms) == 1:
+                anatomical_desc = f", with visible {anatomical_terms[0]}"
+            else:
+                anatomical_desc = f", with visible {', '.join(anatomical_terms[:-1])}, and {anatomical_terms[-1]}"
 
-    if other_details:
-        caption_parts.append(", " + ", ".join(other_details))
+    # Process other tags
+    other_desc = ""
+    filtered_other = []
+    for term in categorized_tags.get("other", []):
+        term_lower = term.lower()
+        
+        # Skip terms we've likely covered elsewhere
+        if term_lower in ["interspecies"] or "lighting" in term_lower:
+            filtered_other.append(term)
+            
+    if filtered_other:
+        other_desc = f", {', '.join(filtered_other)}"
 
-    # Finalize the caption with a period
-    caption = "".join(caption_parts)
+    # Add NSFW rating
+    nsfw_desc = ""
+    if categorized_tags.get("nsfw_rating", []):
+        nsfw_desc = ", explicit content" if "explicit" in " ".join(categorized_tags["nsfw_rating"]).lower() else ", nsfw content"
 
-    # Clean up any remaining formatting issues
-    caption = caption.replace("  ", " ").strip()
-    if not caption.endswith("."):
-        caption += "."
+    # Combine all parts into a fluent caption
+    caption = f"{article} {quality_text} artwork of a {color_desc}{main_subject}{style_desc}{setting_desc}{clothing_desc}{expression_desc}{pose_action_desc}{viewer_desc}{anatomical_desc}{other_desc}{nsfw_desc}."
 
-    # Capitalize the first letter
-    caption = caption[0].upper() + caption[1:]
-
+    # Clean up formatting issues
+    caption = caption.replace("  ", " ")
+    caption = caption.replace(" ,", ",")
+    caption = caption.replace("a a", "a")
+    caption = caption.replace("a an", "an")
+    caption = caption.replace("of a anthro", "of an anthro")
+    caption = caption.replace("A artwork", "An artwork")
+    
+    # Final grammar check
+    caption = caption.replace("of a a", "of a")
+    caption = caption.replace("of a an", "of an")
+    
     return caption
