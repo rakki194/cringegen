@@ -243,13 +243,16 @@ class ComfyWorkflow:
         """Add a node to create an empty latent image
 
         Args:
-            width: Width of the latent image
-            height: Height of the latent image
-            batch_size: Batch size
+            width: Width of the image
+            height: Height of the image
+            batch_size: Batch size for the image
 
         Returns:
-            A NodeOutput for the empty latent
+            A NodeOutput for the empty latent image
         """
+        # TODO: Implement optional resolution check based on model architecture
+        # See docs/TODO.md - Optimal Resolution Check Feature
+        
         node_id = self.add_node(
             "EmptyLatentImage", {"width": width, "height": height, "batch_size": batch_size}
         )
@@ -359,6 +362,7 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
             detail_amount = args.detail_amount if hasattr(args, "detail_amount") else 0.1
             detail_start = args.detail_start if hasattr(args, "detail_start") else 0.5
             detail_end = args.detail_end if hasattr(args, "detail_end") else 0.8
+            detail_exponent = args.detail_exponent if hasattr(args, "detail_exponent") else 1.5
 
             return create_basic_furry_workflow(
                 checkpoint=checkpoint,
@@ -393,6 +397,7 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
                 detail_amount=detail_amount,
                 detail_start=detail_start,
                 detail_end=detail_end,
+                detail_exponent=detail_exponent,
             )
 
         return furry_workflow_wrapper

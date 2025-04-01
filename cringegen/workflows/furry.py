@@ -12,7 +12,13 @@ from ..utils.comfy_api import (
     is_valid_scheduler,
 )
 from ..workflows.base import ComfyWorkflow
-from ..utils.logger import get_logger
+from ..utils.logger import (
+    get_logger, 
+    is_sdxl_model, 
+    print_colored_warning, 
+    is_optimal_resolution,
+    get_optimal_resolution_suggestions
+)
 
 # Create logger for this module
 logger = get_logger(__name__)
@@ -38,7 +44,6 @@ def create_basic_furry_workflow(
     use_zsnr: bool = False,
     use_vpred: bool = False,
     split_sigmas: Optional[float] = None,
-    # New parameters
     split_first_cfg: Optional[float] = None,
     split_second_cfg: Optional[float] = None,
     split_first_sampler: Optional[str] = None,
@@ -56,6 +61,7 @@ def create_basic_furry_workflow(
     detail_amount: float = 0.1,
     detail_start: float = 0.5,
     detail_end: float = 0.8,
+    detail_exponent: float = 1.5,
     batch_size: int = 1,
     show: bool = False,
 ) -> Dict[str, Any]:
@@ -103,6 +109,7 @@ def create_basic_furry_workflow(
         detail_amount: Detail amount for DetailDaemonSamplerNode (0.0-1.0)
         detail_start: Start percent for DetailDaemonSamplerNode (0.0-1.0)
         detail_end: End percent for DetailDaemonSamplerNode (0.0-1.0)
+        detail_exponent: Exponent for DetailDaemonSamplerNode
         batch_size: The batch size for the image
         show: Whether to show the image
 
@@ -114,15 +121,44 @@ def create_basic_furry_workflow(
     # Set model-specific default CFG if not provided
     if cfg is None:
         # Default CFG values based on model
-        if "noobai" in checkpoint.lower():
+        if checkpoint and "noobai" in checkpoint.lower():
             cfg = 3.5  # NoobAI models use lower CFG
-        elif "ponydiffusion" in checkpoint.lower():
+        elif checkpoint and "ponydiffusion" in checkpoint.lower():
             cfg = 7.0  # PonyDiffusion models use higher CFG
         else:
             cfg = 7.0  # Default value for other models
         logger.info(f"Using model-specific default CFG: {cfg} for model: {checkpoint}")
     else:
         logger.info(f"Using user-specified CFG: {cfg}")
+
+    # Check if this is an SDXL model and display a warning if so
+    if checkpoint and is_sdxl_model(checkpoint):
+        print_colored_warning(f"WARNING: Detected SDXL model architecture for checkpoint '{checkpoint}'")
+        # Additional logging for normal log files
+        logger.warning(f"Using SDXL model: {checkpoint}")
+        
+        # Check resolution only if DeepShrink is not enabled
+        if not use_deepshrink and not is_optimal_resolution(width, height, "sdxl", use_deepshrink):
+            pixels = width * height
+            # Get suggestions for better resolutions
+            suggestions = get_optimal_resolution_suggestions(width, height, "sdxl")
+            suggestion_text = ", ".join([f"{w}×{h}" for w, h in suggestions[:3]])
+            
+            print_colored_warning(
+                f"WARNING: Non-optimal resolution for SDXL model ({width}×{height} = {pixels} pixels).\n"
+                f"         Optimal pixel count is ~1,048,576. Suggested resolutions: {suggestion_text}"
+            )
+    # Check SD1.5 resolution if not using DeepShrink
+    elif not use_deepshrink and not is_sdxl_model(checkpoint) and not is_optimal_resolution(width, height, "sd15", use_deepshrink):
+        pixels = width * height
+        # Get suggestions for better resolutions
+        suggestions = get_optimal_resolution_suggestions(width, height, "sd15")
+        suggestion_text = ", ".join([f"{w}×{h}" for w, h in suggestions[:3]])
+        
+        print_colored_warning(
+            f"WARNING: Non-optimal resolution for SD1.5 model ({width}×{height} = {pixels} pixels).\n"
+            f"         Optimal pixel count is ~262,144. Suggested resolutions: {suggestion_text}"
+        )
 
     # Flag to track whether a LoRA is being used
     using_lora = bool(lora) or (loras and len(loras) > 0)
@@ -137,7 +173,7 @@ def create_basic_furry_workflow(
     model_out = workflow.get_output(model_node, 0)
     clip_out = workflow.get_output(model_node, 1)
     vae_out = workflow.get_output(model_node, 2)
-
+    
     # Add primary LoRA if specified
     if lora:
         logger.info(f"Using primary LoRA: {lora} (strength: {lora_strength})")
@@ -400,8 +436,8 @@ def create_basic_furry_workflow(
                     "start": detail_start,
                     "end": detail_end,
                     "bias": 0.5,
-                    "exponent": 1,
-                    "start_offset": 0,  # Changed to 0 to match the example JSON
+                    "exponent": detail_exponent,
+                    "start_offset": 0,
                     "end_offset": 0,
                     "fade": 0,
                     "smooth": True,
@@ -409,23 +445,11 @@ def create_basic_furry_workflow(
                     "sampler": second_sampler_out,
                 },
             )
-            detail_daemon_out = workflow.get_output(detail_daemon, 0)
-
-            # Add BlehForceSeedSampler with a fixed seed offset to ensure different sampling
-            bleh_force_seed = workflow.add_node(
-                "BlehForceSeedSampler",
-                {
-                    "seed_offset": 200,  # Fixed offset as in the example JSON
-                    "sampler": detail_daemon_out,
-                },
-            )
-            second_sampler_out = workflow.get_output(bleh_force_seed, 0)
+            # Use the DetailDaemonSamplerNode output directly
+            final_sampler_out = workflow.get_output(detail_daemon, 0)
         else:
-            # When no detail daemon, just add seed offset to the sampler
-            bleh_force_seed = workflow.add_node(
-                "BlehForceSeedSampler", {"seed_offset": 200, "sampler": second_sampler_out}
-            )
-            second_sampler_out = workflow.get_output(bleh_force_seed, 0)
+            # If not using detail_daemon, just use the second sampler directly
+            final_sampler_out = second_sampler_out
 
         # Create first sampling stage with SamplerCustomAdvanced
         first_stage = workflow.add_node(
@@ -446,7 +470,7 @@ def create_basic_furry_workflow(
             {
                 "noise": disable_noise_out,
                 "guider": second_guider_out,
-                "sampler": second_sampler_out,
+                "sampler": final_sampler_out,
                 "sigmas": second_sigmas_out,
                 "latent_image": first_stage_out,
             },
@@ -483,7 +507,7 @@ def create_basic_furry_workflow(
                     "start": detail_start,
                     "end": detail_end,
                     "bias": 0.5,
-                    "exponent": 1,
+                    "exponent": detail_exponent,
                     "start_offset": 0,  # Changed to 0 to match example JSON
                     "end_offset": 0,
                     "fade": 0,
@@ -492,13 +516,8 @@ def create_basic_furry_workflow(
                     "sampler": second_sampler_out,
                 },
             )
-            detail_daemon_out = workflow.get_output(detail_daemon, 0)
-
-            # Add seed offset to the detail daemon
-            bleh_force_seed = workflow.add_node(
-                "BlehForceSeedSampler", {"seed_offset": 200, "sampler": detail_daemon_out}
-            )
-            final_sampler_out = workflow.get_output(bleh_force_seed, 0)
+            # Use the DetailDaemonSamplerNode output directly
+            final_sampler_out = workflow.get_output(detail_daemon, 0)
 
             # Create CFG Guiders for both stages
             first_cfg_guider = workflow.add_node(
@@ -751,3 +770,24 @@ def create_nsfw_furry_workflow(
             node["inputs"]["filename_prefix"] = "cringegen_nsfw_furry"
 
     return workflow_dict
+
+
+# For testing purposes
+if __name__ == "__main__":
+    from ..utils.logger import print_colored_warning, is_sdxl_model
+    
+    # Test SDXL model warning
+    test_models = [
+        "sdxl_base.safetensors",
+        "sd-xl_base.safetensors",
+        "stable-diffusion-xl-base.safetensors",
+        "stable_diffusion_1_5.safetensors",
+        "ponyDiffusionV6XL_v6StartWithThisOne.safetensors"
+    ]
+    
+    print("Testing SDXL model detection:")
+    for model in test_models:
+        if is_sdxl_model(model):
+            print_colored_warning(f"WARNING: Detected SDXL model architecture for checkpoint '{model}'")
+        else:
+            print(f"Not an SDXL model: {model}")

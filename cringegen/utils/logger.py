@@ -10,6 +10,18 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+# Module exports
+__all__ = [
+    "get_logger", 
+    "configure_logging", 
+    "set_log_level", 
+    "print_colored_warning",
+    "is_sdxl_model",
+    "is_optimal_resolution",
+    "get_optimal_resolution",
+    "get_optimal_resolution_suggestions"
+]
+
 # Default log format
 DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 SIMPLE_LOG_FORMAT = "%(levelname)s: %(message)s"
@@ -19,6 +31,12 @@ _LOGGERS: Dict[str, logging.Logger] = {}
 
 # Environment variable to control default log level
 LOG_LEVEL_ENV_VAR = "CRINGEGEN_LOG_LEVEL"
+
+# Add these constants for ANSI colors
+YELLOW = "\033[93m"
+RED = "\033[91m"
+GREEN = "\033[92m"
+RESET = "\033[0m"
 
 
 def get_logger(name: str = "cringegen") -> logging.Logger:
@@ -166,3 +184,199 @@ def set_log_level(level: Union[int, str]) -> None:
     # Also update all existing handlers
     for handler in root_logger.handlers:
         handler.setLevel(level)
+
+
+def print_colored_warning(message: str, color: str = YELLOW) -> None:
+    """Print a colored warning message to stderr.
+    
+    Args:
+        message: The warning message to print
+        color: ANSI color code to use
+    """
+    print(f"{color}{message}{RESET}", file=sys.stderr)
+
+
+def is_sdxl_model(checkpoint_name: str) -> bool:
+    """Determine if a checkpoint is an SDXL model based on name patterns.
+    
+    Args:
+        checkpoint_name: The name of the checkpoint file
+        
+    Returns:
+        True if the checkpoint appears to be an SDXL model
+    """
+    sdxl_patterns = [
+        "sdxl", 
+        "sd-xl", 
+        "sd_xl",
+        "stableDiffusionXL",
+        "stable-diffusion-xl",
+        "pixartsigma"
+    ]
+    
+    checkpoint_lower = checkpoint_name.lower()
+    return any(pattern in checkpoint_lower for pattern in sdxl_patterns)
+
+
+def is_optimal_resolution(width: int, height: int, model_type: str, use_deepshrink: bool = False) -> bool:
+    """Check if dimensions are optimal for the given model type.
+    
+    Args:
+        width: Image width
+        height: Image height
+        model_type: "sdxl" or "sd15" or other model type
+        use_deepshrink: Whether DeepShrink is enabled (bypasses check if True)
+        
+    Returns:
+        True if the resolution is optimal for the model type or DeepShrink is enabled
+    """
+    # Skip resolution check when DeepShrink is enabled
+    if use_deepshrink:
+        return True
+        
+    # Calculate total pixels
+    total_pixels = width * height
+    
+    if model_type.lower() == "sdxl":
+        # SDXL optimal: 1024×1024 (1,048,576 pixels)
+        # Allow 5% margin for different aspect ratios
+        target_pixels = 1048576
+        margin = target_pixels * 0.05
+        return abs(total_pixels - target_pixels) <= margin
+    elif model_type.lower() == "sd15":
+        # SD 1.5 optimal: 512×512 (262,144 pixels)
+        # Allow 5% margin for different aspect ratios
+        target_pixels = 262144
+        margin = target_pixels * 0.05
+        return abs(total_pixels - target_pixels) <= margin
+    else:
+        # For other models, assume any resolution is fine
+        return True
+
+
+def get_optimal_resolution(aspect_ratio: float, model_type: str) -> tuple:
+    """Calculate optimal resolution for a given aspect ratio and model type.
+    
+    Args:
+        aspect_ratio: Width to height ratio (width/height)
+        model_type: "sdxl" or "sd15" or other model type
+        
+    Returns:
+        Tuple of (width, height) that is optimal for the model type and aspect ratio
+    """
+    # First, determine the target pixel count
+    if model_type.lower() == "sdxl":
+        target_pixels = 1048576  # 1024×1024
+    elif model_type.lower() == "sd15":
+        target_pixels = 262144   # 512×512
+    else:
+        # Default to SD1.5 for unknown models
+        target_pixels = 262144
+    
+    # Calculate dimensions based on aspect ratio and target pixels
+    width = int((target_pixels * aspect_ratio) ** 0.5)
+    height = int(width / aspect_ratio)
+    
+    # Ensure dimensions are divisible by 8 (required by Stable Diffusion)
+    width = width - (width % 8)
+    height = height - (height % 8)
+    
+    return (width, height)
+
+
+def get_optimal_resolution_suggestions(width: int, height: int, model_type: str) -> list:
+    """Get optimal resolution suggestions for a given aspect ratio and model type.
+    
+    Args:
+        width: Current width
+        height: Current height
+        model_type: "sdxl" or "sd15" or other model type
+        
+    Returns:
+        List of tuple suggestions (width, height) that are optimal
+    """
+    # Calculate aspect ratio
+    aspect_ratio = width / height
+    
+    # Get the base optimal resolution for this aspect ratio
+    base_optimal = get_optimal_resolution(aspect_ratio, model_type)
+    
+    # Get some common variations with the same aspect ratio
+    suggestions = [base_optimal]
+    
+    # Add common predefined resolutions that maintain the approximate pixel count
+    if model_type.lower() == "sdxl":
+        if abs(aspect_ratio - 1.0) < 0.01:  # Square (1:1)
+            suggestions = [(1024, 1024)]
+        elif abs(aspect_ratio - (4/3)) < 0.01:  # 4:3
+            suggestions = [(1184, 888)]
+        elif abs(aspect_ratio - (3/4)) < 0.01:  # 3:4
+            suggestions = [(888, 1184)]
+        elif abs(aspect_ratio - (16/9)) < 0.01:  # 16:9
+            suggestions = [(1360, 768)]
+        elif abs(aspect_ratio - (9/16)) < 0.01:  # 9:16
+            suggestions = [(768, 1360)]
+        elif abs(aspect_ratio - (3/2)) < 0.01:  # 3:2
+            suggestions = [(1248, 832)]
+        elif abs(aspect_ratio - (2/3)) < 0.01:  # 2:3
+            suggestions = [(832, 1248)]
+        
+        # Add common SDXL presets regardless of the input aspect ratio
+        if len(suggestions) == 1:  # Only the base suggestion was added
+            if aspect_ratio >= 1.0:  # Landscape
+                suggestions.extend([
+                    (1024, 1024),  # 1:1
+                    (1152, 896),   # 9:7
+                    (1216, 832),   # 19:13
+                    (1344, 768),   # 7:4
+                    (1536, 640),   # 12:5
+                ])
+            else:  # Portrait
+                suggestions.extend([
+                    (1024, 1024),  # 1:1
+                    (896, 1152),   # 7:9
+                    (832, 1216),   # 13:19
+                    (768, 1344),   # 4:7
+                    (640, 1536),   # 5:12
+                ])
+    
+    elif model_type.lower() == "sd15":
+        if abs(aspect_ratio - 1.0) < 0.01:  # Square (1:1)
+            suggestions = [(512, 512)]
+        elif abs(aspect_ratio - (4/3)) < 0.01:  # 4:3
+            suggestions = [(592, 444)]
+        elif abs(aspect_ratio - (3/4)) < 0.01:  # 3:4
+            suggestions = [(444, 592)]
+        elif abs(aspect_ratio - (16/9)) < 0.01:  # 16:9
+            suggestions = [(680, 384)]
+        elif abs(aspect_ratio - (9/16)) < 0.01:  # 9:16
+            suggestions = [(384, 680)]
+        elif abs(aspect_ratio - (3/2)) < 0.01:  # 3:2
+            suggestions = [(624, 416)]
+        elif abs(aspect_ratio - (2/3)) < 0.01:  # 2:3
+            suggestions = [(416, 624)]
+        
+        # Add common SD1.5 presets regardless of the input aspect ratio
+        if len(suggestions) == 1:  # Only the base suggestion was added
+            if aspect_ratio >= 1.0:  # Landscape
+                suggestions.extend([
+                    (512, 512),    # 1:1
+                    (576, 448),    # 9:7
+                    (608, 416),    # 19:13
+                    (672, 384),    # 7:4
+                ])
+            else:  # Portrait
+                suggestions.extend([
+                    (512, 512),    # 1:1
+                    (448, 576),    # 7:9
+                    (416, 608),    # 13:19
+                    (384, 672),    # 4:7
+                ])
+    
+    # Ensure all suggestions are unique
+    unique_suggestions = []
+    for w, h in suggestions:
+        if (w, h) not in unique_suggestions:
+            unique_suggestions.append((w, h))
+    
+    return unique_suggestions

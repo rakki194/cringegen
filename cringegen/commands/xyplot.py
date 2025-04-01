@@ -11,6 +11,7 @@ import tempfile
 import json
 import subprocess
 import time
+import pprint
 from typing import List, Dict, Any, Tuple, Optional, Callable
 import re
 
@@ -81,6 +82,7 @@ def add_xyplot_command(subparsers, parent_parser):
         choices=[
             "checkpoint",
             "lora",
+            "loras",
             "sampler",
             "scheduler",
             "cfg",
@@ -93,6 +95,7 @@ def add_xyplot_command(subparsers, parent_parser):
             "detail_amount",
             "detail_start",
             "detail_end",
+            "detail_exponent",
             "pag",
             "pag_scale",
             "pag_sigma_start",
@@ -112,6 +115,7 @@ def add_xyplot_command(subparsers, parent_parser):
         choices=[
             "checkpoint",
             "lora",
+            "loras",
             "sampler",
             "scheduler",
             "cfg",
@@ -124,6 +128,7 @@ def add_xyplot_command(subparsers, parent_parser):
             "detail_amount",
             "detail_start",
             "detail_end",
+            "detail_exponent",
             "pag",
             "pag_scale",
             "pag_sigma_start",
@@ -168,6 +173,11 @@ def add_xyplot_command(subparsers, parent_parser):
     )
     xyplot_parser.add_argument(
         "--debug-mode", action="store_true", help="Enable debug mode for layout visualization"
+    )
+
+    # Debug options
+    xyplot_parser.add_argument(
+        "--dump-workflows", action="store_true", help="Dump workflow JSON files for debugging"
     )
 
     # Output settings
@@ -270,6 +280,9 @@ def add_xyplot_command(subparsers, parent_parser):
         default=0.8,
         help="End percent for DetailDaemonSamplerNode (0.0-1.0)",
     )
+    xyplot_parser.add_argument(
+        "--detail-exponent", type=float, default=1.5, help="Exponent for detail strength (higher = stronger effect)"
+    )
 
     # Remote ComfyUI options
     xyplot_parser.add_argument(
@@ -299,6 +312,18 @@ def add_xyplot_command(subparsers, parent_parser):
         "--ssh-key",
         type=str,
         help="Path to SSH private key file for remote ComfyUI instance",
+    )
+
+    # Add a separator between sections
+    xyplot_parser.add_argument("--lora", type=str, help="Base LoRA to use")
+    xyplot_parser.add_argument(
+        "--lora-strength", type=float, default=0.35, help="Strength for the LoRA"
+    )
+    xyplot_parser.add_argument(
+        "--loras", type=str, help="Comma-separated list of additional LoRAs to use"
+    )
+    xyplot_parser.add_argument(
+        "--lora-weights", type=str, help="Comma-separated list of weights for additional LoRAs"
     )
 
     xyplot_parser.set_defaults(func=generate_xyplot)
@@ -427,6 +452,108 @@ def handle_lora_weight_param(workflow: Dict[str, Any], value: str, args) -> Dict
     return workflow_copy
 
 
+@register_param_handler("loras")
+def handle_loras_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle multiple LoRAs parameter variation
+    
+    Value format: "lora1:weight1,lora2:weight2,lora3:weight3"
+    Example: "pony/by_wolfy-nail-v3s3000.safetensors:0.35,pony/cotw-v1s400.safetensors:0.4"
+    
+    If no weight is specified, default to 0.35: 
+    "pony/by_wolfy-nail-v3s3000.safetensors,pony/cotw-v1s400.safetensors:0.4"
+    """
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Parse the comma-separated lora:weight pairs
+    lora_entries = []
+    
+    # Handle empty case
+    if not value or value.lower() == "none":
+        loras = []
+        lora_weights = []
+    else:
+        # Split by comma
+        pairs = value.split(",")
+        loras = []
+        lora_weights = []
+        
+        for pair in pairs:
+            # Check if pair contains weight
+            if ":" in pair:
+                lora_name, weight_str = pair.split(":", 1)
+                loras.append(lora_name.strip())
+                try:
+                    lora_weights.append(float(weight_str.strip()))
+                except ValueError:
+                    logger.warning(f"Invalid weight '{weight_str}' for LoRA '{lora_name}', using default 0.35")
+                    lora_weights.append(0.35)
+            else:
+                # No weight specified, use default 0.35
+                loras.append(pair.strip())
+                lora_weights.append(0.35)
+    
+    # Remove any existing LoRA nodes
+    nodes_to_remove = []
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "LoraLoader":
+            nodes_to_remove.append(node_id)
+    
+    # Find the CheckpointLoaderSimple node to get the original model and clip outputs
+    checkpoint_node_id = None
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "CheckpointLoaderSimple":
+            checkpoint_node_id = node_id
+            break
+    
+    if checkpoint_node_id is None:
+        logger.error("Could not find CheckpointLoaderSimple node in workflow")
+        return workflow_copy
+    
+    # We can't actually remove nodes from the workflow, but we can keep track of model and clip outputs
+    model_out = [checkpoint_node_id, 0]
+    clip_out = [checkpoint_node_id, 1]
+    
+    # Now add the new LoRA nodes with the specified weights
+    next_node_id = max(int(nid) for nid in workflow_copy.keys()) + 1
+    
+    for i, (lora_name, weight) in enumerate(zip(loras, lora_weights)):
+        if not lora_name or not lora_name.strip():
+            continue
+            
+        # Add a new LoRA node
+        new_node_id = str(next_node_id + i)
+        workflow_copy[new_node_id] = {
+            "class_type": "LoraLoader",
+            "inputs": {
+                "model": model_out,
+                "clip": clip_out,
+                "lora_name": lora_name,
+                "strength_model": weight,
+                "strength_clip": weight
+            }
+        }
+        
+        # Update model and clip outputs for next LoRA
+        model_out = [new_node_id, 0]
+        clip_out = [new_node_id, 1]
+    
+    # Now update all nodes that were previously using outputs from the old LoRA nodes
+    for node_id, node in workflow_copy.items():
+        for input_name, input_value in node["inputs"].items():
+            if isinstance(input_value, list) and len(input_value) == 2:
+                # If this input was connected to an output of a removed LoRA node
+                if input_value[0] in nodes_to_remove:
+                    # Check if it was using model (0) or clip (1) output
+                    if input_value[1] == 0:  # Model output
+                        node["inputs"][input_name] = model_out
+                    elif input_value[1] == 1:  # CLIP output
+                        node["inputs"][input_name] = clip_out
+    
+    logger.debug(f"Set multiple LoRAs: {', '.join([f'{lora}:{weight}' for lora, weight in zip(loras, lora_weights)])}")
+    return workflow_copy
+
+
 @register_param_handler("seed")
 def handle_seed_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
     """Handle seed parameter variation"""
@@ -434,14 +561,34 @@ def handle_seed_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, A
     workflow_copy = json.loads(json.dumps(workflow))
 
     # Convert value to int
-    seed_value = int(value)
+    try:
+        seed_value = int(value)
+        logger.debug(f"Converting seed value '{value}' to integer: {seed_value}")
+    except ValueError:
+        logger.error(f"Failed to convert seed value '{value}' to integer, using 0")
+        seed_value = 0
 
-    # Find the correct sampler node
+    # Find sampler nodes and RandomNoise nodes to set seed
+    seed_set = False
+    
+    # First find and set KSampler/KSamplerAdvanced nodes
     for node_id, node in workflow_copy.items():
         if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
             node["inputs"]["seed"] = seed_value
-            logger.debug(f"Set seed to {seed_value}")
-            break
+            logger.debug(f"Set seed to {seed_value} in KSampler node {node_id}")
+            seed_set = True
+            # Don't break here - set it for all sampler nodes
+            
+    # Also find and set RandomNoise nodes
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "RandomNoise":
+            node["inputs"]["noise_seed"] = seed_value
+            logger.debug(f"Set noise_seed to {seed_value} in RandomNoise node {node_id}")
+            seed_set = True
+            # Don't break here - set it for all RandomNoise nodes
+
+    if not seed_set:
+        logger.warning(f"Could not find any KSampler, KSamplerAdvanced, or RandomNoise nodes to set seed={seed_value}")
 
     return workflow_copy
 
@@ -950,6 +1097,47 @@ def handle_deepshrink_gradual_param(workflow: Dict[str, Any], value: str, args) 
         return workflow_copy
 
 
+@register_param_handler("detail_exponent")
+def handle_detail_exponent_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle detail_exponent parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+
+    # Convert value to float
+    try:
+        detail_exponent = float(value)
+        logger.info(f"Setting detail_exponent to {detail_exponent}")
+    except ValueError:
+        logger.error(f"Failed to convert detail_exponent value '{value}' to float, using 1.5")
+        detail_exponent = 1.5
+    
+    # First make sure detail_daemon is enabled
+    # Find DetailDaemonSamplerNode nodes and set their exponent
+    daemon_nodes_found = False
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "DetailDaemonSamplerNode":
+            node["inputs"]["exponent"] = detail_exponent
+            daemon_nodes_found = True
+            logger.debug(f"Set exponent to {detail_exponent} in DetailDaemonSamplerNode {node_id}")
+    
+    if not daemon_nodes_found:
+        logger.warning(f"No DetailDaemonSamplerNode found, detail_exponent={detail_exponent} not applied")
+    
+    return workflow_copy
+
+
+def dump_workflow_to_file(workflow: Dict[str, Any], filename: str):
+    """Dumps the workflow JSON to a file for debugging
+    
+    Args:
+        workflow: The workflow to dump
+        filename: The filename to save to
+    """
+    with open(filename, 'w') as f:
+        json.dump(workflow, f, indent=2)
+    logger.info(f"Dumped workflow JSON to {filename}")
+
+
 def generate_single_image(
     workflow: Dict[str, Any], x_param: str, x_value: str, y_param: str, y_value: str, args
 ) -> str:
@@ -966,12 +1154,43 @@ def generate_single_image(
     Returns:
         Path to the generated image
     """
-    # Apply X parameter
-    modified_workflow = param_handlers[x_param](workflow, x_value, args)
+    # Special case for when using seed as a parameter
+    # We need to handle the non-seed parameter first to ensure the workflow is correctly configured
+    # before applying the seed
+    
+    if x_param == "seed" and y_param != "seed":
+        # Handle the non-seed parameter first, then apply seed
+        modified_workflow = param_handlers[y_param](workflow, y_value, args)
+        # Then apply seed directly (not through param handler)
+        seed_value = int(x_value)
+        for node_id, node in modified_workflow.items():
+            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+                node["inputs"]["seed"] = seed_value
+                logger.debug(f"Set seed to {seed_value} in node {node_id}")
+            elif node["class_type"] == "RandomNoise":
+                node["inputs"]["noise_seed"] = seed_value
+                logger.debug(f"Set noise_seed to {seed_value} in RandomNoise node {node_id}")
+    
+    elif y_param == "seed" and x_param != "seed":
+        # Handle the non-seed parameter first, then apply seed
+        modified_workflow = param_handlers[x_param](workflow, x_value, args)
+        # Then apply seed directly
+        seed_value = int(y_value)
+        for node_id, node in modified_workflow.items():
+            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+                node["inputs"]["seed"] = seed_value
+                logger.debug(f"Set seed to {seed_value} in node {node_id}")
+            elif node["class_type"] == "RandomNoise":
+                node["inputs"]["noise_seed"] = seed_value
+                logger.debug(f"Set noise_seed to {seed_value} in RandomNoise node {node_id}")
+    
+    else:
+        # Normal case: Apply X parameter
+        modified_workflow = param_handlers[x_param](workflow, x_value, args)
 
-    # Apply Y parameter (if different from X)
-    if y_param != x_param:
-        modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
+        # Apply Y parameter (if different from X)
+        if y_param != x_param:
+            modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
 
     # Set image dimensions
     for node_id, node in modified_workflow.items():
@@ -979,30 +1198,66 @@ def generate_single_image(
             node["inputs"]["width"] = args.width
             node["inputs"]["height"] = args.height
             
-    # If we're not explicitly varying seed as a parameter, set a unique seed for each image
-    # to ensure they're different, even if user set a global seed
-    if args.x_param != "seed" and args.y_param != "seed":
-        # Generate a seed based on the combination of x and y values
-        # This ensures that the same x,y combination will produce the same result
-        # even across different runs
-        if isinstance(x_value, str) and isinstance(y_value, str):
-            # Create a deterministic but "random-looking" seed from the string representations
-            x_hash = sum(ord(c) for c in str(x_value))
-            y_hash = sum(ord(c) for c in str(y_value))
-            
-            # Use the global seed as a base if provided, otherwise use 0
-            base_seed = args.seed if args.seed is not None else 0
-            combined_seed = (base_seed * 10000) + (x_hash * 100) + y_hash
-            
-            # Ensure seed is in a reasonable range
-            combined_seed = combined_seed % 2147483647  # max 32-bit signed int
-            
-            logger.debug(f"Using derived seed {combined_seed} for {x_param}={x_value}, {y_param}={y_value}")
-            
+    # Handle regular seed when seed is not a parameter
+    if x_param != "seed" and y_param != "seed":
+        # Regular seed handling logic when seed is not a parameter
+        if args.seed is not None:
+            # Use global seed from args
+            seed_value = args.seed
             for node_id, node in modified_workflow.items():
                 if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                    node["inputs"]["seed"] = combined_seed
-                    break
+                    node["inputs"]["seed"] = seed_value
+                    logger.debug(f"Using global seed {seed_value} for KSampler")
+                elif node["class_type"] == "RandomNoise":
+                    node["inputs"]["noise_seed"] = seed_value
+                    logger.debug(f"Using global seed {seed_value} for RandomNoise")
+        else:
+            # Generate a deterministic seed based on position
+            if isinstance(x_value, str) and isinstance(y_value, str):
+                x_hash = sum(ord(c) for c in str(x_value))
+                y_hash = sum(ord(c) for c in str(y_value))
+                
+                combined_seed = (x_hash * 100) + y_hash
+                combined_seed = combined_seed % 2147483647  # max 32-bit signed int
+                
+                for node_id, node in modified_workflow.items():
+                    if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+                        node["inputs"]["seed"] = combined_seed
+                        logger.debug(f"Using position-based seed {combined_seed} for KSampler")
+                    elif node["class_type"] == "RandomNoise":
+                        node["inputs"]["noise_seed"] = combined_seed
+                        logger.debug(f"Using position-based seed {combined_seed} for RandomNoise")
+
+    # Final verification to ensure seed is never None in any sampler or noise node
+    for node_id, node in modified_workflow.items():
+        if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+            if node["inputs"]["seed"] is None:
+                logger.warning(f"Seed is still None in KSampler node {node_id} after all processing - using random seed")
+                node["inputs"]["seed"] = int(time.time()) % 2147483647  # Use current time as seed
+        elif node["class_type"] == "RandomNoise":
+            if node["inputs"]["noise_seed"] is None:
+                logger.warning(f"Seed is still None in RandomNoise node {node_id} after all processing - using random seed")
+                node["inputs"]["noise_seed"] = int(time.time()) % 2147483647  # Use current time as seed
+
+    # Dump the final workflow to a file for debugging (one per grid position)
+    if hasattr(args, "dump_workflows") and args.dump_workflows:
+        debug_dir = os.path.join(args.output_dir, "debug")
+        os.makedirs(debug_dir, exist_ok=True)
+        debug_filename = os.path.join(debug_dir, f"workflow_{x_param}_{x_value}_{y_param}_{y_value}.json")
+        dump_workflow_to_file(modified_workflow, debug_filename)
+        
+    # Extract and log key parameters for debugging
+    seed_value = None
+    sampler_name = None
+    scheduler = None
+    for node_id, node in modified_workflow.items():
+        if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+            seed_value = node["inputs"].get("seed")
+            sampler_name = node["inputs"].get("sampler_name")
+            scheduler = node["inputs"].get("scheduler")
+            break
+            
+    logger.info(f"Position [{x_param}={x_value}, {y_param}={y_value}] → Seed: {seed_value}, Sampler: {sampler_name}")
 
     # Queue the workflow
     prompt_id_response = queue_prompt(modified_workflow, args.comfy_url)
@@ -1411,14 +1666,6 @@ def generate_xyplot(args):
         for node_id, node in workflow.items():
             if node["class_type"] == "CLIPTextEncode" and "negative" in node_id.lower():
                 node["inputs"]["text"] = args.negative_prompt
-                break
-
-    # Apply global seed if specified and not varying seed as a parameter
-    if args.seed is not None and args.x_param != "seed" and args.y_param != "seed":
-        for node_id, node in workflow.items():
-            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
-                node["inputs"]["seed"] = args.seed
-                logger.info(f"Applied global seed: {args.seed}")
                 break
 
     # Generate images for each parameter combination
