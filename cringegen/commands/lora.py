@@ -1,5 +1,5 @@
 """
-LoRA-related commands for CringeGen
+LoRA-related commands for cringegen
 """
 
 import json

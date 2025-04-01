@@ -1,5 +1,5 @@
 """
-Furry generation commands for CringeGen
+Furry generation commands for cringegen
 """
 
 import logging

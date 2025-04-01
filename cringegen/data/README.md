@@ -1,6 +1,6 @@
-# CringeGen Data Structures
+# cringegen Data Structures
 
-This directory contains all the data structures used by CringeGen for generating anthro/furry art prompts. Each file is organized around a specific domain of data needed for the generation process.
+This directory contains all the data structures used by cringegen for generating anthro/furry art prompts. Each file is organized around a specific domain of data needed for the generation process.
 
 ## Overview
 

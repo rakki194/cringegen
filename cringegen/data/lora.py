@@ -1,5 +1,5 @@
 """
-Unified LoRA Classification and Management System for CringeGen
+Unified LoRA Classification and Management System for cringegen
 
 This module provides a centralized system for all LoRA-related data, including
 classification systems, identification patterns, and filtering mechanisms.

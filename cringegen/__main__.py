@@ -1,5 +1,5 @@
 """
-Main entry point for CringeGen when executed as a module
+Main entry point for cringegen when executed as a module
 """
 
 from .cli import main

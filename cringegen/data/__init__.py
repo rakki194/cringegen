@@ -1,5 +1,5 @@
 """
-CringeGen data module
+cringegen data module
 
 This module contains structured data used for generating image prompts.
 It includes taxonomies, character data, environments, LoRA datasets,

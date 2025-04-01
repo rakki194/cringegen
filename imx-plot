@@ -27,7 +27,7 @@ fn main() {
 
 fn run(config_path: &str) -> anyhow::Result<()> {
     use anyhow::Context;
-    use imx::{LabelAlignment, PlotConfig, create_plot};
+    use imx::{create_plot, LabelAlignment, PlotConfig};
     use serde::{Deserialize, Serialize};
     use std::fs;
     use std::path::PathBuf;
@@ -62,11 +62,11 @@ fn run(config_path: &str) -> anyhow::Result<()> {
     }
 
     fn default_top_padding() -> i32 {
-        60
+        120
     }
 
     fn default_left_padding() -> i32 {
-        60
+        80
     }
 
     fn default_font_size() -> f32 {

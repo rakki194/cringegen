@@ -1,7 +1,7 @@
 """
-CringeGen Utilities
+cringegen Utilities
 
-This module provides utility functions for working with CringeGen data structures.
+This module provides utility functions for working with cringegen data structures.
 """
 
 # Import utilities for working with styles

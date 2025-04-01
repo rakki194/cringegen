@@ -1,5 +1,5 @@
 """
-Accessories Data for CringeGen
+Accessories Data for cringegen
 
 This module provides centralized data structures for species-specific accessories.
 It consolidates accessory information previously distributed across multiple files.

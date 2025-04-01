@@ -1,8 +1,8 @@
 """
-Unified Environment System for CringeGen
+Unified Environment System for cringegen
 
 This module provides a centralized environment system that consolidates all environment,
-background, time, weather, and season data for the CringeGen toolkit. It uses consistent
+background, time, weather, and season data for the cringegen toolkit. It uses consistent
 data structures and formats for better maintainability and extensibility.
 
 Key components:

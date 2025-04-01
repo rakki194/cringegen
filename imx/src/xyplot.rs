@@ -53,10 +53,10 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 /// Default space reserved at the top of the plot for labels and padding
-pub const DEFAULT_TOP_PADDING: u32 = 40;
+pub const DEFAULT_TOP_PADDING: u32 = 160;
 
 /// Default space reserved at the left of the plot for row labels
-pub const DEFAULT_LEFT_PADDING: u32 = 40;
+pub const DEFAULT_LEFT_PADDING: u32 = 120;
 
 /// Default font size for labels
 pub const DEFAULT_FONT_SIZE: f32 = 40.0;
@@ -558,33 +558,70 @@ fn calculate_layout(config: &PlotConfig, max_width: u32, max_height: u32, cols: 
 
     // Add column labels - one per column, not per image
     if !config.column_labels.is_empty() {
-        #[allow(clippy::cast_possible_truncation)]
+        // First pass: calculate all label dimensions to determine spacing
+        let mut label_dimensions = Vec::new();
         for col in 0..cols.min(config.column_labels.len() as u32) {
             let label = &config.column_labels[col as usize];
-            let cell_start = col * cell_width + left_padding;
-
             let (label_width, label_height) = calculate_label_dimensions(label, fonts, font_size);
-            let label_width_i32 = f32_to_i32(label_width);
+            label_dimensions.push((f32_to_i32(label_width), label_height));
+        }
 
-            let label_x = match config.column_label_alignment {
-                LabelAlignment::Start => u32_to_i32(cell_start),
-                LabelAlignment::Center => {
-                    u32_to_i32(cell_start + max_width / 2) - label_width_i32 / 2
-                }
-                LabelAlignment::End => u32_to_i32(cell_start + max_width) - label_width_i32,
-            };
+        // Calculate total width of all labels and available width to determine spacing
+        let total_labels_width: i32 = label_dimensions.iter().map(|(w, _)| *w).sum();
+        let available_width = u32_to_i32(content_width);
+        let min_spacing = 20; // Minimum spacing between labels
 
-            // Ensure label is properly positioned in the top padding area
-            let label_y = u32_to_i32(top_padding / 2) - u32_to_i32(label_height / 2);
+        // Calculate start position and spacing
+        let mut current_pos = u32_to_i32(left_padding);
+        let equal_spacing = if label_dimensions.len() > 1 {
+            // Distribute labels evenly across available width
+            (available_width - total_labels_width) / (label_dimensions.len() as i32 - 1)
+        } else {
+            0
+        };
+        let label_spacing = equal_spacing.max(min_spacing);
+
+        // If there's extra space, center everything
+        let total_width_with_spacing =
+            total_labels_width + (label_dimensions.len() as i32 - 1) * label_spacing;
+        let start_offset = if total_width_with_spacing < available_width {
+            (available_width - total_width_with_spacing) / 2
+        } else {
+            0
+        };
+        current_pos += start_offset;
+
+        #[allow(clippy::cast_possible_truncation)]
+        for (col, (label_width, label_height)) in label_dimensions
+            .iter()
+            .enumerate()
+            .take(cols.min(config.column_labels.len() as u32) as usize)
+        {
+            let label = &config.column_labels[col];
+
+            // Center label at current position
+            let centered_x = current_pos + label_width / 2;
+
+            // Ensure it doesn't go outside canvas bounds
+            let adjusted_x = (centered_x - label_width / 2)
+                .max(u32_to_i32(left_padding))
+                .min(u32_to_i32(canvas_width) - label_width);
+
+            // Position label in top padding area
+            let label_y = u32_to_i32(top_padding / 2) - u32_to_i32(*label_height / 2);
+
             layout.add_element(LayoutElement::ColumnLabel {
                 rect: LayoutRect {
-                    x: label_x,
+                    x: adjusted_x,
                     y: label_y,
-                    width: i32_to_u32(label_width_i32),
-                    height: label_height,
+                    width: i32_to_u32(*label_width),
+                    height: *label_height,
                 },
                 text: label.clone(),
             });
+
+            // Move to next label position
+            current_pos += label_width + label_spacing;
         }
     }
 

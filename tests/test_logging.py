@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Test script for the CringeGen logging system.
+Test script for the cringegen logging system.
 """
 
 import os
@@ -82,7 +82,7 @@ def test_cli_logging():
 def main():
     """Main entry point for the test script."""
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Test CringeGen logging system")
+    parser = argparse.ArgumentParser(description="Test cringegen logging system")
     parser.add_argument("--log-file", type=str, default="/tmp/cringegen_test_log.txt",
                         help="Log file for testing file logging")
     args = parser.parse_args()

@@ -1,7 +1,7 @@
 """
-Anatomy Data for CringeGen
+Anatomy Data for cringegen
 
-This module provides anatomical reference data for various species in the CringeGen toolkit.
+This module provides anatomical reference data for various species in the cringegen toolkit.
 It includes male and female anatomy terms organized by taxonomy group.
 
 Key components:

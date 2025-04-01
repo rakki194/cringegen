@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo for the data structures and utilities in CringeGen.
+Demo for the data structures and utilities in cringegen.
 
 This script demonstrates:
 1. Species data structures and taxonomy
@@ -301,7 +301,7 @@ def run_all_demos():
     """Run all demo functions"""
     print("CRINGEGEN DATA STRUCTURES AND UTILITIES DEMO")
     print("This demo will showcase the various data structures and utilities")
-    print("available in CringeGen for handling different types of content.")
+    print("available in cringegen for handling different types of content.")
 
     # Run all demos
     demo_species_data()

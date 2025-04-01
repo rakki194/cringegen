@@ -1,5 +1,5 @@
 """
-XY Plot generation commands for CringeGen
+XY Plot generation commands for cringegen
 
 This module provides functionality for generating XY plot grids that vary parameters
 across X and Y axes to visualize their impact on generated images.
@@ -12,6 +12,7 @@ import json
 import subprocess
 import time
 from typing import List, Dict, Any, Tuple, Optional, Callable
+import re
 
 from ..utils.comfy_api import (
     check_comfy_server,
@@ -87,6 +88,20 @@ def add_xyplot_command(subparsers, parent_parser):
             "lora_weight",
             "seed",
             "prompt_variation",
+            "split_sigmas",
+            "detail_daemon",
+            "detail_amount",
+            "detail_start",
+            "detail_end",
+            "pag",
+            "pag_scale",
+            "pag_sigma_start",
+            "pag_sigma_end",
+            "deepshrink",
+            "deepshrink_factor",
+            "deepshrink_start",
+            "deepshrink_end",
+            "deepshrink_gradual",
         ],
         help="Parameter to vary on the X axis",
     )
@@ -104,6 +119,20 @@ def add_xyplot_command(subparsers, parent_parser):
             "lora_weight",
             "seed",
             "prompt_variation",
+            "split_sigmas",
+            "detail_daemon",
+            "detail_amount",
+            "detail_start",
+            "detail_end",
+            "pag",
+            "pag_scale",
+            "pag_sigma_start",
+            "pag_sigma_end",
+            "deepshrink",
+            "deepshrink_factor",
+            "deepshrink_start",
+            "deepshrink_end",
+            "deepshrink_gradual",
         ],
         help="Parameter to vary on the Y axis",
     )
@@ -116,10 +145,10 @@ def add_xyplot_command(subparsers, parent_parser):
 
     # Plot settings
     xyplot_parser.add_argument(
-        "--width", type=int, default=512, help="Width of each individual image"
+        "--width", type=int, default=1024, help="Width of each individual image"
     )
     xyplot_parser.add_argument(
-        "--height", type=int, default=512, help="Height of each individual image"
+        "--height", type=int, default=1024, help="Height of each individual image"
     )
     xyplot_parser.add_argument(
         "--label-alignment",
@@ -154,6 +183,11 @@ def add_xyplot_command(subparsers, parent_parser):
     xyplot_parser.add_argument(
         "--output-dir", type=str, default="output", help="Output directory for generated images"
     )
+    
+    # Generation parameters
+    xyplot_parser.add_argument(
+        "--seed", type=int, help="Global seed to use for generation (if not varying seed as a parameter)"
+    )
 
     # PAG (Perturbed-Attention Guidance) options
     xyplot_parser.add_argument(
@@ -187,6 +221,54 @@ def add_xyplot_command(subparsers, parent_parser):
         type=float,
         default=0.6,
         help="Gradual percent for DeepShrink (0.0-1.0)",
+    )
+
+    # Split-Sigmas options
+    xyplot_parser.add_argument(
+        "--split-sigmas", type=float, help="Value to split sigmas for multi-stage sampling"
+    )
+    xyplot_parser.add_argument(
+        "--split-first-cfg", type=float, help="CFG for first stage of split-sigma sampling"
+    )
+    xyplot_parser.add_argument(
+        "--split-second-cfg", type=float, help="CFG for second stage of split-sigma sampling"
+    )
+    xyplot_parser.add_argument(
+        "--split-first-sampler", type=str, help="Sampler for first stage of split-sigma sampling (e.g., euler, euler_ancestral)"
+    )
+    xyplot_parser.add_argument(
+        "--split-second-sampler", type=str, help="Sampler for second stage of split-sigma sampling (e.g., euler, dpm_2_ancestral)"
+    )
+    xyplot_parser.add_argument(
+        "--split-first-scheduler", type=str, help="Scheduler for first stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    xyplot_parser.add_argument(
+        "--split-second-scheduler", type=str, help="Scheduler for second stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    
+    # Detail Daemon options
+    xyplot_parser.add_argument(
+        "--detail-daemon",
+        action="store_true",
+        help="Use DetailDaemonSamplerNode for enhanced details",
+    )
+    xyplot_parser.add_argument(
+        "--detail-amount",
+        type=float,
+        default=0.1,
+        help="Detail amount for DetailDaemonSamplerNode (0.0-1.0)",
+    )
+    xyplot_parser.add_argument(
+        "--detail-start",
+        type=float,
+        default=0.5,
+        help="Start percent for DetailDaemonSamplerNode (0.0-1.0)",
+    )
+    xyplot_parser.add_argument(
+        "--detail-end",
+        type=float,
+        default=0.8,
+        help="End percent for DetailDaemonSamplerNode (0.0-1.0)",
     )
 
     # Remote ComfyUI options
@@ -380,10 +462,492 @@ def handle_prompt_variation_param(workflow: Dict[str, Any], value: str, args) ->
     for node_id, node in workflow_copy.items():
         if node["class_type"] == "CLIPTextEncode" and "positive" in node_id.lower():
             node["inputs"]["text"] = new_prompt
-            logger.debug(f"Set prompt variation to: {new_prompt}")
+            logger.debug(f"Set prompt to '{new_prompt}'")
             break
 
     return workflow_copy
+
+
+@register_param_handler("split_sigmas")
+def handle_split_sigmas_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle split-sigma parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+
+    # Try to extract numeric value from more complex text
+    try:
+        # Direct conversion first
+        split_value = float(value)
+    except ValueError:
+        # First look for any number in parentheses
+        numeric_match = re.search(r'\((\d+\.?\d*)\)', value)
+        if numeric_match:
+            split_value = float(numeric_match.group(1))
+        else:
+            # If not found in parentheses, look for any number in the string
+            numeric_match = re.search(r'(\d+\.?\d*)', value)
+            if numeric_match:
+                split_value = float(numeric_match.group(1))
+            else:
+                # Default to 0 if no numeric value found
+                logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0")
+                split_value = 0.0
+    
+    logger.debug(f"Extracted split-sigma value: {split_value} from '{value}'")
+    
+    # For split-sigma workflow, we need to set the split-sigmas parameter
+    # This will be applied by the workflow creation function, so we just
+    # need to update the args
+    args_copy = args
+    args_copy.split_sigmas = split_value
+    logger.debug(f"Set split-sigmas to {split_value}")
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("detail_daemon")
+def handle_detail_daemon_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle detail-daemon parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to extract boolean value from more complex text
+    if isinstance(value, bool):
+        detail_daemon_value = value
+    else:
+        # Convert various forms of text to boolean
+        value_lower = value.lower()
+        if any(truth in value_lower for truth in ["true", "yes", "on", "enabled", "1"]):
+            detail_daemon_value = True
+        elif any(false in value_lower for false in ["false", "no", "off", "disabled", "0"]):
+            detail_daemon_value = False
+        else:
+            # Default to False if can't determine
+            logger.warning(f"Could not determine boolean value from '{value}', defaulting to False")
+            detail_daemon_value = False
+    
+    logger.debug(f"Extracted detail-daemon value: {detail_daemon_value} from '{value}'")
+    
+    # For detail-daemon workflow, we need to set the detail-daemon parameter
+    # This will be applied by the workflow creation function, so we just
+    # need to update the args
+    args_copy = args
+    args_copy.detail_daemon = detail_daemon_value
+    logger.debug(f"Set detail-daemon to {detail_daemon_value}")
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("detail_amount")
+def handle_detail_amount_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle detail amount parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        detail_amount = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            detail_amount = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.1")
+            detail_amount = 0.1
+    
+    logger.debug(f"Extracted detail amount: {detail_amount} from '{value}'")
+    
+    # Ensure detail_daemon is enabled
+    args_copy = args
+    args_copy.detail_daemon = True
+    args_copy.detail_amount = detail_amount
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("detail_start")
+def handle_detail_start_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle detail start parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        detail_start = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            detail_start = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.5")
+            detail_start = 0.5
+    
+    logger.debug(f"Extracted detail start: {detail_start} from '{value}'")
+    
+    # Ensure detail_daemon is enabled
+    args_copy = args
+    args_copy.detail_daemon = True
+    args_copy.detail_start = detail_start
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("detail_end")
+def handle_detail_end_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle detail end parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        detail_end = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            detail_end = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.8")
+            detail_end = 0.8
+    
+    logger.debug(f"Extracted detail end: {detail_end} from '{value}'")
+    
+    # Ensure detail_daemon is enabled
+    args_copy = args
+    args_copy.detail_daemon = True
+    args_copy.detail_end = detail_end
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("pag")
+def handle_pag_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle PAG parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to extract boolean value from more complex text
+    if isinstance(value, bool):
+        pag_value = value
+    else:
+        # Convert various forms of text to boolean
+        value_lower = value.lower()
+        if any(truth in value_lower for truth in ["true", "yes", "on", "enabled", "1"]):
+            pag_value = True
+        elif any(false in value_lower for false in ["false", "no", "off", "disabled", "0"]):
+            pag_value = False
+        else:
+            # Default to False if can't determine
+            logger.warning(f"Could not determine boolean value from '{value}', defaulting to False")
+            pag_value = False
+    
+    logger.debug(f"Extracted PAG value: {pag_value} from '{value}'")
+    
+    # Update args
+    args_copy = args
+    args_copy.pag = pag_value
+    logger.debug(f"Set pag to {pag_value}")
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("pag_scale")
+def handle_pag_scale_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle PAG scale parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        pag_scale = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            pag_scale = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 3.0")
+            pag_scale = 3.0
+    
+    logger.debug(f"Extracted PAG scale: {pag_scale} from '{value}'")
+    
+    # Ensure PAG is enabled
+    args_copy = args
+    args_copy.pag = True
+    args_copy.pag_scale = pag_scale
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("pag_sigma_start")
+def handle_pag_sigma_start_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle PAG sigma start parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        pag_sigma_start = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(-?\d+\.?\d*)', value)
+        if numeric_match:
+            pag_sigma_start = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to -1.0 (auto)")
+            pag_sigma_start = -1.0
+    
+    logger.debug(f"Extracted PAG sigma start: {pag_sigma_start} from '{value}'")
+    
+    # Ensure PAG is enabled
+    args_copy = args
+    args_copy.pag = True
+    args_copy.pag_sigma_start = pag_sigma_start
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("pag_sigma_end")
+def handle_pag_sigma_end_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle PAG sigma end parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        pag_sigma_end = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(-?\d+\.?\d*)', value)
+        if numeric_match:
+            pag_sigma_end = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to -1.0 (auto)")
+            pag_sigma_end = -1.0
+    
+    logger.debug(f"Extracted PAG sigma end: {pag_sigma_end} from '{value}'")
+    
+    # Ensure PAG is enabled
+    args_copy = args
+    args_copy.pag = True
+    args_copy.pag_sigma_end = pag_sigma_end
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("deepshrink")
+def handle_deepshrink_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle DeepShrink parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to extract boolean value from more complex text
+    if isinstance(value, bool):
+        deepshrink_value = value
+    else:
+        # Convert various forms of text to boolean
+        value_lower = value.lower()
+        if any(truth in value_lower for truth in ["true", "yes", "on", "enabled", "1"]):
+            deepshrink_value = True
+        elif any(false in value_lower for false in ["false", "no", "off", "disabled", "0"]):
+            deepshrink_value = False
+        else:
+            # Default to False if can't determine
+            logger.warning(f"Could not determine boolean value from '{value}', defaulting to False")
+            deepshrink_value = False
+    
+    logger.debug(f"Extracted DeepShrink value: {deepshrink_value} from '{value}'")
+    
+    # Update args
+    args_copy = args
+    args_copy.deepshrink = deepshrink_value
+    logger.debug(f"Set deepshrink to {deepshrink_value}")
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("deepshrink_factor")
+def handle_deepshrink_factor_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle DeepShrink factor parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        deepshrink_factor = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            deepshrink_factor = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 2.0")
+            deepshrink_factor = 2.0
+    
+    logger.debug(f"Extracted DeepShrink factor: {deepshrink_factor} from '{value}'")
+    
+    # Ensure DeepShrink is enabled
+    args_copy = args
+    args_copy.deepshrink = True
+    args_copy.deepshrink_factor = deepshrink_factor
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("deepshrink_start")
+def handle_deepshrink_start_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle DeepShrink start parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        deepshrink_start = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            deepshrink_start = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.0")
+            deepshrink_start = 0.0
+    
+    logger.debug(f"Extracted DeepShrink start: {deepshrink_start} from '{value}'")
+    
+    # Ensure DeepShrink is enabled
+    args_copy = args
+    args_copy.deepshrink = True
+    args_copy.deepshrink_start = deepshrink_start
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("deepshrink_end")
+def handle_deepshrink_end_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle DeepShrink end parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        deepshrink_end = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            deepshrink_end = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.35")
+            deepshrink_end = 0.35
+    
+    logger.debug(f"Extracted DeepShrink end: {deepshrink_end} from '{value}'")
+    
+    # Ensure DeepShrink is enabled
+    args_copy = args
+    args_copy.deepshrink = True
+    args_copy.deepshrink_end = deepshrink_end
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
+
+
+@register_param_handler("deepshrink_gradual")
+def handle_deepshrink_gradual_param(workflow: Dict[str, Any], value: str, args) -> Dict[str, Any]:
+    """Handle DeepShrink gradual parameter variation"""
+    # Get a copy of the workflow
+    workflow_copy = json.loads(json.dumps(workflow))
+    
+    # Try to convert value to float
+    try:
+        deepshrink_gradual = float(value)
+    except ValueError:
+        # Extract any numeric value from the string
+        numeric_match = re.search(r'(\d+\.?\d*)', value)
+        if numeric_match:
+            deepshrink_gradual = float(numeric_match.group(1))
+        else:
+            logger.warning(f"Could not extract numeric value from '{value}', defaulting to 0.6")
+            deepshrink_gradual = 0.6
+    
+    logger.debug(f"Extracted DeepShrink gradual: {deepshrink_gradual} from '{value}'")
+    
+    # Ensure DeepShrink is enabled
+    args_copy = args
+    args_copy.deepshrink = True
+    args_copy.deepshrink_gradual = deepshrink_gradual
+    
+    # Re-create the workflow with the updated args
+    workflow_creator = get_workflow_template(args.workflow)
+    if workflow_creator:
+        return workflow_creator(args_copy)
+    else:
+        return workflow_copy
 
 
 def generate_single_image(
@@ -414,6 +978,31 @@ def generate_single_image(
         if node["class_type"] == "EmptyLatentImage":
             node["inputs"]["width"] = args.width
             node["inputs"]["height"] = args.height
+            
+    # If we're not explicitly varying seed as a parameter, set a unique seed for each image
+    # to ensure they're different, even if user set a global seed
+    if args.x_param != "seed" and args.y_param != "seed":
+        # Generate a seed based on the combination of x and y values
+        # This ensures that the same x,y combination will produce the same result
+        # even across different runs
+        if isinstance(x_value, str) and isinstance(y_value, str):
+            # Create a deterministic but "random-looking" seed from the string representations
+            x_hash = sum(ord(c) for c in str(x_value))
+            y_hash = sum(ord(c) for c in str(y_value))
+            
+            # Use the global seed as a base if provided, otherwise use 0
+            base_seed = args.seed if args.seed is not None else 0
+            combined_seed = (base_seed * 10000) + (x_hash * 100) + y_hash
+            
+            # Ensure seed is in a reasonable range
+            combined_seed = combined_seed % 2147483647  # max 32-bit signed int
+            
+            logger.debug(f"Using derived seed {combined_seed} for {x_param}={x_value}, {y_param}={y_value}")
+            
+            for node_id, node in modified_workflow.items():
+                if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+                    node["inputs"]["seed"] = combined_seed
+                    break
 
     # Queue the workflow
     prompt_id_response = queue_prompt(modified_workflow, args.comfy_url)
@@ -468,53 +1057,84 @@ def generate_single_image(
     # Get the image filename
     if status and status["status"] == "completed" and status["images"]:
         image_filename = status["images"][0]["filename"]
+        image_subfolder = status["images"][0].get("subfolder", "")
         logger.info(f"Found image: {image_filename}")
+        
+        # On remote systems, we need to ensure we're getting the right image
+        # Instead of relying on filenames which may be reused, use the prompt_id
+        # to get the exact file associated with this request
+        if args.remote:
+            # Create a unique identifier for this image based on prompt_id
+            unique_id = prompt_id[:8]  # First part of UUID is unique enough
+            
+            # Create a temporary directory to store the exact file
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # First try to get the exact file using the prompt_id
+                temp_filename = f"temp_{unique_id}_{image_filename}"
+                
+                # Run a command to copy the exact file with the right timestamp
+                if image_subfolder:
+                    full_remote_path = f"{args.comfy_output_dir}/{image_subfolder}/{image_filename}"
+                else:
+                    full_remote_path = f"{args.comfy_output_dir}/{image_filename}"
+                
+                # Use SSH to get file listing with timestamps to find the most recent matching file
+                ssh_cmd = [
+                    "ssh",
+                    "-p", str(args.ssh_port),
+                    f"{args.ssh_user}@{args.ssh_host}",
+                    f"ls -lt --time-style=full-iso {full_remote_path}"
+                ]
+                
+                logger.debug(f"Running SSH command to get file details: {' '.join(ssh_cmd)}")
+                result = subprocess.run(ssh_cmd, capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    logger.debug(f"SSH command output: {result.stdout}")
+                    
+                    # Add a small delay before rsync to ensure file is fully written
+                    time.sleep(1)
+                    
+                    # Now we can rsync the file with confidence it's the right one
+                    if args.remote:
+                        local_path = rsync_image_from_comfyui(
+                            image_filename,
+                            args.ssh_host,
+                            args.comfy_output_dir,
+                            args.output_dir,
+                            f"xy_{x_value}_{y_value}",
+                            args.ssh_port,
+                            args.ssh_user,
+                            args.ssh_key,
+                            subfolder=image_subfolder
+                        )
+                    else:
+                        local_path = copy_image_from_comfyui(
+                            image_filename, args.comfy_output_dir, args.output_dir, f"xy_{x_value}_{y_value}",
+                            subfolder=image_subfolder
+                        )
+                else:
+                    logger.warning(f"Failed to get file details via SSH: {result.stderr}")
+                    if args.remote:
+                        local_path = rsync_image_from_comfyui(
+                            image_filename,
+                            args.ssh_host,
+                            args.comfy_output_dir,
+                            args.output_dir,
+                            f"xy_{x_value}_{y_value}",
+                            args.ssh_port,
+                            args.ssh_user,
+                            args.ssh_key,
+                            subfolder=image_subfolder
+                        )
+                    else:
+                        local_path = copy_image_from_comfyui(
+                            image_filename, args.comfy_output_dir, args.output_dir, f"xy_{x_value}_{y_value}",
+                            subfolder=image_subfolder
+                        )
     else:
         logger.error("No images were generated")
         return None
-
-    # Copy the image
-    if args.remote:
-        local_path = rsync_image_from_comfyui(
-            image_filename,
-            args.ssh_host,
-            args.comfy_output_dir,
-            args.output_dir,
-            f"xy_{x_value}_{y_value}",
-            args.ssh_port,
-            args.ssh_user,
-            args.ssh_key,
-        )
-    else:
-        local_path = copy_image_from_comfyui(
-            image_filename, args.comfy_output_dir, args.output_dir, f"xy_{x_value}_{y_value}"
-        )
-
-    if not local_path:
-        logger.warning("Failed to copy image, trying to copy the latest image instead...")
-
-        # Try with latest images as fallback
-        copied = []
-
-        if args.remote:
-            copied = rsync_latest_images_from_comfyui(
-                args.ssh_host,
-                args.comfy_output_dir,
-                args.output_dir,
-                limit=1,
-                ssh_port=args.ssh_port,
-                ssh_user=args.ssh_user,
-                ssh_key=args.ssh_key,
-            )
-        else:
-            # Local copy
-            copied = copy_latest_images_from_comfyui(
-                args.comfy_output_dir, args.output_dir, limit=1
-            )
-
-        if copied:
-            logger.info(f"Copied most recent image as fallback")
-            local_path = copied[0]
 
     return local_path
 
@@ -550,6 +1170,20 @@ def create_xy_grid(
     Returns:
         Path to the output grid image
     """
+    # Calculate padding based on label length
+    # For longer labels, allocate more space
+    max_x_label_len = max(len(str(x)) for x in x_values)
+    max_y_label_len = max(len(str(y)) for y in y_values)
+    
+    top_padding = 160  # Base value
+    left_padding = 120  # Base value
+    
+    # Increase padding for longer labels
+    if max_x_label_len > 15:
+        top_padding += (max_x_label_len - 15) * 3
+    if max_y_label_len > 15:
+        left_padding += (max_y_label_len - 15) * 3
+    
     # Create a temporary JSON config file for imx
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp:
         config = {
@@ -560,9 +1194,9 @@ def create_xy_grid(
             "column_labels": [f"{x_label}: {x}" for x in x_values],
             "column_label_alignment": label_alignment,
             "row_label_alignment": label_alignment,
-            "top_padding": 60,
-            "left_padding": 80,
-            # font_size is ignored in current imx version
+            "top_padding": top_padding,
+            "left_padding": left_padding,
+            "font_size": font_size,  # Now should be used by updated imx library
             "horizontal_spacing": horizontal_spacing,
             "vertical_spacing": vertical_spacing,
             "debug_mode": debug_mode,
@@ -779,6 +1413,14 @@ def generate_xyplot(args):
                 node["inputs"]["text"] = args.negative_prompt
                 break
 
+    # Apply global seed if specified and not varying seed as a parameter
+    if args.seed is not None and args.x_param != "seed" and args.y_param != "seed":
+        for node_id, node in workflow.items():
+            if node["class_type"] == "KSampler" or node["class_type"] == "KSamplerAdvanced":
+                node["inputs"]["seed"] = args.seed
+                logger.info(f"Applied global seed: {args.seed}")
+                break
+
     # Generate images for each parameter combination
     image_paths = []
     total_images = len(x_values) * len(y_values)
@@ -838,36 +1480,66 @@ def generate_xyplot(args):
         
         # Add command to image metadata
         try:
-            # Add metadata to the image using exiftool
-            metadata_cmd = [
-                "exiftool",
-                "-overwrite_original",
-                f"-Comment={command}",
-                grid_path
-            ]
-            result = subprocess.run(metadata_cmd, capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                logger.info("Successfully added command to image metadata")
-            else:
-                logger.warning(f"Failed to add metadata to image: {result.stderr}")
+            # Check if exiftool is available
+            exiftool_available = False
+            try:
+                result = subprocess.run(["which", "exiftool"], capture_output=True, text=True)
+                exiftool_available = result.returncode == 0
+            except Exception:
+                exiftool_available = False
                 
-                # Try using ImageMagick's convert as a fallback
-                convert_cmd = [
-                    "convert", 
-                    grid_path, 
-                    "-set", 
-                    "comment", 
-                    command, 
+            if exiftool_available:
+                # Add metadata to the image using exiftool
+                metadata_cmd = [
+                    "exiftool",
+                    "-overwrite_original",
+                    f"-Comment={command}",
                     grid_path
                 ]
-                result = subprocess.run(convert_cmd, capture_output=True, text=True)
+                result = subprocess.run(metadata_cmd, capture_output=True, text=True)
+                
                 if result.returncode == 0:
-                    logger.info("Successfully added command to image metadata using ImageMagick")
+                    logger.info("Successfully added command to image metadata using exiftool")
                 else:
-                    logger.warning(f"Failed to add metadata using ImageMagick: {result.stderr}")
+                    logger.warning(f"Failed to add metadata with exiftool: {result.stderr}")
+                    raise Exception("exiftool failed")
+            else:
+                # Exiftool not available
+                logger.warning("exiftool not found, falling back to ImageMagick")
+                raise Exception("exiftool not found")
+                
         except Exception as e:
-            logger.warning(f"Error adding metadata to image: {e}")
+            logger.info(f"Falling back to ImageMagick for metadata: {str(e)}")
+            
+            # Try using ImageMagick's convert as a fallback
+            try:
+                # Check if convert is available
+                convert_available = False
+                try:
+                    result = subprocess.run(["which", "convert"], capture_output=True, text=True)
+                    convert_available = result.returncode == 0
+                except Exception:
+                    convert_available = False
+                    
+                if convert_available:
+                    # Use ImageMagick to add metadata
+                    convert_cmd = [
+                        "convert", 
+                        grid_path, 
+                        "-set", 
+                        "comment", 
+                        command, 
+                        grid_path
+                    ]
+                    result = subprocess.run(convert_cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        logger.info("Successfully added command to image metadata using ImageMagick")
+                    else:
+                        logger.warning(f"Failed to add metadata using ImageMagick: {result.stderr}")
+                else:
+                    logger.warning("Neither exiftool nor ImageMagick convert are available for adding metadata")
+            except Exception as e2:
+                logger.warning(f"Error adding metadata using ImageMagick: {e2}")
         
         # If show option is enabled, open the grid image with imv
         if hasattr(args, "show") and args.show:

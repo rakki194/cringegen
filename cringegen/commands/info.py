@@ -1,5 +1,5 @@
 """
-Information and listing commands for CringeGen
+Information and listing commands for cringegen
 """
 
 import logging

@@ -1,5 +1,5 @@
 """
-Character Utility Functions for CringeGen
+Character Utility Functions for cringegen
 
 This module provides utility functions for character generation, manipulation, and validation.
 It works with the character_taxonomy module to provide easy access to character-related operations.

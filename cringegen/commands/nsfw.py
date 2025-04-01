@@ -1,5 +1,5 @@
 """
-NSFW generation commands for CringeGen
+NSFW generation commands for cringegen
 """
 
 import logging

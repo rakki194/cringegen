@@ -344,6 +344,21 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
             deepshrink_gradual = (
                 args.deepshrink_gradual if hasattr(args, "deepshrink_gradual") else 0.6
             )
+            
+            # Split-sigma options
+            split_sigmas = args.split_sigmas if hasattr(args, "split_sigmas") else None
+            split_first_cfg = args.split_first_cfg if hasattr(args, "split_first_cfg") else None
+            split_second_cfg = args.split_second_cfg if hasattr(args, "split_second_cfg") else None
+            split_first_sampler = args.split_first_sampler if hasattr(args, "split_first_sampler") else None
+            split_second_sampler = args.split_second_sampler if hasattr(args, "split_second_sampler") else None
+            split_first_scheduler = args.split_first_scheduler if hasattr(args, "split_first_scheduler") else None
+            split_second_scheduler = args.split_second_scheduler if hasattr(args, "split_second_scheduler") else None
+            
+            # Detail daemon options
+            use_detail_daemon = args.detail_daemon if hasattr(args, "detail_daemon") else False
+            detail_amount = args.detail_amount if hasattr(args, "detail_amount") else 0.1
+            detail_start = args.detail_start if hasattr(args, "detail_start") else 0.5
+            detail_end = args.detail_end if hasattr(args, "detail_end") else 0.8
 
             return create_basic_furry_workflow(
                 checkpoint=checkpoint,
@@ -367,6 +382,17 @@ def get_workflow_template(workflow_type: str) -> Optional[Callable]:
                 deepshrink_start=deepshrink_start,
                 deepshrink_end=deepshrink_end,
                 deepshrink_gradual=deepshrink_gradual,
+                split_sigmas=split_sigmas,
+                split_first_cfg=split_first_cfg,
+                split_second_cfg=split_second_cfg,
+                split_first_sampler=split_first_sampler, 
+                split_second_sampler=split_second_sampler,
+                split_first_scheduler=split_first_scheduler,
+                split_second_scheduler=split_second_scheduler,
+                use_detail_daemon=use_detail_daemon,
+                detail_amount=detail_amount,
+                detail_start=detail_start,
+                detail_end=detail_end,
             )
 
         return furry_workflow_wrapper

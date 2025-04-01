@@ -1,5 +1,5 @@
 """
-CringeGen: AI Image Prompt Generation Toolkit
+cringegen: AI Image Prompt Generation Toolkit
 
 A comprehensive toolkit for generating, analyzing, and enhancing image generation prompts,
 with specialized support for anthro/furry content.

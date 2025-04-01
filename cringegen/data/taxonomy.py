@@ -1,5 +1,5 @@
 """
-Unified Taxonomy System for CringeGen
+Unified Taxonomy System for cringegen
 
 This module provides a centralized taxonomy system for all species, characters, and entities.
 It consolidates taxonomy information previously distributed across multiple files.

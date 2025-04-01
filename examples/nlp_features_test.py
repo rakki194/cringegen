@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive testing of the NLP features in CringeGen:
+Comprehensive testing of the NLP features in cringegen:
 1. Tag/Text conversion
 2. Prompt analysis utilities 
 3. NLTK integration

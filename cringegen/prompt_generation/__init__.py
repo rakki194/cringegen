@@ -1,5 +1,5 @@
 """
-Prompt generation components for CringeGen.
+Prompt generation components for cringegen.
 """
 
 # Import base components

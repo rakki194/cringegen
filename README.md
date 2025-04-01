@@ -1,4 +1,4 @@
-# CringeGen
+# cringegen
 
 A toolkit for generating prompts and workflows for Stable Diffusion models in ComfyUI.
 
@@ -10,9 +10,39 @@ A toolkit for generating prompts and workflows for Stable Diffusion models in Co
 - Create and customize ComfyUI workflows
 - Modular CLI architecture for extensibility and maintainability
 
+## XY Plot Generation
+
+cringegen includes powerful XY plot generation capabilities for visualizing the impact of different parameters:
+
+```bash
+# Create an XY plot varying detail-daemon and split-sigmas
+cringegen xyplot --workflow nsfw --checkpoint ponyDiffusionV6XL_v6StartWithThisOne.safetensors \
+  --prompt "score_9, score_8_up, female anthro wolf, bedroom, seductive pose" \
+  --x-param detail_daemon --x-values false,true \
+  --y-param split_sigmas --y-values 0,7.0 \
+  --split-first-sampler euler --remote
+```
+
+### Advanced Sampling Control
+
+The xyplot command supports advanced sampling techniques:
+
+- **Split-Sigma Sampling**: Divide the sampling process into two stages with different parameters
+  - `--split-sigmas`: Value to split sigmas for multi-stage sampling
+  - `--split-first-cfg` / `--split-second-cfg`: Control guidance scale for each stage
+  - `--split-first-sampler` / `--split-second-sampler`: Use different samplers for each stage
+  - `--split-first-scheduler` / `--split-second-scheduler`: Use different schedulers for each stage
+
+- **Detail-Daemon Sampling**: Enhance fine details in the generated image
+  - `--detail-daemon`: Enable the DetailDaemonSamplerNode
+  - `--detail-amount`: Control the strength (0.0-1.0)
+  - `--detail-start` / `--detail-end`: Control when the detail enhancement is applied
+
+These advanced sampling techniques can be combined with other ComfyUI enhancement features like PAG (Perturbed-Attention Guidance) and DeepShrink for superior results.
+
 ## Advanced NLP Features
 
-CringeGen includes sophisticated natural language processing capabilities for prompt creation, analysis, and enhancement:
+cringegen includes sophisticated natural language processing capabilities for prompt creation, analysis, and enhancement:
 
 ### Tag/Text Conversion
 
@@ -346,7 +376,7 @@ prompt = generator.generate()
 
 ### Conclusion
 
-The CringeGen NLP toolkit provides a robust and versatile set of tools for prompt engineering, analysis, and enhancement. The comprehensive tests demonstrate the system's ability to:
+The cringegen NLP toolkit provides a robust and versatile set of tools for prompt engineering, analysis, and enhancement. The comprehensive tests demonstrate the system's ability to:
 
 1. **Convert between different text formats** with high fidelity
 2. **Extract and categorize entities** from complex descriptions
@@ -369,7 +399,7 @@ These components together form a robust NLP toolkit for prompt generation, analy
 
 ### Split-Sigma Sampling
 
-CringeGen supports advanced multi-stage sampling using the split-sigmas feature. This technique performs sampling in two stages with different settings for each stage, allowing for improved quality and control.
+cringegen supports advanced multi-stage sampling using the split-sigmas feature. This technique performs sampling in two stages with different settings for each stage, allowing for improved quality and control.
 
 ```bash
 # Basic split-sigma sampling example
@@ -421,7 +451,7 @@ pip install -e .
 
 ## Command-Line Interface
 
-CringeGen provides a comprehensive command-line interface with modular command organization:
+cringegen provides a comprehensive command-line interface with modular command organization:
 
 ```bash
 # Generate a furry prompt
@@ -451,7 +481,7 @@ python -m cringegen trigger-phrases my_lora
 
 ### ComfyUI Connection
 
-CringeGen requires a running ComfyUI server for image generation. By default, it connects to `http://127.0.0.1:8188`. You can specify a different ComfyUI server using the `--comfy-url` option:
+cringegen requires a running ComfyUI server for image generation. By default, it connects to `http://127.0.0.1:8188`. You can specify a different ComfyUI server using the `--comfy-url` option:
 
 ```bash
 # Connect to a ComfyUI server running on a different port
@@ -461,7 +491,7 @@ python -m cringegen furry --species fox --comfy-url http://localhost:18188
 python -m cringegen furry --species fox --comfy-url http://remote-server:8188
 ```
 
-If ComfyUI is not running when you try to generate images, CringeGen will display an error message but will still generate and show you the prompt.
+If ComfyUI is not running when you try to generate images, cringegen will display an error message but will still generate and show you the prompt.
 
 ### Command Structure
 
@@ -520,7 +550,7 @@ python lint.py
 
 ## LoRA Management and Analysis
 
-CringeGen includes tools for managing and analyzing LoRA models:
+cringegen includes tools for managing and analyzing LoRA models:
 
 ### LoRA Type Detection and Analysis
 
@@ -571,7 +601,7 @@ for lora in suggestions['complementary']:
 
 ## Shell Completions
 
-CringeGen provides intelligent shell completion scripts for bash and zsh to make command-line usage more efficient:
+cringegen provides intelligent shell completion scripts for bash and zsh to make command-line usage more efficient:
 
 ### Features
 

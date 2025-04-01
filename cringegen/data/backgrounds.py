@@ -1,8 +1,8 @@
 """
-Background and Settings Data for CringeGen
+Background and Settings Data for cringegen
 
 This module provides centralized data structures for background settings, time of day,
-weather conditions, seasons, and mood descriptors for the CringeGen toolkit.
+weather conditions, seasons, and mood descriptors for the cringegen toolkit.
 
 Key components:
 - Background location definitions

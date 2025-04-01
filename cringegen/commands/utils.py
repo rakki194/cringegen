@@ -1,5 +1,5 @@
 """
-Utility commands for CringeGen
+Utility commands for cringegen
 """
 
 import argparse

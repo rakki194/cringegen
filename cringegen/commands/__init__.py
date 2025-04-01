@@ -1,3 +1,3 @@
 """
-Command implementations for CringeGen CLI
+Command implementations for cringegen CLI
 """

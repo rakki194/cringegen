@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test for all NLP features in CringeGen.
+Comprehensive test for all NLP features in cringegen.
 This script demonstrates and tests:
 1. Tag/Text conversion (including natural caption generation)
 2. Entity detection (with furry/anime specialization)
@@ -508,7 +508,7 @@ def run_all_tests():
     """Run all NLP feature tests"""
     separator("COMPREHENSIVE NLP FEATURES TEST")
 
-    print("This test will demonstrate all NLP features in CringeGen, with special focus on:")
+    print("This test will demonstrate all NLP features in cringegen, with special focus on:")
     print("1. Tag/Text conversion including natural caption generation")
     print("2. Entity detection with furry/anime specialization")
     print("3. Prompt analysis and enhancement")

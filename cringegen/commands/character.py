@@ -1,5 +1,5 @@
 """
-Character-specific commands for CringeGen CLI.
+Character-specific commands for cringegen CLI.
 
 This module provides commands for generating prompts for specific canonical characters.
 """

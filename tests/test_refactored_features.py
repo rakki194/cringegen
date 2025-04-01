@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script to verify all refactored components in CringeGen.
+Test script to verify all refactored components in cringegen.
 """
 
 import random

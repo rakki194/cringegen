@@ -1,6 +1,6 @@
-# CringeGen Commands
+# cringegen Commands
 
-This directory contains the implementation of all CringeGen CLI commands, organized into modular files for better maintainability and extensibility.
+This directory contains the implementation of all cringegen CLI commands, organized into modular files for better maintainability and extensibility.
 
 ## Command Modules
 
@@ -11,6 +11,7 @@ This directory contains the implementation of all CringeGen CLI commands, organi
 - **lora.py**: Commands for LoRA-related operations
 - **llm.py**: Commands for generating content using language models
 - **utils.py**: Utility commands such as path resolution and trigger phrase extraction
+- **xyplot.py**: Commands for generating XY plot grids that vary parameters across X and Y axes to visualize their impact on generated images
 
 ## Command Structure
 

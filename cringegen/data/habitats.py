@@ -1,7 +1,7 @@
 """
-Habitats Data for CringeGen
+Habitats Data for cringegen
 
-This module provides habitat information for different species in the CringeGen toolkit.
+This module provides habitat information for different species in the cringegen toolkit.
 It maps species to their natural or commonly associated habitats.
 
 Key components:

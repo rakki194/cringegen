@@ -1,5 +1,5 @@
 """
-Unified Art Styles System for CringeGen
+Unified Art Styles System for cringegen
 
 This module provides a centralized system for all art style-related data, including
 traditional and digital art styles, genre-specific visual aesthetics, and media styles.

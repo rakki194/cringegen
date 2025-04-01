@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Command-line interface for CringeGen shell completions.
+Command-line interface for cringegen shell completions.
 This provides the CLI endpoint that is called by the shell completion scripts.
 """
 
@@ -50,7 +50,7 @@ def main() -> int:
     Returns:
         Exit code
     """
-    parser = argparse.ArgumentParser(description="CringeGen shell completion utility")
+    parser = argparse.ArgumentParser(description="cringegen shell completion utility")
     subparsers = parser.add_subparsers(dest="command", help="Completion command")
 
     # Generate completions

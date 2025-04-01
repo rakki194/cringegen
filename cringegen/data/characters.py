@@ -1,5 +1,5 @@
 """
-Unified Character System for CringeGen
+Unified Character System for cringegen
 
 This module provides a centralized character system that consolidates character data
 from multiple sources including furry characters, anime characters, and game characters.

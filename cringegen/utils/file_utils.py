@@ -1,5 +1,5 @@
 """
-Utilities for file operations in the CringeGen package.
+Utilities for file operations in the cringegen package.
 """
 
 import glob
@@ -26,7 +26,7 @@ def ensure_dir_exists(path: str) -> None:
 
 
 def copy_image_from_comfyui(
-    image_name: str, source_dir: str, dest_dir: str, output_prefix: str = None
+    image_name: str, source_dir: str, dest_dir: str, output_prefix: str = None, subfolder: str = ""
 ) -> Optional[str]:
     """Copy an image from the ComfyUI output directory to the cringegen output directory.
 
@@ -35,6 +35,7 @@ def copy_image_from_comfyui(
         source_dir: Source directory containing the image
         dest_dir: Destination directory
         output_prefix: Optional prefix for output filename
+        subfolder: Optional subfolder within the source directory
 
     Returns:
         Path to the copied image if successful, None otherwise
@@ -44,12 +45,14 @@ def copy_image_from_comfyui(
 
     # ComfyUI sometimes returns paths in format 'subfolder/filename'
     # Extract subfolder if present
-    subfolder = ""
-    if "/" in image_name:
+    if "/" in image_name and not subfolder:
         subfolder, image_name = image_name.rsplit("/", 1)
 
     # Build source and destination paths
-    source_path = os.path.join(source_dir, subfolder, image_name)
+    if subfolder:
+        source_path = os.path.join(source_dir, subfolder, image_name)
+    else:
+        source_path = os.path.join(source_dir, image_name)
 
     # Create output filename with optional prefix
     if output_prefix:
@@ -149,6 +152,7 @@ def rsync_image_from_comfyui(
     ssh_port: int = 1487,
     ssh_user: str = None,
     ssh_key: str = None,
+    subfolder: str = "",
 ) -> Optional[str]:
     """Copy an image from a remote ComfyUI output directory using rsync over SSH.
 
@@ -161,6 +165,7 @@ def rsync_image_from_comfyui(
         ssh_port: SSH port (default: 1487)
         ssh_user: SSH username (default: current user)
         ssh_key: Path to SSH private key file (default: use system default)
+        subfolder: Optional subfolder within the remote directory
 
     Returns:
         Path to the copied image if successful, None otherwise
@@ -170,12 +175,14 @@ def rsync_image_from_comfyui(
 
     # ComfyUI sometimes returns paths in format 'subfolder/filename'
     # Extract subfolder if present
-    subfolder = ""
-    if "/" in image_name:
+    if "/" in image_name and not subfolder:
         subfolder, image_name = image_name.rsplit("/", 1)
 
     # Build remote path
-    remote_path = os.path.join(remote_dir, subfolder, image_name)
+    if subfolder:
+        remote_path = os.path.join(remote_dir, subfolder, image_name)
+    else:
+        remote_path = os.path.join(remote_dir, image_name)
 
     # Create output filename with optional prefix
     if output_prefix:

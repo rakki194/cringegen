@@ -1,5 +1,5 @@
 """
-Unified Settings and Environment System for CringeGen
+Unified Settings and Environment System for cringegen
 
 This module provides a centralized settings system that consolidates environment and
 background data from multiple sources. It includes detailed descriptors for different

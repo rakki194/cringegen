@@ -1,7 +1,7 @@
 """
-Logging utilities for CringeGen.
+Logging utilities for cringegen.
 
-This module provides standardized logging functionality for all components of the CringeGen package.
+This module provides standardized logging functionality for all components of the cringegen package.
 """
 
 import logging
@@ -60,7 +60,7 @@ def configure_logging(
     file_format: Optional[str] = None,
     propagate: bool = False,
 ) -> None:
-    """Configure logging for all CringeGen loggers.
+    """Configure logging for all cringegen loggers.
 
     Args:
         level: Default log level for all handlers
@@ -151,7 +151,7 @@ def configure_cli_logging(args: Any) -> None:
 
 
 def set_log_level(level: Union[int, str]) -> None:
-    """Set the log level for all CringeGen loggers.
+    """Set the log level for all cringegen loggers.
 
     Args:
         level: Log level to set

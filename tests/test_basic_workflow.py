@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Basic test script for CringeGen
+Basic test script for cringegen
 """
 import os
 import sys
@@ -108,7 +108,7 @@ def test_with_comfyui(checkpoint, lora):
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description="Test basic CringeGen functionality")
+    parser = argparse.ArgumentParser(description="Test basic cringegen functionality")
     parser.add_argument("--test-comfyui", action="store_true", help="Test with ComfyUI API")
     parser.add_argument("--checkpoint", type=str, default="v1-5-pruned-emaonly.safetensors", help="Checkpoint model to use for ComfyUI test")
     parser.add_argument("--lora", type=str, default="noob/beksinski-v1s1600.safetensors", help="LoRA model to use for ComfyUI test")

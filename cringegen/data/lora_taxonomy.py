@@ -1,5 +1,5 @@
 """
-Hierarchical LoRA Taxonomy System for CringeGen
+Hierarchical LoRA Taxonomy System for cringegen
 
 This module provides a hierarchical taxonomy of LoRAs (Low-Rank Adaptations) used in image generation.
 It organizes LoRAs by category, purpose, and compatibility with a rich metadata system

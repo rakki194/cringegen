@@ -1,5 +1,5 @@
 """
-LoRA Utility Functions for CringeGen
+LoRA Utility Functions for cringegen
 
 This module provides utility functions for working with the LoRA taxonomy system.
 It includes functions for selecting, filtering, and combining LoRAs in an optimal way.

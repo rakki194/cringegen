@@ -1,5 +1,5 @@
 """
-Character Taxonomy System for CringeGen
+Character Taxonomy System for cringegen
 
 This module provides a comprehensive, hierarchical organization for all character-related data.
 It consolidates and structures character information previously distributed across multiple files.

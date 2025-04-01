@@ -1,4 +1,4 @@
-# TODO List for CringeGen
+# TODO List for cringegen
 
 A list of features and improvements planned for future versions.
 

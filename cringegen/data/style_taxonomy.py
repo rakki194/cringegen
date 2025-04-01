@@ -1,5 +1,5 @@
 """
-Hierarchical Style Taxonomy System for CringeGen
+Hierarchical Style Taxonomy System for cringegen
 
 This module provides a hierarchical taxonomy of art styles, mediums, and aesthetic approaches.
 It organizes styles in a more structured way with clear relationships and categories to

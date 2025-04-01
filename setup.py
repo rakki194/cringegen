@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Setup script for CringeGen
+Setup script for cringegen
 """
 
 from setuptools import setup, find_packages

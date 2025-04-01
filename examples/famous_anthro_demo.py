@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo script for testing famous anthro character detection in the CringeGen toolkit.
+Demo script for testing famous anthro character detection in the cringegen toolkit.
 This script allows users to explore the database of famous furry characters and test
 the entity detection on their own text.
 """
@@ -119,7 +119,7 @@ def main():
     """Main function with menu"""
     print_separator("FAMOUS ANTHRO CHARACTER DEMO")
 
-    print("This demo showcases the anthro character detection in CringeGen.")
+    print("This demo showcases the anthro character detection in cringegen.")
     print("Choose an option:")
 
     while True:

@@ -1,5 +1,5 @@
 """
-Unified Color System for CringeGen
+Unified Color System for cringegen
 
 This module provides a centralized color system with pattern definitions, species-specific
 color patterns, and templates for generating color descriptions. It consolidates color

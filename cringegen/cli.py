@@ -1,5 +1,5 @@
 """
-Command-line interface for CringeGen
+Command-line interface for cringegen
 """
 
 import argparse
@@ -52,7 +52,7 @@ def main():
     )
 
     # Create parser
-    parser = argparse.ArgumentParser(description="CringeGen CLI")
+    parser = argparse.ArgumentParser(description="cringegen CLI")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # Add commands

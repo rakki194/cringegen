@@ -2,8 +2,8 @@
 name = "cringegen-xyplot"
 version = "0.1.0"
 edition = "2021"
-authors = ["CringeGen contributors"]
-description = "XY Plot support for CringeGen"
+authors = ["cringegen contributors"]
+description = "XY Plot support for cringegen"
 license = "MIT"
 
 [dependencies]

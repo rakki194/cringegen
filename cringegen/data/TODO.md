@@ -1,6 +1,6 @@
-# CringeGen Data Structure Refactoring Plan
+# cringegen Data Structure Refactoring Plan
 
-This document outlines a comprehensive plan to refactor and improve the data structures in the CringeGen project.
+This document outlines a comprehensive plan to refactor and improve the data structures in the cringegen project.
 
 ## Current Issues
 

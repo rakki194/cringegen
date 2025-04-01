@@ -1,5 +1,5 @@
 """
-LLM-related commands for CringeGen
+LLM-related commands for cringegen
 """
 
 import logging

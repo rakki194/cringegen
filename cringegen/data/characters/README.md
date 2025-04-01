@@ -1,6 +1,6 @@
 # Character Template System
 
-This directory contains individual character templates for the CringeGen prompt generation system. Each character is defined in its own file, making it easier to add, modify, and maintain character definitions.
+This directory contains individual character templates for the cringegen prompt generation system. Each character is defined in its own file, making it easier to add, modify, and maintain character definitions.
 
 ## Adding a New Character
 
