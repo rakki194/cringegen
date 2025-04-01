@@ -2,6 +2,10 @@
 
 A list of features and improvements planned for future versions.
 
+- [ ] Standardize interfaces for all prompt generation components
+  - [ ] Define clear APIs for all generator types
+  - [ ] Implement consistent parameter handling across generators
+  - [ ] Add proper documentation for all interfaces
 - [x] Refactor data structures in ./cringegen/data for better organization
   - [x] Create a unified taxonomy system (consolidate species_data.py with overlapping data in other files)
   - [x] Centralize character data (merge overlapping entries from furry_characters.py, anime_data.py, etc.)
@@ -11,7 +15,6 @@ A list of features and improvements planned for future versions.
   - [ ] Add type hints to all data structures
   - [x] Update all imports and references in the codebase to use the new structure
   - [x] Create comprehensive tests to validate the data structure integrity
-
 - [ ] Improve bidirectional conversion for higher tag recovery rate (currently 35-50%)
   - [ ] Add advanced text parsing for complex descriptors
   - [ ] Implement context-aware tag extraction
@@ -133,75 +136,3 @@ A list of features and improvements planned for future versions.
 - [ ] Add support for custom LoRA handling
 - [ ] Create model-specific templates
 - [ ] Add multi-language support
-
-## XY Plot Implementation Strategy
-
-The XY plot functionality will enable users to experiment with different parameters and visualize their impact on generated images. The implementation will leverage the `imx` Rust library for powerful image grid generation and formatting capabilities.
-
-1. **Core Infrastructure**
-   - Create a new module `cringegen/commands/xyplot.py` for the XY plot command
-   - Implement a grid-based generation system that varies two parameters independently
-   - Design a flexible parameter specification system that can handle different data types (strings, numbers, arrays)
-   - Create Rust bindings to utilize the `imx` library's image grid functionality
-   - Implement efficient image handling with support for various formats (JPEG, PNG, WebP, JXL)
-
-2. **Parameter Variation Support**
-   - Implement handlers for each parameter type:
-     - Model handler: loads different checkpoint models
-     - LoRA handler: loads different LoRA models with configurable weights
-     - Sampler/Scheduler handler: switches between different sampling methods
-     - Numeric parameter handler: varies numeric values (CFG, steps, weights)
-     - Seed handler: manages controlled seed variation
-     - Prompt variation handler: supports text substitution or modification
-
-3. **Grid Generation Pipeline**
-   - Create a job scheduling system to manage multiple generation tasks
-   - Implement progress tracking for long-running grid generations
-   - Build output filename and directory structure conventions
-   - Add support for resuming interrupted grid generations
-   - Use `imx` for efficient image processing and layout generation
-
-4. **Output Visualization with imx**
-   - Utilize `imx`'s `create_plot` function for generating professional grid layouts
-   - Implement rich label formatting with proper alignment options (start, center, end)
-   - Support multiline text in grid labels for detailed parameter descriptions
-   - Configure label padding and alignment for optimal readability
-   - Leverage `imx`'s automatic image scaling and alignment capabilities
-   - Support debug visualization mode for layout troubleshooting
-
-5. **User Interface**
-   - Design a command-line interface with intuitive parameter specification
-   - Support for configuration files to define complex grid experiments
-   - Add interactive mode for exploring results and refining parameters
-   - Create visualization of parameter space before generation
-   - Implement customizable label formatting options
-
-6. **Integration**
-   - Connect to existing ComfyUI workflows for actual image generation
-   - Reuse remote/SSH functionality for distributed processing
-   - Integrate with existing image viewing capabilities (--show flag) and the `--remote` flag for copying the grid over SSH
-   - Create a Rust-Python bridge to efficiently leverage `imx` capabilities
-   - Ensure compatibility with all existing generation modes (furry, nsfw, etc.)
-   - Implement JXL format support for advanced users
-
-7. **Advanced Features**
-   - Create export options for sharing experiments
-   - Support for animation between grid points
-   - Add model keyword trigger detection and automatic application
-   - Implement safe numeric conversions for image data processing
-   - Utilize `imx`'s layout debugging capabilities for development and troubleshooting
-   - Support Unicode and emoji in grid labels for expressive parameter descriptions
-   - Add letterboxing removal and transparency handling options
-
-This functionality will help users:
-
-- Compare model performance across different conditions
-- Find optimal parameter values for specific styles or prompts
-- Understand the impact of different samplers, schedulers, and other parameters
-- Create consistent image series by controlling parameter variations
-- Share and document their experimental processes and findings
-
-- [ ] Standardize interfaces for all prompt generation components
-  - [ ] Define clear APIs for all generator types
-  - [ ] Implement consistent parameter handling across generators
-  - [ ] Add proper documentation for all interfaces

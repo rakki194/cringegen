@@ -9,6 +9,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
+import re
 
 # Module exports
 __all__ = [
@@ -19,7 +20,8 @@ __all__ = [
     "is_sdxl_model",
     "is_optimal_resolution",
     "get_optimal_resolution",
-    "get_optimal_resolution_suggestions"
+    "get_optimal_resolution_suggestions",
+    "get_model_info"
 ]
 
 # Default log format
@@ -216,6 +218,102 @@ def is_sdxl_model(checkpoint_name: str) -> bool:
     
     checkpoint_lower = checkpoint_name.lower()
     return any(pattern in checkpoint_lower for pattern in sdxl_patterns)
+
+
+def get_model_info(checkpoint_name: str) -> tuple[str, str]:
+    """Detect model architecture and family from checkpoint name.
+    
+    Args:
+        checkpoint_name: The name of the checkpoint file
+        
+    Returns:
+        Tuple of (architecture_type, model_family)
+        Where architecture_type is one of: "sdxl", "sd15", "sd35", "flux", "ltx", "lumina", etc.
+        And model_family is the specific model series like "noob", "yiffymix", "dreamshaper", etc.
+    """
+    checkpoint_lower = checkpoint_name.lower()
+    
+    # First detect architecture
+    architecture = "unknown"
+    
+    # SDXL detection - more comprehensive patterns
+    xl_pattern = re.compile(r'(xl|XL)')
+    if any(pattern in checkpoint_lower for pattern in [
+        "sdxl", "sd-xl", "sd_xl", "stablediffusionxl", "stable-diffusion-xl"
+    ]) or xl_pattern.search(checkpoint_name) or "noob" in checkpoint_lower:
+        architecture = "sdxl"
+    
+    # SD3.5 detection
+    elif any(pattern in checkpoint_lower for pattern in [
+        "sd3.5", "sd-3.5", "sd_3.5", "sd35"
+    ]):
+        architecture = "sd35"
+    
+    # SD1.5 detection (baseline models)
+    elif any(pattern in checkpoint_lower for pattern in [
+        "sd1.5", "sd-1.5", "sd_1.5", "sd15"
+    ]) or "yiffymix" in checkpoint_lower:
+        architecture = "sd15"
+    
+    # Flux detection
+    elif "chroma-unlocked" in checkpoint_lower:
+        architecture = "flux"
+    
+    # LTX detection
+    elif "ltx" in checkpoint_lower:
+        architecture = "ltx"
+    
+    # Lumina detection
+    elif "lumina" in checkpoint_lower:
+        architecture = "lumina"
+    
+    # Now detect model family
+    family = "unknown"
+    
+    # Common model families
+    family_patterns = {
+        "animagine": ["animagine"],
+        "dreamshaper": ["dreamshaper"],
+        "epicrealism": ["epicrealism"],
+        "illustrious": ["illustrious"],
+        "juggernaut": ["juggernaut"],
+        "noob": ["noob", "realnoob"],
+        "pony": ["pony"],
+        "zavychroma": ["zavychroma"],
+        "chroma": ["chroma"],
+        "yiffymix": ["yiffymix"],
+        "pixartsigma": ["pixartsigma"]
+    }
+    
+    for family_name, patterns in family_patterns.items():
+        if any(pattern in checkpoint_lower for pattern in patterns):
+            family = family_name
+            break
+    
+    # Handle special cases for SD3.5
+    if architecture == "sd35":
+        if "large" in checkpoint_lower:
+            family = "sd35l"
+        elif "medium" in checkpoint_lower:
+            if "turbo" in checkpoint_lower:
+                family = "sd35mt"
+            else:
+                family = "sd35m"
+    
+    # Handle vanilla SDXL case
+    if architecture == "sdxl" and family == "unknown":
+        if any(pattern in checkpoint_lower for pattern in ["base", "1.0"]):
+            family = "sdxl"
+    
+    # Handle LTX and Lumina where architecture = family
+    if architecture in ["ltx", "lumina"] and family == "unknown":
+        family = architecture
+        
+    # Fix for SD3.5 turbo model
+    if checkpoint_lower == "sd3.5m_turbo.safetensors":
+        family = "sd35mt"
+    
+    return architecture, family
 
 
 def is_optimal_resolution(width: int, height: int, model_type: str, use_deepshrink: bool = False) -> bool:

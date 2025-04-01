@@ -53,3 +53,59 @@ WARNING: Non-optimal resolution for SDXL model (768×768 = 589,824 pixels).
 ### Priority: Medium
 
 This feature will help users, especially beginners, get better results by using recommended image dimensions for their specific model architecture.
+
+## Model Classification System
+
+### Overview
+
+Implement a comprehensive model classification system that can detect both the base architecture and the specific model family from checkpoint names.
+
+### Requirements
+
+- Detect model architecture (SD1.5, SDXL, SD3.5, Flux, LTX, Lumina, etc.)
+- Detect model family/series (noob, yiffymix, dreamshaper, epicrealism, etc.)
+- Create a database of model-specific prompt prefixes and settings
+- Integrate with existing workflows to apply model-specific optimizations
+
+### Implementation Plan
+
+1. **Model Detection**
+   - Enhance the newly implemented `get_model_info()` function
+   - Add pattern recognition for more model types
+   - Implement test coverage with test cases for all supported models
+   - Create fallback mechanisms for unknown models
+
+2. **Model-Specific Optimizations**
+   - Create a database/dictionary of model-specific prompt prefixes
+   - Add model-specific default generation parameters (steps, CFG, sampler)
+   - Document the optimal settings for each model family
+
+3. **Prompt Tag Injection**
+   - Implement automatic prompt prefix/tag injection based on model family
+   - Allow users to disable automatic tag injection
+   - Create a system to document which tags work best with which models
+
+4. **Workflow Integration**
+   - Integrate model detection with generation workflows
+   - Automatically select optimal workflow based on model architecture
+   - Add model-specific UI elements or warnings when appropriate
+
+5. **Documentation**
+   - Document all supported models and their detection patterns
+   - Create a user guide explaining how the model classification system works
+   - Add examples of model-specific prompt prefixes and their effects
+
+### Example Model Classification Dictionary
+
+```python
+MODEL_PREFIXES = {
+    "noob": "masterpiece, best quality, realistic, photorealistic,",
+    "yiffymix": "masterpiece, best quality, highly detailed,",
+    "epicrealism": "RAW, analog, nikon, film grain,",
+    # etc.
+}
+```
+
+### Priority: High
+
+This feature will significantly improve generation quality by tailoring prompts and parameters to specific model architectures and families. It will also simplify user experience by reducing the need for manual prompt engineering.
