@@ -203,6 +203,18 @@ def add_random_nsfw_command(subparsers, parent_parser):
         "--split-second-cfg", type=float, help="CFG for second stage of split-sigma sampling"
     )
     random_nsfw_parser.add_argument(
+        "--split-first-sampler", type=str, help="Sampler for first stage of split-sigma sampling (e.g., euler, euler_ancestral)"
+    )
+    random_nsfw_parser.add_argument(
+        "--split-second-sampler", type=str, help="Sampler for second stage of split-sigma sampling (e.g., euler, dpm_2_ancestral)"
+    )
+    random_nsfw_parser.add_argument(
+        "--split-first-scheduler", type=str, help="Scheduler for first stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    random_nsfw_parser.add_argument(
+        "--split-second-scheduler", type=str, help="Scheduler for second stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    random_nsfw_parser.add_argument(
         "--use-deepshrink",
         action="store_true",
         help="Use DeepShrink for improved high-frequency details",
@@ -658,7 +670,7 @@ def generate_random_nsfw(args):
                 prompt=prompt,
                 negative_prompt=negative_prompt,
                 checkpoint=args.checkpoint,
-                lora=None,
+                lora=None,  # We don't use primary lora since we use the style_loras array instead
                 loras=style_loras,
                 lora_weights=lora_strengths,
                 seed=curr_seed,
@@ -681,6 +693,10 @@ def generate_random_nsfw(args):
                 split_sigmas=args.split_sigmas,
                 split_first_cfg=args.split_first_cfg,
                 split_second_cfg=args.split_second_cfg,
+                split_first_sampler=args.split_first_sampler,
+                split_second_sampler=args.split_second_sampler,
+                split_first_scheduler=args.split_first_scheduler,
+                split_second_scheduler=args.split_second_scheduler,
                 use_deepshrink=args.use_deepshrink,
                 deepshrink_factor=args.deepshrink_factor,
                 deepshrink_start=args.deepshrink_start,

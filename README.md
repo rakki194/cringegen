@@ -365,6 +365,54 @@ The most promising areas for future development include:
 
 These components together form a robust NLP toolkit for prompt generation, analysis, and enhancement, with special focus on furry/anime content and image generation workflows.
 
+## Advanced Features
+
+### Split-Sigma Sampling
+
+CringeGen supports advanced multi-stage sampling using the split-sigmas feature. This technique performs sampling in two stages with different settings for each stage, allowing for improved quality and control.
+
+```bash
+# Basic split-sigma sampling example
+python -m cringegen nsfw-furry --species fox --split-sigmas 7.0
+
+# Advanced split-sigma sampling with custom samplers and settings
+python -m cringegen nsfw-furry --species wolf --split-sigmas 7.0 \
+    --split-first-sampler euler --split-second-sampler dpm_2_ancestral \
+    --split-first-cfg 2.0 --split-second-cfg 4.0
+```
+
+#### Split-Sigma Parameters
+
+When using split-sigmas, you can customize each stage independently with these options:
+
+| Parameter | Description |
+|-----------|-------------|
+| `--split-sigmas` | Value to split sigmas for multi-stage sampling (e.g., 7.0) |
+| `--split-first-cfg` | CFG scale for the first stage (default: model-specific value or 3.0) |
+| `--split-second-cfg` | CFG scale for the second stage (default: model-specific value) |
+| `--split-first-sampler` | Sampler for the first stage (default: euler_ancestral) |
+| `--split-second-sampler` | Sampler for the second stage (default: euler_ancestral) |
+| `--split-first-scheduler` | Scheduler for the first stage (e.g., normal, karras) |
+| `--split-second-scheduler` | Scheduler for the second stage (e.g., normal, karras) |
+
+#### Detail Daemon with Split-Sigmas
+
+For enhanced details, you can combine split-sigmas with the detail-daemon feature:
+
+```bash
+python -m cringegen nsfw-furry --species fox --split-sigmas 7.0 \
+    --detail-daemon --detail-amount 0.2 --detail-start 0.4 --detail-end 0.8
+```
+
+When using `--detail-daemon` with split-sigmas, the detail daemon is applied to the second stage sampler.
+
+To see all available samplers and schedulers:
+
+```bash
+python -m cringegen list-samplers
+python -m cringegen list-schedulers
+```
+
 ## Installation
 
 ```bash

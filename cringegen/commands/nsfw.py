@@ -214,6 +214,18 @@ def add_nsfw_command(subparsers, parent_parser):
         "--split-second-cfg", type=float, help="CFG for second stage of split-sigma sampling"
     )
     nsfw_parser.add_argument(
+        "--split-first-sampler", type=str, help="Sampler for first stage of split-sigma sampling (e.g., euler, euler_ancestral)"
+    )
+    nsfw_parser.add_argument(
+        "--split-second-sampler", type=str, help="Sampler for second stage of split-sigma sampling (e.g., euler, dpm_2_ancestral)"
+    )
+    nsfw_parser.add_argument(
+        "--split-first-scheduler", type=str, help="Scheduler for first stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    nsfw_parser.add_argument(
+        "--split-second-scheduler", type=str, help="Scheduler for second stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    nsfw_parser.add_argument(
         "--use-deepshrink",
         action="store_true",
         help="Use DeepShrink for improved high-frequency details",
@@ -463,21 +475,20 @@ def generate_nsfw_furry(args):
         for i, (prompt, negative_prompt, curr_seed) in enumerate(prompts):
             # Create workflow for this prompt
             workflow = create_nsfw_furry_workflow(
+                checkpoint=args.checkpoint,
                 prompt=prompt,
                 negative_prompt=negative_prompt,
-                checkpoint=args.checkpoint,
-                lora=args.lora,
-                loras=additional_loras,
-                lora_weights=lora_weights,
-                seed=curr_seed,
                 width=args.width,
                 height=args.height,
+                seed=curr_seed,
                 steps=args.steps,
                 cfg=args.cfg,
                 lora_strength=args.lora_strength,
+                lora=args.lora,
+                loras=additional_loras,
+                lora_weights=lora_weights,
                 sampler=args.sampler,
                 scheduler=args.scheduler,
-                # Advanced workflow options
                 use_pag=args.pag,
                 pag_scale=args.pag_scale,
                 pag_sigma_start=args.pag_sigma_start,
@@ -489,6 +500,10 @@ def generate_nsfw_furry(args):
                 split_sigmas=args.split_sigmas,
                 split_first_cfg=args.split_first_cfg,
                 split_second_cfg=args.split_second_cfg,
+                split_first_sampler=args.split_first_sampler,
+                split_second_sampler=args.split_second_sampler,
+                split_first_scheduler=args.split_first_scheduler,
+                split_second_scheduler=args.split_second_scheduler,
                 use_deepshrink=args.use_deepshrink,
                 deepshrink_factor=args.deepshrink_factor,
                 deepshrink_start=args.deepshrink_start,

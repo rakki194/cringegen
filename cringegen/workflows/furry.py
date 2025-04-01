@@ -41,6 +41,10 @@ def create_basic_furry_workflow(
     # New parameters
     split_first_cfg: Optional[float] = None,
     split_second_cfg: Optional[float] = None,
+    split_first_sampler: Optional[str] = None,
+    split_second_sampler: Optional[str] = None,
+    split_first_scheduler: Optional[str] = None,
+    split_second_scheduler: Optional[str] = None,
     pag_scale: float = 3.0,
     pag_sigma_start: float = -1.0,
     pag_sigma_end: float = -1.0,
@@ -84,6 +88,10 @@ def create_basic_furry_workflow(
         split_sigmas: Value to split sigmas for multi-stage sampling
         split_first_cfg: CFG for first stage of split-sigma sampling
         split_second_cfg: CFG for second stage of split-sigma sampling
+        split_first_sampler: Sampler for first stage of split-sigma sampling
+        split_second_sampler: Sampler for second stage of split-sigma sampling
+        split_first_scheduler: Scheduler for first stage of split-sigma sampling
+        split_second_scheduler: Scheduler for second stage of split-sigma sampling
         pag_scale: Scale for Perturbed-Attention Guidance
         pag_sigma_start: Start sigma for PAG
         pag_sigma_end: End sigma for PAG
@@ -293,9 +301,27 @@ def create_basic_furry_workflow(
         )
 
         # Create a KarrasScheduler with rho=7 (similar to noobai_api.json)
-        karras_scheduler = workflow.add_node(
-            "KarrasScheduler", {"steps": steps, "sigma_max": 100, "sigma_min": 0.0291675, "rho": 7}
-        )
+        # If a specific first scheduler is specified, use it instead of the default KarrasScheduler
+        if split_first_scheduler:
+            logger.info(f"Using custom first stage scheduler: {split_first_scheduler}")
+            if split_first_scheduler == "karras":
+                # Keep using KarrasScheduler with default parameters
+                karras_scheduler = workflow.add_node(
+                    "KarrasScheduler", 
+                    {"steps": steps, "sigma_max": 100, "sigma_min": 0.0291675, "rho": 7}
+                )
+            else:
+                # Use a generic scheduler node
+                karras_scheduler = workflow.add_node(
+                    "SchedulerNode",
+                    {"scheduler_name": split_first_scheduler, "steps": steps}
+                )
+        else:
+            # Default to KarrasScheduler
+            karras_scheduler = workflow.add_node(
+                "KarrasScheduler", 
+                {"steps": steps, "sigma_max": 100, "sigma_min": 0.0291675, "rho": 7}
+            )
         sigmas_out = workflow.get_output(karras_scheduler, 0)
 
         # Split the sigmas at the specified value
@@ -343,15 +369,24 @@ def create_basic_furry_workflow(
         )
         second_guider_out = workflow.get_output(second_cfg_guider, 0)
 
-        # Create first stage sampler (euler_ancestral)
+        # Create first stage sampler (using specified sampler or default to euler_ancestral)
+        first_sampler_name = split_first_sampler if split_first_sampler else "euler_ancestral"
         first_sampler_select = workflow.add_node(
-            "KSamplerSelect", {"sampler_name": "euler_ancestral"}
+            "KSamplerSelect", {"sampler_name": first_sampler_name}
         )
         first_sampler_out = workflow.get_output(first_sampler_select, 0)
+        logger.info(f"Using first stage sampler: {first_sampler_name}")
 
-        # Create second stage sampler (euler_ancestral)
-        second_sampler_select = workflow.add_node("SamplerEulerAncestral", {"eta": 1, "s_noise": 1})
+        # Create second stage sampler (using specified sampler or default to euler_ancestral)
+        second_sampler_name = split_second_sampler if split_second_sampler else "euler_ancestral"
+        if second_sampler_name == "euler_ancestral":
+            second_sampler_select = workflow.add_node("SamplerEulerAncestral", {"eta": 1, "s_noise": 1})
+        else:
+            second_sampler_select = workflow.add_node(
+                "KSamplerSelect", {"sampler_name": second_sampler_name}
+            )
         second_sampler_out = workflow.get_output(second_sampler_select, 0)
+        logger.info(f"Using second stage sampler: {second_sampler_name}")
 
         # Add DetailDaemonSamplerNode for second stage if requested
         if use_detail_daemon:
@@ -584,17 +619,17 @@ def create_basic_furry_workflow(
 
 def create_nsfw_furry_workflow(
     checkpoint: str,
-    lora: Optional[str] = None,
-    prompt: str = "",
-    negative_prompt: str = "",
+    prompt: str,
+    negative_prompt: str,
     width: int = 1024,
     height: int = 1024,
-    seed: int = -1,
-    steps: int = 20,
-    cfg: float = None,
+    seed: int = 0,
+    steps: int = 40,
+    cfg: float = None,  # Default will be set based on model
     lora_strength: float = 0.35,
-    loras: Optional[list] = None,
-    lora_weights: Optional[list] = None,
+    lora: Optional[str] = None,  # Add back the lora parameter
+    loras: Optional[list] = None,  # New parameter for multiple LoRAs
+    lora_weights: Optional[list] = None,  # New parameter for LoRA weights
     sampler: Optional[str] = None,
     scheduler: Optional[str] = None,
     use_deepshrink: bool = False,
@@ -602,8 +637,13 @@ def create_nsfw_furry_workflow(
     use_zsnr: bool = False,
     use_vpred: bool = False,
     split_sigmas: Optional[float] = None,
+    # New parameters
     split_first_cfg: Optional[float] = None,
     split_second_cfg: Optional[float] = None,
+    split_first_sampler: Optional[str] = None,
+    split_second_sampler: Optional[str] = None,
+    split_first_scheduler: Optional[str] = None,
+    split_second_scheduler: Optional[str] = None,
     pag_scale: float = 3.0,
     pag_sigma_start: float = -1.0,
     pag_sigma_end: float = -1.0,
@@ -622,7 +662,6 @@ def create_nsfw_furry_workflow(
 
     Args:
         checkpoint: Name of the checkpoint to use
-        lora: Name of the LoRA to use
         prompt: The positive prompt
         negative_prompt: The negative prompt
         width: The width of the image
@@ -631,6 +670,7 @@ def create_nsfw_furry_workflow(
         steps: The number of sampling steps
         cfg: The CFG scale
         lora_strength: The strength of the LoRA
+        lora: Name of the LoRA to use
         loras: List of additional LoRAs to use
         lora_weights: List of weights for additional LoRAs
         sampler: The sampler to use
@@ -642,6 +682,10 @@ def create_nsfw_furry_workflow(
         split_sigmas: Value to split sigmas for multi-stage sampling
         split_first_cfg: CFG for first stage of split-sigma sampling
         split_second_cfg: CFG for second stage of split-sigma sampling
+        split_first_sampler: Sampler for first stage of split-sigma sampling
+        split_second_sampler: Sampler for second stage of split-sigma sampling
+        split_first_scheduler: Scheduler for first stage of split-sigma sampling
+        split_second_scheduler: Scheduler for second stage of split-sigma sampling
         pag_scale: Scale for Perturbed-Attention Guidance
         pag_sigma_start: Start sigma for PAG
         pag_sigma_end: End sigma for PAG
@@ -682,6 +726,10 @@ def create_nsfw_furry_workflow(
         split_sigmas=split_sigmas,
         split_first_cfg=split_first_cfg,
         split_second_cfg=split_second_cfg,
+        split_first_sampler=split_first_sampler,
+        split_second_sampler=split_second_sampler,
+        split_first_scheduler=split_first_scheduler,
+        split_second_scheduler=split_second_scheduler,
         pag_scale=pag_scale,
         pag_sigma_start=pag_sigma_start,
         pag_sigma_end=pag_sigma_end,
