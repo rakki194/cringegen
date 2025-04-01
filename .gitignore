@@ -1,3 +1,4 @@
+Cargo.lock
 output/
 !data/
 node_modules/

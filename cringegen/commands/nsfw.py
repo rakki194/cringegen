@@ -5,6 +5,7 @@ NSFW generation commands for CringeGen
 import logging
 import random
 import os
+import time
 
 from ..prompt_generation.generators.furry_generator import NsfwFurryPromptGenerator
 from ..utils.comfy_api import (
@@ -16,6 +17,7 @@ from ..utils.comfy_api import (
     get_matching_lora,
     get_preferred_checkpoint,
     queue_prompt,
+    check_generation_status,
 )
 from ..utils.file_utils import (
     copy_image_from_comfyui,
@@ -511,13 +513,71 @@ def generate_nsfw_furry(args):
             # Get image path if we need to copy it
             if args.copy_output and not args.no_generate:
                 try:
-                    # First try using the API to get the image path
-                    image_path = get_image_path(prompt_id_str, args.comfy_url)
+                    # Poll for generation status with a reasonable timeout
+                    max_poll_time = 300  # 5 minutes max
+                    poll_interval = 2  # Check every 2 seconds
+                    start_time = time.time()
 
-                    if image_path and len(image_path) > 0:
-                        logger.info(f"Found image path via API: {image_path[0]}")
+                    logger.info(f"Monitoring generation status for prompt {prompt_id_str}")
+
+                    # Poll until completed or timeout
+                    last_progress = 0
+                    status = None
+                    while time.time() - start_time < max_poll_time:
+                        status = check_generation_status(prompt_id_str, args.comfy_url)
+
+                        # Print progress updates only when progress changes significantly
+                        if status["status"] == "pending":
+                            if time.time() - start_time > 10:  # Only log after 10 seconds of waiting
+                                logger.info(f"Generation pending... ({int(time.time() - start_time)}s elapsed)")
+                        elif status["status"] == "processing":
+                            current_progress = int(status["progress"] * 100)
+                            if current_progress >= last_progress + 10 or (time.time() - start_time) % 10 < 2:
+                                logger.info(
+                                    f"Generation in progress: {current_progress}% ({int(time.time() - start_time)}s elapsed)"
+                                )
+                                last_progress = current_progress
+                        elif status["status"] == "completed":
+                            logger.info(f"Generation completed in {int(time.time() - start_time)}s!")
+                            break
+                        elif status["status"] == "error":
+                            logger.error(f"Generation error: {status['error']}")
+                            continue
+
+                        # Wait before polling again
+                        time.sleep(poll_interval)
+
+                    # Check if we timed out
+                    if time.time() - start_time >= max_poll_time:
+                        logger.warning(f"Generation timed out after {max_poll_time}s")
+                        # Try with latest images as fallback
+                        if args.remote:
+                            copied = rsync_latest_images_from_comfyui(
+                                args.ssh_host,
+                                args.comfy_output_dir,
+                                args.output_dir,
+                                limit=1,
+                                ssh_port=args.ssh_port,
+                                ssh_user=args.ssh_user,
+                                ssh_key=args.ssh_key,
+                            )
+                        else:
+                            # Local copy
+                            copied = copy_latest_images_from_comfyui(
+                                args.comfy_output_dir, args.output_dir, limit=1
+                            )
+                        
+                        if copied:
+                            logger.info(f"Copied most recent image as fallback")
+                            copied_images.extend(copied)
+                        continue
+
+                    # Get the image filename if status is completed
+                    if status and status["status"] == "completed" and status["images"]:
+                        image_filename = status["images"][0]["filename"]
+                        logger.info(f"Found image: {image_filename}")
+                        
                         success = False
-
                         if args.remote:
                             # Check for required SSH parameters
                             if not args.ssh_host:
@@ -527,7 +587,7 @@ def generate_nsfw_furry(args):
                             logger.info(f"Using rsync over SSH to copy image from {args.ssh_host}")
                             success = (
                                 rsync_image_from_comfyui(
-                                    image_path[0],  # Use the first image
+                                    image_filename,  # Use the image filename directly
                                     args.ssh_host,
                                     args.comfy_output_dir,
                                     args.output_dir,
@@ -542,7 +602,7 @@ def generate_nsfw_furry(args):
                             # Local copy
                             success = (
                                 copy_image_from_comfyui(
-                                    image_path[0],  # Use the first image
+                                    image_filename,  # Use the image filename directly
                                     args.comfy_output_dir,
                                     args.output_dir,
                                     f"nsfw_furry_{curr_seed}",
@@ -555,7 +615,7 @@ def generate_nsfw_furry(args):
                             # If successful, add to the list of copied images
                             copied_path = os.path.join(
                                 args.output_dir,
-                                f"nsfw_{curr_seed}{os.path.splitext(image_path[0])[1]}",
+                                f"nsfw_furry_{curr_seed}{os.path.splitext(image_filename)[1]}",
                             )
                             copied_images.append(copied_path)
                         else:
@@ -592,9 +652,9 @@ def generate_nsfw_furry(args):
                             else:
                                 logger.warning("Failed to find or copy any images")
                     else:
-                        # If API doesn't return image path, try looking for the most recent image
+                        # If no images were generated, try looking for the most recent image
                         logger.info(
-                            "No image path from API, trying to copy the most recent image..."
+                            "No images were generated, trying to copy the most recent image..."
                         )
 
                         if args.remote:
