@@ -19,6 +19,9 @@ _SCHEDULER_CACHE = None
 _LORA_CACHE = None
 _CHECKPOINT_CACHE = None
 
+# Global ComfyAPI instance cache for each URL
+_COMFY_API_CACHE = {}
+
 # Checkpoint to LoRA directory mappings
 # Maps checkpoint names to LoRA directory prefixes
 CHECKPOINT_LORA_MAPPINGS = {
@@ -422,7 +425,7 @@ def queue_prompt(workflow: Dict[str, Any], api_url: str = None) -> Dict[str, Any
     if api_url is None:
         api_url = get_comfy_api_url()
 
-    api = ComfyAPI(api_url)
+    api = get_comfy_api_client(api_url)
     return api.queue_prompt(workflow)
 
 
@@ -440,7 +443,7 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
     if api_url is None:
         api_url = get_comfy_api_url()
 
-    api = ComfyAPI(api_url)
+    api = get_comfy_api_client(api_url)
 
     try:
         # First, check if we can directly get the history without waiting
@@ -950,11 +953,12 @@ def get_lora_suggestions(checkpoint: str, api_url: str = None, limit: int = 5) -
 
 def clear_cache() -> None:
     """Clear the cache of samplers, schedulers, LoRAs and checkpoints"""
-    global _SAMPLER_CACHE, _SCHEDULER_CACHE, _LORA_CACHE, _CHECKPOINT_CACHE
+    global _SAMPLER_CACHE, _SCHEDULER_CACHE, _LORA_CACHE, _CHECKPOINT_CACHE, _COMFY_API_CACHE
     _SAMPLER_CACHE = None
     _SCHEDULER_CACHE = None
     _LORA_CACHE = None
     _CHECKPOINT_CACHE = None
+    _COMFY_API_CACHE = {}
 
 
 def get_matching_lora(lora: str, api_url: str = None) -> Optional[str]:
@@ -1284,6 +1288,35 @@ def get_preferred_checkpoint(api_url: str = None) -> Optional[str]:
     return available_checkpoints[0]
 
 
+def get_comfy_api_client(api_url: str = None) -> ComfyAPI:
+    """Get or create a ComfyAPI client for the given URL
+    
+    This function returns a cached ComfyAPI instance for the given URL,
+    or creates a new one if none exists yet.
+    
+    Args:
+        api_url: The ComfyUI API URL (default: None, will use get_comfy_api_url())
+        
+    Returns:
+        A ComfyAPI instance
+    """
+    global _COMFY_API_CACHE
+    
+    if api_url is None:
+        api_url = get_comfy_api_url()
+    
+    # Check if we already have a client for this URL
+    if api_url in _COMFY_API_CACHE:
+        logger.debug(f"Using cached ComfyAPI client for {api_url}")
+        return _COMFY_API_CACHE[api_url]
+    
+    # Create a new client and cache it
+    logger.debug(f"Creating new ComfyAPI client for {api_url}")
+    client = ComfyAPI(api_url)
+    _COMFY_API_CACHE[api_url] = client
+    return client
+
+
 def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, Any]:
     """Check the status of a generation without waiting for timeout
 
@@ -1345,6 +1378,6 @@ def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, An
     except Exception as e:
         logger.warning(f"Error checking prompt queue: {e}")
 
-    # Now check the history
-    api = ComfyAPI(api_url)
+    # Now check the history - use the cached client instead of creating a new one
+    api = get_comfy_api_client(api_url)
     return api.check_generation_status(prompt_id)

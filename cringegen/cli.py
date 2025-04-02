@@ -14,6 +14,10 @@ from .commands.nsfw import add_nsfw_command
 from .commands.random_nsfw import add_random_nsfw_command
 from .commands.utils import add_utils_commands
 from .commands.character import add_character_command
+from .commands.accessories import add_accessories_command
+from .commands.poses import add_poses_command
+from .commands.clothing import add_clothing_command
+from .commands.backgrounds import add_backgrounds_command
 from .commands.xyplot import add_xyplot_command
 from .commands.model_detect import add_subparser as add_model_detect_command
 from .commands.noobai import add_subparser as add_noobai_command
@@ -67,6 +71,10 @@ def main():
     add_llm_commands(subparsers, parent_parser)
     add_utils_commands(subparsers, parent_parser)
     add_character_command(subparsers, parent_parser)
+    add_accessories_command(subparsers, parent_parser)
+    add_poses_command(subparsers, parent_parser)
+    add_clothing_command(subparsers, parent_parser)
+    add_backgrounds_command(subparsers, parent_parser)
     add_xyplot_command(subparsers, parent_parser)
     add_model_detect_command(subparsers, parent_parser)
     add_noobai_command(subparsers, parent_parser)
