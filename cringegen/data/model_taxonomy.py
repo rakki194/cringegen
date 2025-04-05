@@ -106,7 +106,7 @@ MODEL_FAMILY_PREFIXES = {
         "prompt_prefix": "masterpiece, best quality, newest, absurdres, highres, ",
         "negative_prefix": "worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands, mammal, ambiguous form, feral, semi-anthro, ",
         "trigger_words": ["absurdres", "highres"],
-        "default_cfg": 7.0,
+        "default_cfg": 3.5,
         "background_optimizations": {
             "simple background": "",
             "detailed background": "scenery porn, amazing background, ",

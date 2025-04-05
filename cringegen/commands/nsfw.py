@@ -824,80 +824,165 @@ def create_nsfw_workflow(args):
     Returns:
         A workflow dictionary
     """
+    # Use the more advanced furry workflow implementation for NSFW generation
+    from ..workflows.furry import create_nsfw_furry_workflow
+    import logging
+    logger = logging.getLogger(__name__)
+    
     import random
 
-    # Create a basic workflow
-    from ..workflows.base import ComfyWorkflow
-
-    workflow = ComfyWorkflow()
-
-    # Add checkpoint loader
+    # Collect all the parameters we need to pass to create_nsfw_furry_workflow
     checkpoint = (
         args.checkpoint
         if hasattr(args, "checkpoint") and args.checkpoint
         else "noobaiXLVpredv10.safetensors"
     )
-    model_output = workflow.load_checkpoint(checkpoint)
-
-    # Add LoRA if specified
-    if hasattr(args, "lora") and args.lora:
-        model_output, clip_output = workflow.load_lora(
-            model_output,
-            args.lora,
-            args.lora_strength if hasattr(args, "lora_strength") else 1.0,
-            args.lora_strength if hasattr(args, "lora_strength") else 1.0,
-        )
-    else:
-        # Extract clip from model output if no LoRA
-        clip_output = workflow.get_output(1, 1)
-
-    # Create prompt
+    
+    # Get prompt
     if hasattr(args, "prompt") and args.prompt:
-        positive_prompt = args.prompt
+        prompt = args.prompt
     else:
         from .utils import generate_random_prompt  # Import here to avoid circular imports
+        prompt = generate_random_prompt(nsfw=True)
 
-        positive_prompt = generate_random_prompt(nsfw=True)
-
-    # Create negative prompt
+    # Get negative prompt
     if hasattr(args, "negative_prompt") and args.negative_prompt:
         negative_prompt = args.negative_prompt
     else:
         negative_prompt = "worst quality, low quality, medium quality, deleted, lowres, bad anatomy, bad hands, watermark"
-
-    # Encode prompts
-    positive_conditioning = workflow.clip_text_encode(clip_output, positive_prompt)
-    negative_conditioning = workflow.clip_text_encode(clip_output, negative_prompt)
-
-    # Create latent image
+    
+    # Get basic parameters
     width = args.width if hasattr(args, "width") else 1024
     height = args.height if hasattr(args, "height") else 1024
-    latent = workflow.empty_latent(width, height)
-
-    # Set up sampler
     seed = args.seed if hasattr(args, "seed") and args.seed != -1 else random.randint(0, 2**32 - 1)
     steps = args.steps if hasattr(args, "steps") else 40
-    cfg = args.cfg if hasattr(args, "cfg") else 7.0
+    cfg = args.cfg if hasattr(args, "cfg") else 3.5
     sampler = args.sampler if hasattr(args, "sampler") else "euler_ancestral"
     scheduler = args.scheduler if hasattr(args, "scheduler") else "normal"
-
-    # Add sampler
-    latent_sampled = workflow.ksampler(
-        model_output,
-        positive_conditioning,
-        negative_conditioning,
-        latent,
-        seed,
-        steps,
-        cfg,
-        sampler,
-        scheduler,
+    
+    # Get LoRA parameters
+    lora = args.lora if hasattr(args, "lora") else None
+    lora_strength = args.lora_strength if hasattr(args, "lora_strength") else 1.0
+    loras = args.loras if hasattr(args, "loras") else None
+    lora_weights = args.lora_weights if hasattr(args, "lora_weights") else None
+    
+    # Get PAG parameters - default to True if it's being used in XY plot
+    use_pag = True if (hasattr(args, "x_param") and args.x_param in ["pag_scale", "pag_sigma_start", "pag_sigma_end"]) or \
+              (hasattr(args, "y_param") and args.y_param in ["pag_scale", "pag_sigma_start", "pag_sigma_end"]) else \
+              (args.pag if hasattr(args, "pag") else False)
+              
+    pag_scale = args.pag_scale if hasattr(args, "pag_scale") else 3.0
+    pag_sigma_start = args.pag_sigma_start if hasattr(args, "pag_sigma_start") else -1.0
+    pag_sigma_end = args.pag_sigma_end if hasattr(args, "pag_sigma_end") else -1.0
+    
+    # Log PAG settings before creating workflow for debugging
+    if use_pag:
+        logger.debug(f"Using PAG with scale: {pag_scale}, sigma_start: {pag_sigma_start}, sigma_end: {pag_sigma_end}")
+    else:
+        logger.debug("PAG is disabled")
+    
+    # Get DeepShrink parameters
+    use_deepshrink = args.use_deepshrink if hasattr(args, "use_deepshrink") else False
+    deepshrink_factor = args.deepshrink_factor if hasattr(args, "deepshrink_factor") else 2.0
+    deepshrink_start = args.deepshrink_start if hasattr(args, "deepshrink_start") else 0.0
+    deepshrink_end = args.deepshrink_end if hasattr(args, "deepshrink_end") else 0.35
+    deepshrink_gradual = args.deepshrink_gradual if hasattr(args, "deepshrink_gradual") else 0.6
+    
+    # Get Split Sigmas parameters
+    split_sigmas = args.split_sigmas if hasattr(args, "split_sigmas") else None
+    split_first_cfg = args.split_first_cfg if hasattr(args, "split_first_cfg") else None
+    split_second_cfg = args.split_second_cfg if hasattr(args, "split_second_cfg") else None
+    split_first_sampler = args.split_first_sampler if hasattr(args, "split_first_sampler") else None
+    split_second_sampler = args.split_second_sampler if hasattr(args, "split_second_sampler") else None
+    split_first_scheduler = args.split_first_scheduler if hasattr(args, "split_first_scheduler") else None
+    split_second_scheduler = args.split_second_scheduler if hasattr(args, "split_second_scheduler") else None
+    
+    # Get Detail Daemon parameters
+    use_detail_daemon = args.detail_daemon if hasattr(args, "detail_daemon") else False
+    detail_amount = args.detail_amount if hasattr(args, "detail_amount") else 0.1
+    detail_start = args.detail_start if hasattr(args, "detail_start") else 0.5
+    detail_end = args.detail_end if hasattr(args, "detail_end") else 0.8
+    detail_exponent = args.detail_exponent if hasattr(args, "detail_exponent") else 1.5
+    
+    # Get ZSNR and v-prediction parameters
+    use_zsnr = args.use_zsnr if hasattr(args, "use_zsnr") else False
+    use_vpred = args.use_vpred if hasattr(args, "use_vpred") else False
+    
+    # Call the more advanced implementation
+    workflow = create_nsfw_furry_workflow(
+        checkpoint=checkpoint,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        width=width,
+        height=height,
+        seed=seed,
+        steps=steps,
+        cfg=cfg,
+        lora_strength=lora_strength,
+        lora=lora,
+        loras=loras,
+        lora_weights=lora_weights,
+        sampler=sampler,
+        scheduler=scheduler,
+        use_deepshrink=use_deepshrink,
+        use_pag=use_pag,
+        use_zsnr=use_zsnr,
+        use_vpred=use_vpred,
+        split_sigmas=split_sigmas,
+        split_first_cfg=split_first_cfg,
+        split_second_cfg=split_second_cfg,
+        split_first_sampler=split_first_sampler,
+        split_second_sampler=split_second_sampler,
+        split_first_scheduler=split_first_scheduler,
+        split_second_scheduler=split_second_scheduler,
+        pag_scale=pag_scale,
+        pag_sigma_start=pag_sigma_start,
+        pag_sigma_end=pag_sigma_end,
+        deepshrink_factor=deepshrink_factor,
+        deepshrink_start=deepshrink_start,
+        deepshrink_end=deepshrink_end,
+        deepshrink_gradual=deepshrink_gradual,
+        use_detail_daemon=use_detail_daemon,
+        detail_amount=detail_amount,
+        detail_start=detail_start,
+        detail_end=detail_end,
+        batch_size=1,
+        show=False,
     )
-
-    # Add VAE decoder
-    image = workflow.vae_decode(workflow.get_output(1, 2), latent_sampled)
-
-    # Add image saving
-    workflow.save_image(image, "xyplot")
-
-    return workflow.to_dict()
+    
+    # Post-process the workflow to ensure the PAG node is connected correctly if it exists
+    if use_pag:
+        pag_node_id = None
+        checkpoint_node_id = None
+        
+        # First, find the PAG and checkpoint nodes
+        for node_id, node in workflow.items():
+            if node["class_type"] == "PerturbedAttention":
+                pag_node_id = node_id
+                logger.debug(f"Found PAG node {node_id} in workflow: {node}")
+            elif node["class_type"] == "CheckpointLoaderSimple":
+                checkpoint_node_id = node_id
+                logger.debug(f"Found checkpoint node {node_id} in workflow")
+                
+        # If PAG node exists, ensure its output is properly used
+        if pag_node_id and checkpoint_node_id:
+            pag_output = [pag_node_id, 0]
+            checkpoint_output = [checkpoint_node_id, 0]
+            
+            # Check if any nodes use the checkpoint model output directly
+            # if they should be using the PAG output
+            for node_id, node in workflow.items():
+                if node_id == pag_node_id:  # Skip the PAG node itself
+                    continue
+                    
+                # Check model inputs in nodes like KSampler, CFGGuider, etc.
+                for input_name, input_value in node["inputs"].items():
+                    if input_name == "model" and isinstance(input_value, list) and len(input_value) == 2:
+                        if input_value[0] == checkpoint_node_id and input_value[1] == 0:
+                            # This node should use PAG output instead
+                            node["inputs"][input_name] = pag_output
+                            logger.debug(f"Updated node {node_id} to use PAG output for input '{input_name}'")
+        elif use_pag and not pag_node_id:
+            logger.warning("PAG was enabled but no PAG node was found in the workflow!")
+    
+    return workflow

@@ -275,7 +275,11 @@ def create_basic_furry_workflow(
                 "unet_block_list": "",
             },
         )
+        # Very important: use the PAG output as the model output for all subsequent nodes
         model_out = workflow.get_output(pag_node, 0)
+        logger.debug("PAG node added and its output will be used as the model input for subsequent nodes")
+    else:
+        logger.debug("PAG is disabled, using model output directly")
 
     # Encode prompts
     positive = workflow.add_node("CLIPTextEncode", {"clip": clip_out, "text": prompt})

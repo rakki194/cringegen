@@ -5,12 +5,58 @@ Utility commands for cringegen
 import argparse
 import logging
 import os
+import random
 from typing import Any, Dict, List
 
 from ..utils.comfy_api import get_lora_directory, resolve_model_path
 from ..utils.lora_metadata.autocomplete import get_trigger_phrases
+from ..prompt_generation.generators.furry_generator import FurryPromptGenerator, NsfwFurryPromptGenerator
 
 logger = logging.getLogger(__name__)
+
+
+def generate_random_prompt(nsfw: bool = False) -> str:
+    """
+    Generate a random prompt for image generation.
+    
+    Args:
+        nsfw: Whether to generate an NSFW prompt
+        
+    Returns:
+        A randomly generated prompt string
+    """
+    if nsfw:
+        # Create NSFW furry prompt generator with random parameters
+        generator = NsfwFurryPromptGenerator(
+            explicit_level=random.randint(1, 3),
+            use_anatomical_terms=True,
+            use_nlp=True,
+            use_art_style=True
+        )
+    else:
+        # Create regular furry prompt generator
+        generator = FurryPromptGenerator(
+            use_nlp=True,
+            use_art_style=True
+        )
+    
+    # Generate the prompt
+    return generator.generate()
+
+
+def generate_prompt_cmd(args):
+    """Command handler for generate-prompt"""
+    # Set the seed if specified
+    if args.seed != -1:
+        random.seed(args.seed)
+        logger.info(f"Using seed: {args.seed}")
+        
+    # Generate prompts
+    for i in range(args.count):
+        prompt = generate_random_prompt(nsfw=args.nsfw)
+        if args.count > 1:
+            logger.info(f"Prompt {i+1}/{args.count}:")
+        logger.info(prompt)
 
 
 def add_utils_commands(subparsers, parent_parser):
@@ -28,6 +74,15 @@ def add_utils_commands(subparsers, parent_parser):
     )
     trigger_phrases_parser.add_argument("lora", type=str, help="Name or path of the LoRA file")
     trigger_phrases_parser.set_defaults(func=get_trigger_phrases_cmd)
+    
+    # Add generate-prompt command
+    generate_prompt_parser = subparsers.add_parser(
+        "generate-prompt", help="Generate random prompts", parents=[parent_parser]
+    )
+    generate_prompt_parser.add_argument("--nsfw", action="store_true", help="Generate NSFW prompts")
+    generate_prompt_parser.add_argument("--count", type=int, default=1, help="Number of prompts to generate")
+    generate_prompt_parser.add_argument("--seed", type=int, default=-1, help="Random seed (-1 for random)")
+    generate_prompt_parser.set_defaults(func=generate_prompt_cmd)
 
     return subparsers
 

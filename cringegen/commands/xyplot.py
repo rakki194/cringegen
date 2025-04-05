@@ -200,6 +200,9 @@ def add_xyplot_command(subparsers, parent_parser):
     xyplot_parser.add_argument(
         "--seed", type=int, help="Global seed to use for generation (if not varying seed as a parameter)"
     )
+    xyplot_parser.add_argument(
+        "--cfg", type=float, help="Global CFG scale to use for generation (if not varying CFG as a parameter)"
+    )
 
     # PAG (Perturbed-Attention Guidance) options
     xyplot_parser.add_argument(
@@ -1434,6 +1437,94 @@ def generate_single_image(
         pag_sigma_start_value = x_value if x_param == "pag_sigma_start" else y_value if y_param == "pag_sigma_start" else None
         pag_sigma_end_value = x_value if x_param == "pag_sigma_end" else y_value if y_param == "pag_sigma_end" else None
         
+        # Debug: print all nodes and their types to see if PAG exists
+        pag_nodes = []
+        checkpoints = []
+        for node_id, node in modified_workflow.items():
+            if node["class_type"] == "PerturbedAttention":
+                pag_nodes.append((node_id, node))
+                logger.debug(f"Found PAG node {node_id}: {node}")
+            elif node["class_type"] == "CheckpointLoaderSimple":
+                checkpoints.append((node_id, node))
+                logger.debug(f"Found checkpoint node {node_id}: {node}")
+        
+        logger.debug(f"Found {len(pag_nodes)} PAG nodes and {len(checkpoints)} checkpoint nodes")
+        
+        # If no PAG nodes are found, we need to create one
+        if not pag_nodes:
+            logger.warning("No PAG nodes found, but PAG parameters are being varied!")
+            
+            # Find the checkpoint loader node and its outputs
+            checkpoint_node_id = None
+            model_output = None
+            
+            for node_id, node in modified_workflow.items():
+                if node["class_type"] == "CheckpointLoaderSimple":
+                    checkpoint_node_id = node_id
+                    # The model output is usually the first output
+                    model_output = [node_id, 0]
+                    logger.debug(f"Using checkpoint node {node_id} as model input for PAG")
+                    break
+            
+            if checkpoint_node_id and model_output:
+                # Create a new unique node ID (use high numbers to avoid conflicts)
+                new_node_id = str(1000 + len(modified_workflow))
+                
+                # Use default PAG values if not specified
+                if pag_scale_value is None:
+                    pag_scale_value = "3.0"
+                
+                try:
+                    pag_scale = float(pag_scale_value)
+                except (ValueError, TypeError):
+                    pag_scale = 3.0
+                    
+                # Create the PAG node
+                pag_node = {
+                    "class_type": "PerturbedAttention",
+                    "inputs": {
+                        "model": model_output,
+                        "scale": pag_scale,
+                        "adaptive_scale": 0,
+                        "unet_block": "middle",
+                        "unet_block_id": 0,
+                        "sigma_start": -1.0 if pag_sigma_start_value is None else float(pag_sigma_start_value),
+                        "sigma_end": -1.0 if pag_sigma_end_value is None else float(pag_sigma_end_value),
+                        "rescale": 0,
+                        "rescale_mode": "full",
+                        "unet_block_list": ""
+                    }
+                }
+                
+                # Add the node to the workflow
+                modified_workflow[new_node_id] = pag_node
+                logger.debug(f"Added PAG node {new_node_id} to workflow with scale {pag_scale}")
+                
+                # Update all nodes that were using the model output to use the PAG output instead
+                pag_output = [new_node_id, 0]
+                nodes_updated = 0
+                
+                for node_id, node in modified_workflow.items():
+                    if node_id == new_node_id:  # Skip the PAG node itself
+                        continue
+                        
+                    # Check if this node is using the model output
+                    for input_name, input_value in node["inputs"].items():
+                        if isinstance(input_value, list) and len(input_value) == 2:
+                            if input_value[0] == checkpoint_node_id and input_value[1] == 0:
+                                # This input is using the model output, change it to use PAG output
+                                node["inputs"][input_name] = pag_output
+                                nodes_updated += 1
+                                logger.debug(f"Updated node {node_id} input '{input_name}' to use PAG output")
+                
+                logger.debug(f"Updated {nodes_updated} nodes to use PAG output")
+                
+                # If no nodes were updated, that's a problem!
+                if nodes_updated == 0:
+                    logger.error("No nodes were updated to use PAG output! PAG will have no effect!")
+            else:
+                logger.error("Could not find checkpoint node to add PAG!")
+
         # Search for PerturbedAttention nodes and ensure they have correct settings
         for node_id, node in modified_workflow.items():
             if node["class_type"] == "PerturbedAttention":
@@ -1484,7 +1575,31 @@ def generate_single_image(
                 
                 if not pag_node_output_used:
                     logger.warning(f"PAG node {node_id} appears to be disconnected - its output is not used by any other node!")
-                    # Don't try to fix this here as it requires understanding the workflow structure
+                    
+                    # Check if this node is using a model input
+                    model_input = node["inputs"].get("model")
+                    if model_input and isinstance(model_input, list) and len(model_input) == 2:
+                        model_node_id, _ = model_input
+                        logger.debug(f"PAG node {node_id} is using model from node {model_node_id}")
+                        
+                        # Find all nodes using the same model input and redirect them to use PAG output
+                        pag_output = [node_id, 0]
+                        nodes_updated = 0
+                        
+                        for other_id, other_node in modified_workflow.items():
+                            if other_id == node_id:  # Skip the PAG node itself
+                                continue
+                                
+                            # Check all inputs
+                            for input_name, input_value in other_node["inputs"].items():
+                                if isinstance(input_value, list) and len(input_value) == 2:
+                                    if input_value[0] == model_node_id and input_value[1] == 0:
+                                        # This node is using the same model output, redirect to PAG
+                                        other_node["inputs"][input_name] = pag_output
+                                        nodes_updated += 1
+                                        logger.debug(f"Redirected node {other_id} input '{input_name}' to use PAG output")
+                        
+                        logger.debug(f"Redirected {nodes_updated} nodes to use PAG output")
                 
                 # We've processed the PAG node, no need to continue the loop
                 break

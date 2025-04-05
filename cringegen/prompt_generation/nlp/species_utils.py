@@ -190,7 +190,7 @@ def generate_species_description(species: str, gender: str) -> str:
         "canine": [
             f"{gender_display} {species} with a fluffy tail and pointed ears",
             f"{gender_display} {species} with alert eyes and a sleek coat",
-            f"{gender_display} {species} with a powerful build and keen senses",
+            f"{gender_display} {species} with a powerful build",
         ],
         "feline": [
             f"{gender_display} {species} with sleek fur and alert eyes",
@@ -220,7 +220,7 @@ def generate_species_description(species: str, gender: str) -> str:
         "reptile": [
             f"{gender_display} {species} with shimmering scales and striking eyes",
             f"{gender_display} {species} with a powerful tail and imposing presence",
-            f"{gender_display} {species} with sharp claws and keen senses",
+            f"{gender_display} {species} with sharp claws",
         ],
         "avian": [
             f"{gender_display} {species} with colorful feathers and a sharp beak",

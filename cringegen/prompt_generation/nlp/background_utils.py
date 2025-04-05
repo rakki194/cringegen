@@ -70,7 +70,20 @@ def generate_background_description(
     # Add location modifier if available
     if "modifiers" in location_data and random.random() < 0.5:
         location_modifier = random.choice(location_data["modifiers"])
-        description = f"{description} ({location_modifier})"
+        # Use different natural phrasings based on the location type
+        phrases = [
+            f"a {location_descriptor} {location_modifier} {location}",
+            f"a {location_descriptor} {location} with {location_modifier} trees",
+            f"a {location_descriptor} {location} dotted with {location_modifier} trees",
+            f"a {location_descriptor} {location} surrounded by {location_modifier} trees",
+        ]
+        
+        # For non-tree modifiers, use more generic phrasing
+        if location_modifier in ["tropical", "rainforest", "jungle", "alpine", "coastal", 
+                                "highland", "valley", "mountain", "desert"]:
+            description = f"a {location_descriptor} {location_modifier} {location}"
+        else:
+            description = random.choice(phrases)
 
     # Add time of day information
     time_data = TIME_OF_DAY.get(time_of_day, TIME_OF_DAY["afternoon"])

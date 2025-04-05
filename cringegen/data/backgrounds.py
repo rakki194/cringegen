@@ -291,7 +291,7 @@ BACKGROUND_SETTINGS: Dict[str, Dict[str, List[str]]] = {
             "thick undergrowth",
             "meandering paths",
             "fallen logs",
-            "bird songs",
+            "singing birds",
             "rustling leaves",
             "woodland creatures",
             "flowering shrubs",
