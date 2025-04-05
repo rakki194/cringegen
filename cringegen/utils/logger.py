@@ -9,7 +9,25 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
-import re
+
+# Import model detection functions from the dedicated module
+from .model_detection import (
+    is_sdxl_model,
+    is_sd15_model,
+    is_sd2_model,
+    is_sd35_model,
+    is_flux_model,
+    is_stable_cascade_model,
+    is_ltx_model,
+    is_lumina_model,
+    detect_model_architecture,
+    get_model_info,
+    get_sd35_variant,
+    test_model_detection,
+    is_optimal_resolution,
+    get_optimal_resolution,
+    get_optimal_resolution_suggestions
+)
 
 # Module exports
 __all__ = [
@@ -17,7 +35,17 @@ __all__ = [
     "configure_logging", 
     "set_log_level", 
     "print_colored_warning",
+    "print_colored_info",
     "is_sdxl_model",
+    "is_sd15_model",
+    "is_sd2_model",
+    "is_sd35_model",
+    "is_flux_model",
+    "is_stable_cascade_model",
+    "is_ltx_model",
+    "is_lumina_model",
+    "detect_model_architecture",
+    "test_model_detection",
     "is_optimal_resolution",
     "get_optimal_resolution",
     "get_optimal_resolution_suggestions",
@@ -198,298 +226,11 @@ def print_colored_warning(message: str, color: str = YELLOW) -> None:
     print(f"{color}{message}{RESET}", file=sys.stderr)
 
 
-def is_sdxl_model(checkpoint_name: str) -> bool:
-    """Determine if a checkpoint is an SDXL model based on name patterns.
+def print_colored_info(message: str, color: str = GREEN) -> None:
+    """Print a colored info message to stdout.
     
     Args:
-        checkpoint_name: The name of the checkpoint file
-        
-    Returns:
-        True if the checkpoint appears to be an SDXL model
+        message: The info message to print
+        color: ANSI color code to use
     """
-    sdxl_patterns = [
-        "sdxl", 
-        "sd-xl", 
-        "sd_xl",
-        "stableDiffusionXL",
-        "stable-diffusion-xl",
-        "pixartsigma"
-    ]
-    
-    checkpoint_lower = checkpoint_name.lower()
-    
-    # Special case for NoobAI models - specifically check for XL in the name
-    if ("noob" in checkpoint_lower or "noobai" in checkpoint_lower) and ("xl" in checkpoint_lower or "XL" in checkpoint_name):
-        return True
-        
-    return any(pattern in checkpoint_lower for pattern in sdxl_patterns)
-
-
-def get_model_info(checkpoint_name: str) -> tuple[str, str]:
-    """Detect model architecture and family from checkpoint name.
-    
-    Args:
-        checkpoint_name: The name of the checkpoint file
-        
-    Returns:
-        Tuple of (architecture_type, model_family)
-        Where architecture_type is one of: "sdxl", "sd15", "sd35", "flux", "ltx", "lumina", etc.
-        And model_family is the specific model series like "noob", "yiffymix", "dreamshaper", etc.
-    """
-    checkpoint_lower = checkpoint_name.lower()
-    
-    # First detect architecture
-    architecture = "unknown"
-    
-    # SDXL detection - more comprehensive patterns
-    xl_pattern = re.compile(r'(xl|XL)')
-    
-    # Special case for NoobAI models - they are SDXL
-    if ("noob" in checkpoint_lower or "noobai" in checkpoint_lower):
-        if "xl" in checkpoint_lower or "XL" in checkpoint_name:
-            architecture = "sdxl"
-        else:
-            # Assume SD1.5 for non-XL NoobAI models
-            architecture = "sd15"
-    
-    # Other SDXL detection patterns
-    elif any(pattern in checkpoint_lower for pattern in [
-        "sdxl", "sd-xl", "sd_xl", "stablediffusionxl", "stable-diffusion-xl"
-    ]) or xl_pattern.search(checkpoint_name):
-        architecture = "sdxl"
-    
-    # SD3.5 detection
-    elif any(pattern in checkpoint_lower for pattern in [
-        "sd3.5", "sd-3.5", "sd_3.5", "sd35"
-    ]):
-        architecture = "sd35"
-    
-    # SD1.5 detection (baseline models)
-    elif any(pattern in checkpoint_lower for pattern in [
-        "sd1.5", "sd-1.5", "sd_1.5", "sd15"
-    ]) or "yiffymix" in checkpoint_lower:
-        architecture = "sd15"
-    
-    # Flux detection
-    elif "chroma-unlocked" in checkpoint_lower:
-        architecture = "flux"
-    
-    # LTX detection
-    elif "ltx" in checkpoint_lower:
-        architecture = "ltx"
-    
-    # Lumina detection
-    elif "lumina" in checkpoint_lower:
-        architecture = "lumina"
-    
-    # Now detect model family
-    family = "unknown"
-    
-    # Common model families
-    family_patterns = {
-        "animagine": ["animagine"],
-        "dreamshaper": ["dreamshaper"],
-        "epicrealism": ["epicrealism"],
-        "illustrious": ["illustrious"],
-        "juggernaut": ["juggernaut"],
-        "noob": ["noob", "realnoob", "noobai"],
-        "pony": ["pony"],
-        "zavychroma": ["zavychroma"],
-        "chroma": ["chroma"],
-        "yiffymix": ["yiffymix"],
-        "pixartsigma": ["pixartsigma"]
-    }
-    
-    for family_name, patterns in family_patterns.items():
-        if any(pattern in checkpoint_lower for pattern in patterns):
-            family = family_name
-            break
-    
-    # Handle special cases for SD3.5
-    if architecture == "sd35":
-        if "large" in checkpoint_lower:
-            family = "sd35l"
-        elif "medium" in checkpoint_lower:
-            if "turbo" in checkpoint_lower:
-                family = "sd35mt"
-            else:
-                family = "sd35m"
-    
-    # Handle vanilla SDXL case
-    if architecture == "sdxl" and family == "unknown":
-        if any(pattern in checkpoint_lower for pattern in ["base", "1.0"]):
-            family = "sdxl"
-    
-    # Handle LTX and Lumina where architecture = family
-    if architecture in ["ltx", "lumina"] and family == "unknown":
-        family = architecture
-        
-    # Fix for SD3.5 turbo model
-    if checkpoint_lower == "sd3.5m_turbo.safetensors":
-        family = "sd35mt"
-    
-    return architecture, family
-
-
-def is_optimal_resolution(width: int, height: int, model_type: str, use_deepshrink: bool = False) -> bool:
-    """Check if dimensions are optimal for the given model type.
-    
-    Args:
-        width: Image width
-        height: Image height
-        model_type: "sdxl" or "sd15" or other model type
-        use_deepshrink: Whether DeepShrink is enabled (bypasses check if True)
-        
-    Returns:
-        True if the resolution is optimal for the model type or DeepShrink is enabled
-    """
-    # Skip resolution check when DeepShrink is enabled
-    if use_deepshrink:
-        return True
-        
-    # Calculate total pixels
-    total_pixels = width * height
-    
-    if model_type.lower() == "sdxl":
-        # SDXL optimal: 1024×1024 (1,048,576 pixels)
-        # Allow 5% margin for different aspect ratios
-        target_pixels = 1048576
-        margin = target_pixels * 0.05
-        return abs(total_pixels - target_pixels) <= margin
-    elif model_type.lower() == "sd15":
-        # SD 1.5 optimal: 512×512 (262,144 pixels)
-        # Allow 5% margin for different aspect ratios
-        target_pixels = 262144
-        margin = target_pixels * 0.05
-        return abs(total_pixels - target_pixels) <= margin
-    else:
-        # For other models, assume any resolution is fine
-        return True
-
-
-def get_optimal_resolution(aspect_ratio: float, model_type: str) -> tuple:
-    """Calculate optimal resolution for a given aspect ratio and model type.
-    
-    Args:
-        aspect_ratio: Width to height ratio (width/height)
-        model_type: "sdxl" or "sd15" or other model type
-        
-    Returns:
-        Tuple of (width, height) that is optimal for the model type and aspect ratio
-    """
-    # First, determine the target pixel count
-    if model_type.lower() == "sdxl":
-        target_pixels = 1048576  # 1024×1024
-    elif model_type.lower() == "sd15":
-        target_pixels = 262144   # 512×512
-    else:
-        # Default to SD1.5 for unknown models
-        target_pixels = 262144
-    
-    # Calculate dimensions based on aspect ratio and target pixels
-    width = int((target_pixels * aspect_ratio) ** 0.5)
-    height = int(width / aspect_ratio)
-    
-    # Ensure dimensions are divisible by 8 (required by Stable Diffusion)
-    width = width - (width % 8)
-    height = height - (height % 8)
-    
-    return (width, height)
-
-
-def get_optimal_resolution_suggestions(width: int, height: int, model_type: str) -> list:
-    """Get optimal resolution suggestions for a given aspect ratio and model type.
-    
-    Args:
-        width: Current width
-        height: Current height
-        model_type: "sdxl" or "sd15" or other model type
-        
-    Returns:
-        List of tuple suggestions (width, height) that are optimal
-    """
-    # Calculate aspect ratio
-    aspect_ratio = width / height
-    
-    # Get the base optimal resolution for this aspect ratio
-    base_optimal = get_optimal_resolution(aspect_ratio, model_type)
-    
-    # Get some common variations with the same aspect ratio
-    suggestions = [base_optimal]
-    
-    # Add common predefined resolutions that maintain the approximate pixel count
-    if model_type.lower() == "sdxl":
-        if abs(aspect_ratio - 1.0) < 0.01:  # Square (1:1)
-            suggestions = [(1024, 1024)]
-        elif abs(aspect_ratio - (4/3)) < 0.01:  # 4:3
-            suggestions = [(1184, 888)]
-        elif abs(aspect_ratio - (3/4)) < 0.01:  # 3:4
-            suggestions = [(888, 1184)]
-        elif abs(aspect_ratio - (16/9)) < 0.01:  # 16:9
-            suggestions = [(1360, 768)]
-        elif abs(aspect_ratio - (9/16)) < 0.01:  # 9:16
-            suggestions = [(768, 1360)]
-        elif abs(aspect_ratio - (3/2)) < 0.01:  # 3:2
-            suggestions = [(1248, 832)]
-        elif abs(aspect_ratio - (2/3)) < 0.01:  # 2:3
-            suggestions = [(832, 1248)]
-        
-        # Add common SDXL presets regardless of the input aspect ratio
-        if len(suggestions) == 1:  # Only the base suggestion was added
-            if aspect_ratio >= 1.0:  # Landscape
-                suggestions.extend([
-                    (1024, 1024),  # 1:1
-                    (1152, 896),   # 9:7
-                    (1216, 832),   # 19:13
-                    (1344, 768),   # 7:4
-                    (1536, 640),   # 12:5
-                ])
-            else:  # Portrait
-                suggestions.extend([
-                    (1024, 1024),  # 1:1
-                    (896, 1152),   # 7:9
-                    (832, 1216),   # 13:19
-                    (768, 1344),   # 4:7
-                    (640, 1536),   # 5:12
-                ])
-    
-    elif model_type.lower() == "sd15":
-        if abs(aspect_ratio - 1.0) < 0.01:  # Square (1:1)
-            suggestions = [(512, 512)]
-        elif abs(aspect_ratio - (4/3)) < 0.01:  # 4:3
-            suggestions = [(592, 444)]
-        elif abs(aspect_ratio - (3/4)) < 0.01:  # 3:4
-            suggestions = [(444, 592)]
-        elif abs(aspect_ratio - (16/9)) < 0.01:  # 16:9
-            suggestions = [(680, 384)]
-        elif abs(aspect_ratio - (9/16)) < 0.01:  # 9:16
-            suggestions = [(384, 680)]
-        elif abs(aspect_ratio - (3/2)) < 0.01:  # 3:2
-            suggestions = [(624, 416)]
-        elif abs(aspect_ratio - (2/3)) < 0.01:  # 2:3
-            suggestions = [(416, 624)]
-        
-        # Add common SD1.5 presets regardless of the input aspect ratio
-        if len(suggestions) == 1:  # Only the base suggestion was added
-            if aspect_ratio >= 1.0:  # Landscape
-                suggestions.extend([
-                    (512, 512),    # 1:1
-                    (576, 448),    # 9:7
-                    (608, 416),    # 19:13
-                    (672, 384),    # 7:4
-                ])
-            else:  # Portrait
-                suggestions.extend([
-                    (512, 512),    # 1:1
-                    (448, 576),    # 7:9
-                    (416, 608),    # 13:19
-                    (384, 672),    # 4:7
-                ])
-    
-    # Ensure all suggestions are unique
-    unique_suggestions = []
-    for w, h in suggestions:
-        if (w, h) not in unique_suggestions:
-            unique_suggestions.append((w, h))
-    
-    return unique_suggestions
+    print(f"{color}{message}{RESET}")

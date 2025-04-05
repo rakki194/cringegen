@@ -17,7 +17,8 @@ from ..utils.logger import (
     is_sdxl_model, 
     print_colored_warning, 
     is_optimal_resolution,
-    get_optimal_resolution_suggestions
+    get_optimal_resolution_suggestions,
+    print_colored_info,
 )
 
 # Create logger for this module
@@ -133,9 +134,9 @@ def create_basic_furry_workflow(
 
     # Check if this is an SDXL model and display a warning if so
     if checkpoint and is_sdxl_model(checkpoint):
-        print_colored_warning(f"WARNING: Detected SDXL model architecture for checkpoint '{checkpoint}'")
+        print_colored_info(f"Detected SDXL model architecture for checkpoint '{checkpoint}'")
         # Additional logging for normal log files
-        logger.warning(f"Using SDXL model: {checkpoint}")
+        logger.info(f"Using SDXL model: {checkpoint}")
         
         # Check resolution only if DeepShrink is not enabled
         if not use_deepshrink and not is_optimal_resolution(width, height, "sdxl", use_deepshrink):
@@ -774,7 +775,7 @@ def create_nsfw_furry_workflow(
 
 # For testing purposes
 if __name__ == "__main__":
-    from ..utils.logger import print_colored_warning, is_sdxl_model
+    from ..utils.logger import print_colored_info, is_sdxl_model
     
     # Test SDXL model warning
     test_models = [
@@ -788,6 +789,6 @@ if __name__ == "__main__":
     print("Testing SDXL model detection:")
     for model in test_models:
         if is_sdxl_model(model):
-            print_colored_warning(f"WARNING: Detected SDXL model architecture for checkpoint '{model}'")
+            print_colored_info(f"Detected SDXL model architecture for checkpoint '{model}'")
         else:
             print(f"Not an SDXL model: {model}")

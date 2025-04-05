@@ -3,6 +3,7 @@ Utilities for interacting with the ComfyUI API
 """
 
 import os
+import random
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -112,27 +113,50 @@ class ComfyAPI:
             logger.warning(f"Generated random client ID on error: {client_id}")
             return client_id
 
-    def queue_prompt(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
+    def queue_prompt(self, workflow: Dict[str, Any], max_retries: int = 5, initial_retry_delay: float = 1.0) -> Dict[str, Any]:
         """Queue a workflow prompt for execution
 
         Args:
             workflow: The workflow to queue
+            max_retries: Maximum number of retries on failure (default: 5)
+            initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
 
         Returns:
             The response from the server
         """
-        try:
-            prompt_data = {"prompt": workflow, "client_id": self.client_id}
-            logger.debug(f"Queuing prompt with client ID: {self.client_id}")
-            logger.debug(f"Sending request to {self.base_url}/prompt")
-            r = requests.post(f"{self.base_url}/prompt", json=prompt_data)
-            logger.debug(f"Response status: {r.status_code}")
-            json_data = r.json()
-            logger.debug(f"Response JSON: {json_data}")
-            return json_data
-        except Exception as e:
-            logger.error(f"Error in queue_prompt: {e}")
-            raise ComfyAPIError(f"Failed to queue prompt: {e}")
+        retry_count = 0
+        retry_delay = initial_retry_delay
+        last_error = None
+
+        while retry_count <= max_retries:
+            try:
+                prompt_data = {"prompt": workflow, "client_id": self.client_id}
+                logger.debug(f"Queuing prompt with client ID: {self.client_id}")
+                logger.debug(f"Sending request to {self.base_url}/prompt")
+                r = requests.post(f"{self.base_url}/prompt", json=prompt_data)
+                logger.debug(f"Response status: {r.status_code}")
+                json_data = r.json()
+                logger.debug(f"Response JSON: {json_data}")
+                return json_data
+            except requests.exceptions.ConnectionError as e:
+                last_error = e
+                if retry_count < max_retries:
+                    retry_count += 1
+                    logger.warning(f"Connection error when queueing prompt: {e}")
+                    logger.info(f"Retrying ({retry_count}/{max_retries}) in {retry_delay:.1f}s...")
+                    time.sleep(retry_delay)
+                    # Exponential backoff with jitter
+                    retry_delay = min(retry_delay * 2, 30.0) * (0.9 + 0.2 * random.random())
+                else:
+                    logger.error(f"Max retries exceeded when queueing prompt: {e}")
+                    break
+            except Exception as e:
+                last_error = e
+                logger.error(f"Error in queue_prompt: {e}")
+                break
+        
+        # If we've exhausted retries or encountered a non-connection error
+        raise ComfyAPIError(f"Failed to queue prompt: {last_error}")
 
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
         """Get an image from the ComfyUI server
@@ -159,12 +183,14 @@ class ComfyAPI:
             logger.error(f"Error getting image: {e}")
             raise ComfyAPIError(f"Error getting image: {e}")
 
-    def wait_for_image(self, prompt_id: str, timeout: int = 300) -> List[Dict[str, Any]]:
+    def wait_for_image(self, prompt_id: str, timeout: int = 300, max_retries: int = 10, initial_retry_delay: float = 1.0) -> List[Dict[str, Any]]:
         """Wait for an image to be generated
 
         Args:
             prompt_id: The ID of the prompt
             timeout: Timeout in seconds (default: 300)
+            max_retries: Maximum consecutive connection errors before failing (default: 10)
+            initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
 
         Returns:
             A list of image information dictionaries
@@ -174,7 +200,7 @@ class ComfyAPI:
 
         # Keep track of consecutive errors
         consecutive_errors = 0
-        max_consecutive_errors = 5
+        retry_delay = initial_retry_delay
 
         while time.time() - start_time < timeout:
             try:
@@ -197,16 +223,19 @@ class ComfyAPI:
                     consecutive_errors += 1
 
                     # If we've had too many consecutive errors, fail
-                    if consecutive_errors >= max_consecutive_errors:
-                        logger.error(f"Too many consecutive errors ({max_consecutive_errors})")
+                    if consecutive_errors >= max_retries:
+                        logger.error(f"Too many consecutive errors ({max_retries})")
                         raise ComfyAPIError(f"Too many consecutive errors while waiting for image")
 
-                    # Wait a bit longer between retries
-                    time.sleep(2)
+                    # Wait with exponential backoff before retrying
+                    time.sleep(retry_delay)
+                    # Exponential backoff with jitter
+                    retry_delay = min(retry_delay * 1.5, 10.0) * (0.9 + 0.2 * random.random())
                     continue
 
-                # Reset error counter on successful response
+                # Reset error counter and delay on successful response
                 consecutive_errors = 0
+                retry_delay = initial_retry_delay
 
                 # Try to decode JSON
                 try:
@@ -235,24 +264,39 @@ class ComfyAPI:
                 # Not ready yet, wait and retry
                 time.sleep(2)
 
-            except requests.exceptions.RequestException as e:
-                logger.warning(f"Request error: {e}")
+            except requests.exceptions.ConnectionError as e:
+                logger.warning(f"Connection error when checking status: {e}")
                 consecutive_errors += 1
 
                 # If we've had too many consecutive errors, fail
-                if consecutive_errors >= max_consecutive_errors:
-                    logger.error(f"Too many consecutive errors ({max_consecutive_errors})")
+                if consecutive_errors >= max_retries:
+                    logger.error(f"Too many consecutive connection errors ({max_retries})")
                     raise ComfyAPIError(f"Connection error while waiting for image: {e}")
 
-                time.sleep(2)  # Wait a bit longer between retries
+                # Wait with exponential backoff before retrying
+                logger.info(f"Retrying in {retry_delay:.1f}s... ({consecutive_errors}/{max_retries})")
+                time.sleep(retry_delay)
+                # Exponential backoff with jitter
+                retry_delay = min(retry_delay * 1.5, 10.0) * (0.9 + 0.2 * random.random())
                 continue
 
             except Exception as e:
-                logger.error(f"Error waiting for image: {e}")
-                raise ComfyAPIError(f"Error waiting for image: {e}")
+                logger.error(f"Unexpected error while waiting for image: {e}")
+                consecutive_errors += 1
 
-        logger.error(f"Timed out waiting for image after {timeout} seconds")
-        raise ComfyAPIError(f"Timed out waiting for image after {timeout} seconds")
+                # If we've had too many consecutive errors, fail
+                if consecutive_errors >= max_retries:
+                    logger.error(f"Too many consecutive errors ({max_retries})")
+                    raise ComfyAPIError(f"Error while waiting for image: {e}")
+
+                # Wait with exponential backoff before retrying
+                time.sleep(retry_delay)
+                # Exponential backoff with jitter
+                retry_delay = min(retry_delay * 1.5, 10.0) * (0.9 + 0.2 * random.random())
+
+        # If we get here, we've timed out
+        logger.warning(f"Timed out after {timeout}s waiting for image")
+        raise ComfyAPIError(f"Timed out after {timeout}s waiting for image")
 
     def _extract_image_info(self, history_item: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract image information from a history item
@@ -280,11 +324,13 @@ class ComfyAPI:
         logger.debug(f"Extracted {len(images)} images from history item")
         return images
 
-    def check_generation_status(self, prompt_id: str) -> Dict[str, Any]:
+    def check_generation_status(self, prompt_id: str, max_retries: int = 3, retry_delay: float = 1.0) -> Dict[str, Any]:
         """Check the status of a generation without waiting for timeout
 
         Args:
             prompt_id: The ID of the prompt
+            max_retries: Maximum number of retries on connection failure (default: 3)
+            retry_delay: Delay between retries in seconds (default: 1.0)
 
         Returns:
             A dictionary with the status information:
@@ -295,109 +341,133 @@ class ComfyAPI:
                 "error": error message (if status is "error")
             }
         """
-        try:
-            # Check if prompt exists in history (meaning it's been processed or is processing)
-            r = requests.get(f"{self.base_url}/history/{prompt_id}")
-
-            # If not in history yet, it's still pending
-            if r.status_code == 404:
-                logger.debug(f"Prompt {prompt_id} not found in history yet, likely still pending")
-                return {"status": "pending", "progress": 0.0, "images": [], "error": None}
-
-            # Check for other errors
-            if r.status_code != 200:
-                logger.warning(f"API returned error code {r.status_code} for prompt {prompt_id}")
-                return {
-                    "status": "error",
-                    "progress": 0.0,
-                    "images": [],
-                    "error": f"API returned error code {r.status_code}",
-                }
-
-            # Parse JSON response
+        for attempt in range(1, max_retries + 1):
             try:
-                data = r.json()
-            except ValueError as e:
-                logger.warning(f"Invalid JSON response for prompt {prompt_id}: {e}")
-                return {
-                    "status": "error",
-                    "progress": 0.0,
-                    "images": [],
-                    "error": "Invalid JSON response",
-                }
+                # Check if prompt exists in history (meaning it's been processed or is processing)
+                r = requests.get(f"{self.base_url}/history/{prompt_id}")
 
-            # Check if this is a valid history item
-            if not isinstance(data, dict):
-                logger.warning(f"Unexpected response format for prompt {prompt_id}: {type(data)}")
-                return {
-                    "status": "error",
-                    "progress": 0.0,
-                    "images": [],
-                    "error": "Unexpected response format",
-                }
+                # If not in history yet, it's still pending
+                if r.status_code == 404:
+                    logger.debug(f"Prompt {prompt_id} not found in history yet, likely still pending")
+                    return {"status": "pending", "progress": 0.0, "images": [], "error": None}
 
-            # Check if prompt ID is in the response
-            if prompt_id not in data:
-                # This could be because the prompt is still pending or because it's invalid
-                # Try to check if there are any recent outputs we can use instead
-                logger.debug(
-                    f"Prompt {prompt_id} not found in history data. Checking for recent outputs."
-                )
+                # Check for other errors
+                if r.status_code != 200:
+                    logger.warning(f"API returned error code {r.status_code} for prompt {prompt_id}")
+                    if attempt < max_retries:
+                        logger.info(f"Retrying status check ({attempt}/{max_retries})...")
+                        time.sleep(retry_delay)
+                        continue
+                    return {
+                        "status": "error",
+                        "progress": 0.0,
+                        "images": [],
+                        "error": f"API returned error code {r.status_code}",
+                    }
 
-                # If history has any entries at all, see if we can find the most recent one
-                if data:
-                    # Get most recent entry
-                    most_recent = None
-                    most_recent_num = -1
+                # Parse JSON response
+                try:
+                    data = r.json()
+                except ValueError as e:
+                    logger.warning(f"Invalid JSON response for prompt {prompt_id}: {e}")
+                    if attempt < max_retries:
+                        logger.info(f"Retrying after JSON parse error ({attempt}/{max_retries})...")
+                        time.sleep(retry_delay)
+                        continue
+                    return {
+                        "status": "error",
+                        "progress": 0.0,
+                        "images": [],
+                        "error": "Invalid JSON response",
+                    }
 
-                    for key, entry in data.items():
-                        if isinstance(entry, dict) and "outputs" in entry:
-                            entry_num = entry.get("number", -1)
-                            if entry_num > most_recent_num:
-                                most_recent = key
-                                most_recent_num = entry_num
+                # Check if this is a valid history item
+                if not isinstance(data, dict):
+                    logger.warning(f"Unexpected response format for prompt {prompt_id}: {type(data)}")
+                    if attempt < max_retries:
+                        logger.info(f"Retrying after format error ({attempt}/{max_retries})...")
+                        time.sleep(retry_delay)
+                        continue
+                    return {
+                        "status": "error",
+                        "progress": 0.0,
+                        "images": [],
+                        "error": "Unexpected response format",
+                    }
 
-                    if most_recent and "outputs" in data[most_recent]:
-                        # We found a recent output, use that instead
-                        logger.info(
-                            f"Using most recent output from prompt {most_recent} instead of {prompt_id}"
-                        )
-                        images = self._extract_image_info(data[most_recent])
-                        if images:
-                            return {
-                                "status": "completed",
-                                "progress": 1.0,
-                                "images": images,
-                                "error": f"Using output from prompt {most_recent} as {prompt_id} was not found",
-                            }
+                # Check if prompt ID is in the response
+                if prompt_id not in data:
+                    # This could be because the prompt is still pending or because it's invalid
+                    # Try to check if there are any recent outputs we can use instead
+                    logger.debug(
+                        f"Prompt {prompt_id} not found in history data. Checking for recent outputs."
+                    )
 
-                # If we got here, we didn't find any suitable replacement
-                return {
-                    "status": "pending",  # Assume pending rather than error
-                    "progress": 0.0,
-                    "images": [],
-                    "error": "Prompt ID not found in history data",
-                }
+                    # If history has any entries at all, see if we can find the most recent one
+                    if data:
+                        # Get most recent entry
+                        most_recent = None
+                        most_recent_num = -1
 
-            # Get the history item for this prompt
-            history_item = data[prompt_id]
+                        for key, entry in data.items():
+                            if isinstance(entry, dict) and "outputs" in entry:
+                                entry_num = entry.get("number", -1)
+                                if entry_num > most_recent_num:
+                                    most_recent = key
+                                    most_recent_num = entry_num
 
-            # Check if completed (has outputs)
-            if "outputs" in history_item and history_item["outputs"]:
-                # Extract images
-                images = self._extract_image_info(history_item)
-                return {"status": "completed", "progress": 1.0, "images": images, "error": None}
+                        if most_recent and "outputs" in data[most_recent]:
+                            # We found a recent output, use that instead
+                            logger.info(
+                                f"Using most recent output from prompt {most_recent} instead of {prompt_id}"
+                            )
+                            images = self._extract_image_info(data[most_recent])
+                            if images:
+                                return {
+                                    "status": "completed",
+                                    "progress": 1.0,
+                                    "images": images,
+                                    "error": f"Using output from prompt {most_recent} as {prompt_id} was not found",
+                                }
 
-            # Still processing - check progress if available
-            progress = 0.0
-            if "progress" in history_item:
-                progress = float(history_item["progress"])
+                    # If we got here, we didn't find any suitable replacement
+                    return {
+                        "status": "pending",  # Assume pending rather than error
+                        "progress": 0.0,
+                        "images": [],
+                        "error": "Prompt ID not found in history data",
+                    }
 
-            return {"status": "processing", "progress": progress, "images": [], "error": None}
+                # Get the history item for this prompt
+                history_item = data[prompt_id]
 
-        except Exception as e:
-            logger.warning(f"Error checking generation status: {e}")
-            return {"status": "error", "progress": 0.0, "images": [], "error": str(e)}
+                # Check if completed (has outputs)
+                if "outputs" in history_item and history_item["outputs"]:
+                    # Extract images
+                    images = self._extract_image_info(history_item)
+                    return {"status": "completed", "progress": 1.0, "images": images, "error": None}
+
+                # Still processing - check progress if available
+                progress = 0.0
+                if "progress" in history_item:
+                    progress = float(history_item["progress"])
+
+                return {"status": "processing", "progress": progress, "images": [], "error": None}
+
+            except requests.exceptions.ConnectionError as e:
+                logger.warning(f"Connection error checking generation status: {e}")
+                if attempt < max_retries:
+                    logger.info(f"Retrying after connection error ({attempt}/{max_retries})...")
+                    time.sleep(retry_delay)
+                    continue
+                return {"status": "error", "progress": 0.0, "images": [], "error": f"Connection error: {str(e)}"}
+            except Exception as e:
+                logger.warning(f"Error checking generation status: {e}")
+                if attempt < max_retries:
+                    logger.info(f"Retrying after unexpected error ({attempt}/{max_retries})...")
+                    time.sleep(retry_delay)
+                    continue
+                return {"status": "error", "progress": 0.0, "images": [], "error": str(e)}
 
 
 # Helper functions for easier use
@@ -412,12 +482,14 @@ def get_comfy_api_url() -> str:
     return os.environ.get("COMFY_API_URL", "http://127.0.0.1:8188")
 
 
-def queue_prompt(workflow: Dict[str, Any], api_url: str = None) -> Dict[str, Any]:
+def queue_prompt(workflow: Dict[str, Any], api_url: str = None, max_retries: int = 5, initial_retry_delay: float = 1.0) -> Dict[str, Any]:
     """Queue a workflow prompt for execution
 
     Args:
         workflow: The workflow to queue
         api_url: URL of the ComfyUI server
+        max_retries: Maximum number of retries on failure (default: 5)
+        initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
 
     Returns:
         The response from the server
@@ -426,16 +498,18 @@ def queue_prompt(workflow: Dict[str, Any], api_url: str = None) -> Dict[str, Any
         api_url = get_comfy_api_url()
 
     api = get_comfy_api_client(api_url)
-    return api.queue_prompt(workflow)
+    return api.queue_prompt(workflow, max_retries=max_retries, initial_retry_delay=initial_retry_delay)
 
 
-def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> List[str]:
+def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300, max_retries: int = 10, initial_retry_delay: float = 1.0) -> List[str]:
     """Get the path to generated images
 
     Args:
         prompt_id: ID of the prompt
         api_url: URL of the ComfyUI server
         timeout: Timeout in seconds (default: 300)
+        max_retries: Maximum consecutive connection errors before failing (default: 10)
+        initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
 
     Returns:
         List of image paths
@@ -471,7 +545,7 @@ def get_image_path(prompt_id: str, api_url: str = None, timeout: int = 300) -> L
 
         # If direct check didn't work, wait for the image normally
         logger.info(f"Waiting for image generation (timeout: {timeout}s)")
-        images = api.wait_for_image(prompt_id, timeout)
+        images = api.wait_for_image(prompt_id, timeout, max_retries=max_retries, initial_retry_delay=initial_retry_delay)
 
         if not images:
             logger.warning("No images were generated")
@@ -1204,11 +1278,13 @@ def get_available_loras(api_url: str = None, force_refresh: bool = False) -> Lis
         return []
 
 
-def check_comfy_server(api_url: str = None) -> Tuple[bool, str]:
+def check_comfy_server(api_url: str = None, max_retries: int = 3, retry_delay: float = 1.0) -> Tuple[bool, str]:
     """Check if ComfyUI server is available
 
     Args:
         api_url: URL of the ComfyUI server
+        max_retries: Maximum number of connection attempts (default: 3)
+        retry_delay: Delay between retries in seconds (default: 1.0)
 
     Returns:
         Tuple of (is_available, message)
@@ -1217,24 +1293,45 @@ def check_comfy_server(api_url: str = None) -> Tuple[bool, str]:
         api_url = get_comfy_api_url()
 
     logger.info(f"Checking ComfyUI server at {api_url}")
-    try:
-        r = requests.get(f"{api_url}/", timeout=5)
-        if r.status_code == 200:
-            return True, "ComfyUI server is available"
-        else:
-            return False, f"ComfyUI server returned unexpected status code: {r.status_code}"
-    except requests.exceptions.ConnectionError:
-        return (
-            False,
-            f"ComfyUI server not running at {api_url}. Please start ComfyUI before generating images.",
-        )
-    except requests.exceptions.Timeout:
-        return (
-            False,
-            f"Connection to ComfyUI server at {api_url} timed out. Server may be busy or not responding.",
-        )
-    except Exception as e:
-        return False, f"Error connecting to ComfyUI server: {e}"
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = requests.get(f"{api_url}/", timeout=5)
+            if r.status_code == 200:
+                return True, "ComfyUI server is available"
+            else:
+                if attempt < max_retries:
+                    logger.warning(f"ComfyUI server returned unexpected status code: {r.status_code}, retrying ({attempt}/{max_retries})...")
+                    time.sleep(retry_delay)
+                    continue
+                return False, f"ComfyUI server returned unexpected status code: {r.status_code}"
+        except requests.exceptions.ConnectionError as e:
+            if attempt < max_retries:
+                logger.warning(f"Connection to ComfyUI server failed (attempt {attempt}/{max_retries}): {e}")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                continue
+            return (
+                False,
+                f"ComfyUI server not running at {api_url}. Please start ComfyUI before generating images.",
+            )
+        except requests.exceptions.Timeout:
+            if attempt < max_retries:
+                logger.warning(f"Connection to ComfyUI server timed out (attempt {attempt}/{max_retries})")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                continue
+            return (
+                False,
+                f"Connection to ComfyUI server at {api_url} timed out. Server may be busy or not responding.",
+            )
+        except Exception as e:
+            if attempt < max_retries:
+                logger.warning(f"Error connecting to ComfyUI server (attempt {attempt}/{max_retries}): {e}")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                continue
+            return False, f"Error connecting to ComfyUI server: {e}"
 
 
 def get_preferred_checkpoint(api_url: str = None) -> Optional[str]:
@@ -1317,12 +1414,14 @@ def get_comfy_api_client(api_url: str = None) -> ComfyAPI:
     return client
 
 
-def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, Any]:
+def check_generation_status(prompt_id: str, api_url: str = None, max_retries: int = 3, retry_delay: float = 1.0) -> Dict[str, Any]:
     """Check the status of a generation without waiting for timeout
 
     Args:
         prompt_id: The ID of the prompt
         api_url: URL of the ComfyUI server
+        max_retries: Maximum consecutive connection errors before failing (default: 3)
+        retry_delay: Delay between retries in seconds (default: 1.0)
 
     Returns:
         A dictionary with the status information:
@@ -1375,9 +1474,12 @@ def check_generation_status(prompt_id: str, api_url: str = None) -> Dict[str, An
                                 }
             except Exception as e:
                 logger.warning(f"Error parsing queue data: {e}")
+    except requests.exceptions.ConnectionError as e:
+        logger.warning(f"Connection error checking queue: {e}")
+        # Don't fail here, try to check history instead
     except Exception as e:
         logger.warning(f"Error checking prompt queue: {e}")
 
     # Now check the history - use the cached client instead of creating a new one
     api = get_comfy_api_client(api_url)
-    return api.check_generation_status(prompt_id)
+    return api.check_generation_status(prompt_id, max_retries=max_retries, retry_delay=retry_delay)
