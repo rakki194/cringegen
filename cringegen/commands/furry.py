@@ -196,6 +196,88 @@ def add_furry_command(subparsers, parent_parser):
         help="Path to SSH private key file for remote ComfyUI instance",
     )
 
+    # Advanced workflow options
+    furry_parser.add_argument(
+        "--pag", action="store_true", help="Use Perturbed-Attention Guidance for improved detail"
+    )
+    furry_parser.add_argument(
+        "--pag-scale", type=float, default=3.0, help="Scale for Perturbed-Attention Guidance"
+    )
+    furry_parser.add_argument(
+        "--pag-sigma-start", type=float, default=-1.0, help="Start sigma for PAG (default: auto)"
+    )
+    furry_parser.add_argument(
+        "--pag-sigma-end", type=float, default=-1.0, help="End sigma for PAG (default: auto)"
+    )
+    furry_parser.add_argument(
+        "--detail-daemon",
+        action="store_true",
+        help="Use DetailDaemonSamplerNode for enhanced details",
+    )
+    furry_parser.add_argument(
+        "--detail-amount",
+        type=float,
+        default=0.1,
+        help="Detail amount for DetailDaemonSamplerNode (0.0-1.0)",
+    )
+    furry_parser.add_argument(
+        "--detail-start",
+        type=float,
+        default=0.5,
+        help="Start percent for DetailDaemonSamplerNode (0.0-1.0)",
+    )
+    furry_parser.add_argument(
+        "--detail-end",
+        type=float,
+        default=0.8,
+        help="End percent for DetailDaemonSamplerNode (0.0-1.0)",
+    )
+    furry_parser.add_argument(
+        "--split-sigmas", type=float, help="Value to split sigmas for multi-stage sampling"
+    )
+    furry_parser.add_argument(
+        "--split-first-cfg", type=float, help="CFG for first stage of split-sigma sampling"
+    )
+    furry_parser.add_argument(
+        "--split-second-cfg", type=float, help="CFG for second stage of split-sigma sampling"
+    )
+    furry_parser.add_argument(
+        "--split-first-sampler", type=str, help="Sampler for first stage of split-sigma sampling (e.g., euler, euler_ancestral)"
+    )
+    furry_parser.add_argument(
+        "--split-second-sampler", type=str, help="Sampler for second stage of split-sigma sampling (e.g., euler, dpm_2_ancestral)"
+    )
+    furry_parser.add_argument(
+        "--split-first-scheduler", type=str, help="Scheduler for first stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    furry_parser.add_argument(
+        "--split-second-scheduler", type=str, help="Scheduler for second stage of split-sigma sampling (e.g., normal, karras)"
+    )
+    furry_parser.add_argument(
+        "--use-deepshrink",
+        action="store_true",
+        help="Use DeepShrink for improved high-frequency details",
+    )
+    furry_parser.add_argument(
+        "--deepshrink-factor", type=float, default=2.0, help="Downscale factor for DeepShrink"
+    )
+    furry_parser.add_argument(
+        "--deepshrink-start", type=float, default=0.0, help="Start percent for DeepShrink (0.0-1.0)"
+    )
+    furry_parser.add_argument(
+        "--deepshrink-end", type=float, default=0.35, help="End percent for DeepShrink (0.0-1.0)"
+    )
+    furry_parser.add_argument(
+        "--deepshrink-gradual",
+        type=float,
+        default=0.6,
+        help="Gradual percent for DeepShrink (0.0-1.0)",
+    )
+    furry_parser.add_argument(
+        "--use-zsnr", action="store_true", help="Enable Zero SNR for potentially improved results"
+    )
+    furry_parser.add_argument("--use-vpred", action="store_true", help="Use v-prediction sampling")
+
     furry_parser.set_defaults(func=generate_furry)
     return furry_parser
 
@@ -338,6 +420,28 @@ def generate_furry(args):
                 lora_strength=args.lora_strength,
                 sampler=args.sampler,
                 scheduler=args.scheduler,
+                use_pag=args.pag if hasattr(args, 'pag') else False,
+                pag_scale=args.pag_scale if hasattr(args, 'pag_scale') else 3.0,
+                pag_sigma_start=args.pag_sigma_start if hasattr(args, 'pag_sigma_start') else -1.0,
+                pag_sigma_end=args.pag_sigma_end if hasattr(args, 'pag_sigma_end') else -1.0,
+                use_detail_daemon=args.detail_daemon if hasattr(args, 'detail_daemon') else False,
+                detail_amount=args.detail_amount if hasattr(args, 'detail_amount') else 0.1,
+                detail_start=args.detail_start if hasattr(args, 'detail_start') else 0.5,
+                detail_end=args.detail_end if hasattr(args, 'detail_end') else 0.8,
+                split_sigmas=args.split_sigmas if hasattr(args, 'split_sigmas') else None,
+                split_first_cfg=args.split_first_cfg if hasattr(args, 'split_first_cfg') else None,
+                split_second_cfg=args.split_second_cfg if hasattr(args, 'split_second_cfg') else None,
+                split_first_sampler=args.split_first_sampler if hasattr(args, 'split_first_sampler') else None,
+                split_second_sampler=args.split_second_sampler if hasattr(args, 'split_second_sampler') else None,
+                split_first_scheduler=args.split_first_scheduler if hasattr(args, 'split_first_scheduler') else None,
+                split_second_scheduler=args.split_second_scheduler if hasattr(args, 'split_second_scheduler') else None,
+                use_deepshrink=args.use_deepshrink if hasattr(args, 'use_deepshrink') else False,
+                deepshrink_factor=args.deepshrink_factor if hasattr(args, 'deepshrink_factor') else 2.0,
+                deepshrink_start=args.deepshrink_start if hasattr(args, 'deepshrink_start') else 0.0,
+                deepshrink_end=args.deepshrink_end if hasattr(args, 'deepshrink_end') else 0.35,
+                deepshrink_gradual=args.deepshrink_gradual if hasattr(args, 'deepshrink_gradual') else 0.6,
+                use_zsnr=args.use_zsnr if hasattr(args, 'use_zsnr') else False,
+                use_vpred=args.use_vpred if hasattr(args, 'use_vpred') else False,
             )
 
             # Queue workflow
