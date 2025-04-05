@@ -3,6 +3,7 @@ Utility functions for background and setting-related natural language processing
 """
 
 import random
+import re
 from typing import Dict, List, Optional, Tuple, Union
 
 # Update imports to use new centralized data module
@@ -25,6 +26,41 @@ SEASONS = backgrounds.SEASONS
 SPECIES_HABITATS = habitats.SPECIES_HABITATS
 TIME_OF_DAY = backgrounds.TIME_OF_DAY
 WEATHER_CONDITIONS = backgrounds.WEATHER_CONDITIONS
+
+
+def get_indefinite_article(word: str) -> str:
+    """Determine whether to use 'a' or 'an' before a word.
+    
+    Args:
+        word: The word to check
+        
+    Returns:
+        'a' or 'an' based on the word's pronunciation
+    """
+    if not word:
+        return "a"
+        
+    # Clean the word - remove any leading punctuation or spaces
+    word = word.strip().lstrip("\"'([{")
+    if not word:
+        return "a"
+    
+    # Convert to lowercase for checking
+    word_lower = word.lower()
+    
+    # Words starting with vowel sounds generally use 'an'
+    if word_lower[0] in 'aeiou':
+        # Special cases for 'u' when it sounds like 'you'
+        if word_lower.startswith(('uni', 'eu', 'use', 'ute', 'u-')):
+            return "a"
+        return "an"
+    
+    # Words starting with silent 'h' use 'an'
+    if word_lower.startswith(('hour', 'honor', 'heir', 'honest')):
+        return "an"
+    
+    # Default to 'a' for consonant sounds
+    return "a"
 
 
 def generate_background_description(
@@ -64,25 +100,27 @@ def generate_background_description(
         location_data["features"], min(2, len(location_data["features"]))
     )
 
-    # Create the base description
-    description = f"a {location_descriptor} {location}"
+    # Create the base description with proper article
+    article = get_indefinite_article(location_descriptor)
+    description = f"{article} {location_descriptor} {location}"
 
     # Add location modifier if available
     if "modifiers" in location_data and random.random() < 0.5:
         location_modifier = random.choice(location_data["modifiers"])
         # Use different natural phrasings based on the location type
-        phrases = [
-            f"a {location_descriptor} {location_modifier} {location}",
-            f"a {location_descriptor} {location} with {location_modifier} trees",
-            f"a {location_descriptor} {location} dotted with {location_modifier} trees",
-            f"a {location_descriptor} {location} surrounded by {location_modifier} trees",
-        ]
-        
-        # For non-tree modifiers, use more generic phrasing
         if location_modifier in ["tropical", "rainforest", "jungle", "alpine", "coastal", 
-                                "highland", "valley", "mountain", "desert"]:
-            description = f"a {location_descriptor} {location_modifier} {location}"
+                               "highland", "valley", "mountain", "desert"]:
+            # Get proper article for the new phrase
+            article = get_indefinite_article(f"{location_descriptor} {location_modifier}")
+            description = f"{article} {location_descriptor} {location_modifier} {location}"
         else:
+            # Different phrase options with trees
+            phrases = [
+                f"{get_indefinite_article(f'{location_descriptor} {location_modifier}')} {location_descriptor} {location_modifier} {location}",
+                f"{get_indefinite_article(location_descriptor)} {location_descriptor} {location} with {location_modifier} trees",
+                f"{get_indefinite_article(location_descriptor)} {location_descriptor} {location} dotted with {location_modifier} trees",
+                f"{get_indefinite_article(location_descriptor)} {location_descriptor} {location} surrounded by {location_modifier} trees",
+            ]
             description = random.choice(phrases)
 
     # Add time of day information
@@ -218,9 +256,11 @@ def enhance_prompt_with_background(
     if location in BACKGROUND_SETTINGS:
         location_data = BACKGROUND_SETTINGS[location]
         descriptor = random.choice(location_data["descriptors"])
-        background_phrases.append(f"in a {descriptor} {location}")
+        article = get_indefinite_article(descriptor)
+        background_phrases.append(f"in {article} {descriptor} {location}")
     else:
-        background_phrases.append(f"in a {location}")
+        article = get_indefinite_article(location)
+        background_phrases.append(f"in {article} {location}")
 
     # Add time of day if specified
     if time_of_day and time_of_day.lower() in TIME_OF_DAY:
@@ -232,7 +272,8 @@ def enhance_prompt_with_background(
     if weather and weather.lower() in WEATHER_CONDITIONS:
         weather_data = WEATHER_CONDITIONS[weather.lower()]
         atmosphere = random.choice(weather_data["atmosphere"])
-        background_phrases.append(f"in {atmosphere} {weather} conditions")
+        article = get_indefinite_article(atmosphere)
+        background_phrases.append(f"in {article} {atmosphere} {weather} conditions")
 
     # Combine background phrases
     if len(background_phrases) > 1:
