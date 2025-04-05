@@ -15,6 +15,7 @@ import pprint
 from typing import List, Dict, Any, Tuple, Optional, Callable
 import re
 import pathlib
+import copy
 
 from ..utils.comfy_api import (
     check_comfy_server,
@@ -955,17 +956,28 @@ def handle_pag_scale_param(workflow: Dict[str, Any], value: str, args) -> Dict[s
     
     logger.debug(f"Extracted PAG scale: {pag_scale} from '{value}'")
     
-    # Ensure PAG is enabled
-    args_copy = args
-    args_copy.pag = True
-    args_copy.pag_scale = pag_scale
+    # First try to directly modify any existing PerturbedAttention node in the workflow
+    pag_node_found = False
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "PerturbedAttention":
+            node["inputs"]["scale"] = pag_scale
+            logger.debug(f"Directly updated PerturbedAttention node {node_id} with scale: {pag_scale}")
+            pag_node_found = True
+            break
     
-    # Re-create the workflow with the updated args
-    workflow_creator = get_workflow_template(args.workflow)
-    if workflow_creator:
-        return workflow_creator(args_copy)
-    else:
-        return workflow_copy
+    # If no PAG node was found or needs to be created, recreate the workflow
+    if not pag_node_found:
+        # Ensure PAG is enabled
+        args_copy = args
+        args_copy.pag = True
+        args_copy.pag_scale = pag_scale
+        
+        # Re-create the workflow with the updated args
+        workflow_creator = get_workflow_template(args.workflow)
+        if workflow_creator:
+            return workflow_creator(args_copy)
+    
+    return workflow_copy
 
 
 @register_param_handler("pag_sigma_start")
@@ -988,17 +1000,28 @@ def handle_pag_sigma_start_param(workflow: Dict[str, Any], value: str, args) -> 
     
     logger.debug(f"Extracted PAG sigma start: {pag_sigma_start} from '{value}'")
     
-    # Ensure PAG is enabled
-    args_copy = args
-    args_copy.pag = True
-    args_copy.pag_sigma_start = pag_sigma_start
+    # First try to directly modify any existing PerturbedAttention node in the workflow
+    pag_node_found = False
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "PerturbedAttention":
+            node["inputs"]["sigma_start"] = pag_sigma_start
+            logger.debug(f"Directly updated PerturbedAttention node {node_id} with sigma_start: {pag_sigma_start}")
+            pag_node_found = True
+            break
     
-    # Re-create the workflow with the updated args
-    workflow_creator = get_workflow_template(args.workflow)
-    if workflow_creator:
-        return workflow_creator(args_copy)
-    else:
-        return workflow_copy
+    # If no PAG node was found or needs to be created, recreate the workflow
+    if not pag_node_found:
+        # Ensure PAG is enabled
+        args_copy = args
+        args_copy.pag = True
+        args_copy.pag_sigma_start = pag_sigma_start
+        
+        # Re-create the workflow with the updated args
+        workflow_creator = get_workflow_template(args.workflow)
+        if workflow_creator:
+            return workflow_creator(args_copy)
+    
+    return workflow_copy
 
 
 @register_param_handler("pag_sigma_end")
@@ -1021,17 +1044,28 @@ def handle_pag_sigma_end_param(workflow: Dict[str, Any], value: str, args) -> Di
     
     logger.debug(f"Extracted PAG sigma end: {pag_sigma_end} from '{value}'")
     
-    # Ensure PAG is enabled
-    args_copy = args
-    args_copy.pag = True
-    args_copy.pag_sigma_end = pag_sigma_end
+    # First try to directly modify any existing PerturbedAttention node in the workflow
+    pag_node_found = False
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "PerturbedAttention":
+            node["inputs"]["sigma_end"] = pag_sigma_end
+            logger.debug(f"Directly updated PerturbedAttention node {node_id} with sigma_end: {pag_sigma_end}")
+            pag_node_found = True
+            break
     
-    # Re-create the workflow with the updated args
-    workflow_creator = get_workflow_template(args.workflow)
-    if workflow_creator:
-        return workflow_creator(args_copy)
-    else:
-        return workflow_copy
+    # If no PAG node was found or needs to be created, recreate the workflow
+    if not pag_node_found:
+        # Ensure PAG is enabled
+        args_copy = args
+        args_copy.pag = True
+        args_copy.pag_sigma_end = pag_sigma_end
+        
+        # Re-create the workflow with the updated args
+        workflow_creator = get_workflow_template(args.workflow)
+        if workflow_creator:
+            return workflow_creator(args_copy)
+    
+    return workflow_copy
 
 
 @register_param_handler("deepshrink")
@@ -1057,9 +1091,24 @@ def handle_deepshrink_param(workflow: Dict[str, Any], value: str, args) -> Dict[
     
     logger.debug(f"Extracted DeepShrink value: {deepshrink_value} from '{value}'")
     
+    # Find any existing PAG scale in the workflow
+    pag_scale = None
+    for node_id, node in workflow_copy.items():
+        if node["class_type"] == "PerturbedAttention" and "scale" in node["inputs"]:
+            pag_scale = node["inputs"]["scale"]
+            logger.debug(f"Found existing PAG scale in workflow: {pag_scale}")
+            break
+    
     # Update args
     args_copy = args
     args_copy.deepshrink = deepshrink_value
+    
+    # If we found a PAG scale, make sure to preserve it
+    if pag_scale is not None and pag_scale != 3.0:  # Only override if not the default value
+        args_copy.pag = True
+        args_copy.pag_scale = pag_scale
+        logger.debug(f"Preserving PAG scale {pag_scale} when recreating workflow")
+    
     logger.debug(f"Set deepshrink to {deepshrink_value}")
     
     # Re-create the workflow with the updated args
@@ -1267,22 +1316,56 @@ def generate_single_image(
     
     # Log what we're generating
     logger.info(f"Generating image {args.index_count}/{args.total_count}: {x_param}={x_value}, {y_param}={y_value}")
-
-    # Create a copy of the workflow for modification
-    modified_workflow = json.loads(json.dumps(workflow))
-
-    # Apply the X parameter handler
-    if x_param in param_handlers:
-        modified_workflow = param_handlers[x_param](modified_workflow, x_value, args)
-    else:
-        logger.warning(f"No handler for X parameter: {x_param}")
-
-    # Apply the Y parameter handler
-    if y_param in param_handlers:
-        modified_workflow = param_handlers[y_param](modified_workflow, y_value, args)
-    else:
-        logger.warning(f"No handler for Y parameter: {y_param}")
+    
+    # Generate a unique filename for this combination
+    filename_prefix = f"xy_{x_value_safe}_{y_value_safe}_{int(time.time())}"
+    
+    # Modify the workflow for this combination
+    logger.debug(f"Generating image for {x_param}={x_value}, {y_param}={y_value}")
+    
+    # Get handlers for the parameters
+    x_handler = get_param_handler(x_param)
+    y_handler = get_param_handler(y_param)
+    
+    if x_handler is None:
+        logger.error(f"No handler found for X parameter: {x_param}")
+        return None
+    if y_handler is None:
+        logger.error(f"No handler found for Y parameter: {y_param}")
+        return None
+    
+    # Make a copy of the workflow
+    modified_workflow = copy.deepcopy(workflow)
+    
+    # Always apply in a fixed order to ensure consistency:
+    # 1. Apply the X parameter change first
+    modified_workflow = x_handler(modified_workflow, x_value, args)
+    
+    # 2. Then apply the Y parameter change
+    modified_workflow = y_handler(modified_workflow, y_value, args)
+    
+    # When PAG is involved, make sure the PAG scale is correctly set
+    if (x_param == "pag_scale" or y_param == "pag_scale") and ("deepshrink" in x_param or "deepshrink" in y_param):
+        # Get the PAG scale value
+        pag_scale_value = x_value if x_param == "pag_scale" else y_value if y_param == "pag_scale" else None
         
+        if pag_scale_value is not None:
+            try:
+                pag_scale = float(pag_scale_value)
+                # Find any PerturbedAttention nodes and update their scale
+                for node_id, node in modified_workflow.items():
+                    if node["class_type"] == "PerturbedAttention":
+                        node["inputs"]["scale"] = pag_scale
+                        logger.debug(f"Forcibly updated PerturbedAttention node {node_id} scale to {pag_scale}")
+            except ValueError:
+                logger.warning(f"Could not convert PAG scale value {pag_scale_value} to float")
+    
+    # Dump the workflow if requested
+    if args.dump_workflows:
+        dump_file = f"output/debug/workflow_{x_param}_{x_value_safe}_{y_param}_{y_value_safe}.json"
+        dump_workflow_to_file(modified_workflow, dump_file)
+        logger.debug(f"Saved workflow to {dump_file}")
+
     # Add a unique image name to the SaveImage node to prevent caching/reuse
     unique_prefix = f"xy_{x_param}_{x_value_safe}_{y_param}_{y_value_safe}_{int(time.time())}"
     for node_id, node in modified_workflow.items():
@@ -1290,14 +1373,6 @@ def generate_single_image(
             # Set a unique filename_prefix based on the current parameters
             node["inputs"]["filename_prefix"] = unique_prefix
             logger.debug(f"Set unique filename_prefix to {unique_prefix} in SaveImage node")
-
-    # Dump the workflow if requested
-    if args.dump_workflows:
-        debug_dir = os.path.join(args.output_dir, "debug")
-        debug_filename = os.path.join(
-            debug_dir, f"workflow_{x_param}_{x_value_safe}_{y_param}_{y_value_safe}.json"
-        )
-        dump_workflow_to_file(modified_workflow, debug_filename)
 
     # Determine the output filename - ensure we don't have duplicate extensions
     output_filename = os.path.join(
@@ -1909,3 +1984,15 @@ def generate_xyplot(args):
     except Exception as e:
         logger.error(f"Failed to create XY plot grid: {str(e)}")
         raise
+
+
+def get_param_handler(param: str):
+    """Get the handler function for a parameter.
+    
+    Args:
+        param: The parameter name
+        
+    Returns:
+        The handler function, or None if not found
+    """
+    return param_handlers.get(param)

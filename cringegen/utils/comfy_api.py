@@ -113,12 +113,12 @@ class ComfyAPI:
             logger.warning(f"Generated random client ID on error: {client_id}")
             return client_id
 
-    def queue_prompt(self, workflow: Dict[str, Any], max_retries: int = 5, initial_retry_delay: float = 1.0) -> Dict[str, Any]:
+    def queue_prompt(self, workflow: Dict[str, Any], max_retries: int = 500, initial_retry_delay: float = 1.0) -> Dict[str, Any]:
         """Queue a workflow prompt for execution
 
         Args:
             workflow: The workflow to queue
-            max_retries: Maximum number of retries on failure (default: 5)
+            max_retries: Maximum number of retries on failure (default: 500)
             initial_retry_delay: Initial delay between retries in seconds (default: 1.0)
 
         Returns:
@@ -1414,13 +1414,13 @@ def get_comfy_api_client(api_url: str = None) -> ComfyAPI:
     return client
 
 
-def check_generation_status(prompt_id: str, api_url: str = None, max_retries: int = 3, retry_delay: float = 1.0) -> Dict[str, Any]:
+def check_generation_status(prompt_id: str, api_url: str = None, max_retries: int = 500, retry_delay: float = 1.0) -> Dict[str, Any]:
     """Check the status of a generation without waiting for timeout
 
     Args:
         prompt_id: The ID of the prompt
         api_url: URL of the ComfyUI server
-        max_retries: Maximum consecutive connection errors before failing (default: 3)
+        max_retries: Maximum consecutive connection errors before failing (default: 500)
         retry_delay: Delay between retries in seconds (default: 1.0)
 
     Returns:
