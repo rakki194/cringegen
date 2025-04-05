@@ -967,15 +967,42 @@ def handle_pag_scale_param(workflow: Dict[str, Any], value: str, args) -> Dict[s
     
     # If no PAG node was found or needs to be created, recreate the workflow
     if not pag_node_found:
-        # Ensure PAG is enabled
-        args_copy = args
+        # Create a deep copy of args to avoid modifying the original
+        import copy
+        args_copy = copy.deepcopy(args)
+        
+        # Set PAG parameters on the copy
         args_copy.pag = True
         args_copy.pag_scale = pag_scale
+        
+        # Make sure sigma parameters are preserved if they exist in the original args
+        if hasattr(args, 'pag_sigma_start') and args.pag_sigma_start != -1.0:
+            args_copy.pag_sigma_start = args.pag_sigma_start
+            
+        if hasattr(args, 'pag_sigma_end') and args.pag_sigma_end != -1.0:
+            args_copy.pag_sigma_end = args.pag_sigma_end
+        
+        logger.debug(f"Recreating workflow with PAG enabled and scale={pag_scale}")
         
         # Re-create the workflow with the updated args
         workflow_creator = get_workflow_template(args.workflow)
         if workflow_creator:
-            return workflow_creator(args_copy)
+            workflow_copy = workflow_creator(args_copy)
+            
+            # Force enable PAG node to ensure it's in the workflow with our settings
+            pag_node_found = False
+            for node_id, node in workflow_copy.items():
+                if node["class_type"] == "PerturbedAttention":
+                    # Double-check the scale value is set correctly
+                    if node["inputs"]["scale"] != pag_scale:
+                        logger.warning(f"PAG scale mismatch after recreation: {node['inputs']['scale']} vs {pag_scale}, fixing...")
+                        node["inputs"]["scale"] = pag_scale
+                    pag_node_found = True
+                    logger.debug(f"Verified PAG node {node_id} has correct scale: {pag_scale}")
+                    break
+                    
+            if not pag_node_found:
+                logger.error(f"Failed to find PerturbedAttention node after workflow recreation!")
     
     return workflow_copy
 
@@ -1011,15 +1038,42 @@ def handle_pag_sigma_start_param(workflow: Dict[str, Any], value: str, args) -> 
     
     # If no PAG node was found or needs to be created, recreate the workflow
     if not pag_node_found:
-        # Ensure PAG is enabled
-        args_copy = args
+        # Create a deep copy of args to avoid modifying the original
+        import copy
+        args_copy = copy.deepcopy(args)
+        
+        # Set PAG parameters on the copy
         args_copy.pag = True
         args_copy.pag_sigma_start = pag_sigma_start
+        
+        # Preserve other PAG settings if they exist
+        if hasattr(args, 'pag_scale'):
+            args_copy.pag_scale = args.pag_scale
+            
+        if hasattr(args, 'pag_sigma_end') and args.pag_sigma_end != -1.0:
+            args_copy.pag_sigma_end = args.pag_sigma_end
+        
+        logger.debug(f"Recreating workflow with PAG enabled and sigma_start={pag_sigma_start}")
         
         # Re-create the workflow with the updated args
         workflow_creator = get_workflow_template(args.workflow)
         if workflow_creator:
-            return workflow_creator(args_copy)
+            workflow_copy = workflow_creator(args_copy)
+            
+            # Verify the PAG node has been created with correct settings
+            pag_node_found = False
+            for node_id, node in workflow_copy.items():
+                if node["class_type"] == "PerturbedAttention":
+                    # Double-check the sigma_start value is set correctly
+                    if node["inputs"]["sigma_start"] != pag_sigma_start:
+                        logger.warning(f"PAG sigma_start mismatch after recreation: {node['inputs']['sigma_start']} vs {pag_sigma_start}, fixing...")
+                        node["inputs"]["sigma_start"] = pag_sigma_start
+                    pag_node_found = True
+                    logger.debug(f"Verified PAG node {node_id} has correct sigma_start: {pag_sigma_start}")
+                    break
+                    
+            if not pag_node_found:
+                logger.error(f"Failed to find PerturbedAttention node after workflow recreation!")
     
     return workflow_copy
 
@@ -1055,15 +1109,42 @@ def handle_pag_sigma_end_param(workflow: Dict[str, Any], value: str, args) -> Di
     
     # If no PAG node was found or needs to be created, recreate the workflow
     if not pag_node_found:
-        # Ensure PAG is enabled
-        args_copy = args
+        # Create a deep copy of args to avoid modifying the original
+        import copy
+        args_copy = copy.deepcopy(args)
+        
+        # Set PAG parameters on the copy
         args_copy.pag = True
         args_copy.pag_sigma_end = pag_sigma_end
+        
+        # Preserve other PAG settings if they exist
+        if hasattr(args, 'pag_scale'):
+            args_copy.pag_scale = args.pag_scale
+            
+        if hasattr(args, 'pag_sigma_start') and args.pag_sigma_start != -1.0:
+            args_copy.pag_sigma_start = args.pag_sigma_start
+        
+        logger.debug(f"Recreating workflow with PAG enabled and sigma_end={pag_sigma_end}")
         
         # Re-create the workflow with the updated args
         workflow_creator = get_workflow_template(args.workflow)
         if workflow_creator:
-            return workflow_creator(args_copy)
+            workflow_copy = workflow_creator(args_copy)
+            
+            # Verify the PAG node has been created with correct settings
+            pag_node_found = False
+            for node_id, node in workflow_copy.items():
+                if node["class_type"] == "PerturbedAttention":
+                    # Double-check the sigma_end value is set correctly
+                    if node["inputs"]["sigma_end"] != pag_sigma_end:
+                        logger.warning(f"PAG sigma_end mismatch after recreation: {node['inputs']['sigma_end']} vs {pag_sigma_end}, fixing...")
+                        node["inputs"]["sigma_end"] = pag_sigma_end
+                    pag_node_found = True
+                    logger.debug(f"Verified PAG node {node_id} has correct sigma_end: {pag_sigma_end}")
+                    break
+                    
+            if not pag_node_found:
+                logger.error(f"Failed to find PerturbedAttention node after workflow recreation!")
     
     return workflow_copy
 
@@ -1345,20 +1426,68 @@ def generate_single_image(
     modified_workflow = y_handler(modified_workflow, y_value, args)
     
     # When PAG is involved, make sure the PAG scale is correctly set
-    if (x_param == "pag_scale" or y_param == "pag_scale") and ("deepshrink" in x_param or "deepshrink" in y_param):
-        # Get the PAG scale value
-        pag_scale_value = x_value if x_param == "pag_scale" else y_value if y_param == "pag_scale" else None
+    if (x_param in ["pag_scale", "pag_sigma_start", "pag_sigma_end"] or 
+        y_param in ["pag_scale", "pag_sigma_start", "pag_sigma_end"]):
         
-        if pag_scale_value is not None:
-            try:
-                pag_scale = float(pag_scale_value)
-                # Find any PerturbedAttention nodes and update their scale
-                for node_id, node in modified_workflow.items():
-                    if node["class_type"] == "PerturbedAttention":
+        # Get the PAG parameter values
+        pag_scale_value = x_value if x_param == "pag_scale" else y_value if y_param == "pag_scale" else None
+        pag_sigma_start_value = x_value if x_param == "pag_sigma_start" else y_value if y_param == "pag_sigma_start" else None
+        pag_sigma_end_value = x_value if x_param == "pag_sigma_end" else y_value if y_param == "pag_sigma_end" else None
+        
+        # Search for PerturbedAttention nodes and ensure they have correct settings
+        for node_id, node in modified_workflow.items():
+            if node["class_type"] == "PerturbedAttention":
+                # Update all PAG parameters that were specified in the XY plot
+                if pag_scale_value is not None:
+                    try:
+                        pag_scale = float(pag_scale_value)
                         node["inputs"]["scale"] = pag_scale
-                        logger.debug(f"Forcibly updated PerturbedAttention node {node_id} scale to {pag_scale}")
-            except ValueError:
-                logger.warning(f"Could not convert PAG scale value {pag_scale_value} to float")
+                        logger.debug(f"Final check: Updated PerturbedAttention node {node_id} scale to {pag_scale}")
+                    except ValueError:
+                        logger.warning(f"Could not convert PAG scale value {pag_scale_value} to float")
+                
+                if pag_sigma_start_value is not None:
+                    try:
+                        pag_sigma_start = float(pag_sigma_start_value)
+                        node["inputs"]["sigma_start"] = pag_sigma_start
+                        logger.debug(f"Final check: Updated PerturbedAttention node {node_id} sigma_start to {pag_sigma_start}")
+                    except ValueError:
+                        logger.warning(f"Could not convert PAG sigma_start value {pag_sigma_start_value} to float")
+                        
+                if pag_sigma_end_value is not None:
+                    try:
+                        pag_sigma_end = float(pag_sigma_end_value)
+                        node["inputs"]["sigma_end"] = pag_sigma_end
+                        logger.debug(f"Final check: Updated PerturbedAttention node {node_id} sigma_end to {pag_sigma_end}")
+                    except ValueError:
+                        logger.warning(f"Could not convert PAG sigma_end value {pag_sigma_end_value} to float")
+                
+                # Set pag to True as well to ensure the node is used
+                args.pag = True
+                
+                # Verify the PAG node is correctly connected in the workflow
+                # Check if any other node uses this PAG node's output
+                pag_node_output_used = False
+                for other_node_id, other_node in modified_workflow.items():
+                    if other_node_id == node_id:
+                        continue  # Skip the PAG node itself
+                        
+                    # Check all input values that might be node references
+                    for input_name, input_value in other_node["inputs"].items():
+                        # Node references are lists in the format [node_id, output_idx]
+                        if isinstance(input_value, list) and len(input_value) == 2:
+                            ref_node_id, _ = input_value
+                            if ref_node_id == node_id:
+                                pag_node_output_used = True
+                                logger.debug(f"PAG node {node_id} output is used by node {other_node_id}")
+                                break
+                
+                if not pag_node_output_used:
+                    logger.warning(f"PAG node {node_id} appears to be disconnected - its output is not used by any other node!")
+                    # Don't try to fix this here as it requires understanding the workflow structure
+                
+                # We've processed the PAG node, no need to continue the loop
+                break
     
     # Dump the workflow if requested
     if args.dump_workflows:
@@ -1795,7 +1924,7 @@ def generate_xyplot(args):
     x_values = [x.strip() for x in x_values]
     y_values = [y.strip() for y in y_values]
 
-    # Remove any empty values
+    # Remove any empty values 
     x_values = [x for x in x_values if x]
     y_values = [y for y in y_values if y]
 
