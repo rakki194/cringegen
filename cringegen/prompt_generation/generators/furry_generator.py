@@ -20,6 +20,13 @@ from ..base import (
 from ..nlp.background_utils import get_complementary_locations
 from ..nlp.color_utils import get_random_pattern, parse_color_input
 from ..nlp.species_utils import enhance_prompt_with_anatomy
+# Import centralized prompt components
+from ...data.prompt_components import (
+    get_random_pose, 
+    get_random_clothing, 
+    get_random_accessories, 
+    get_random_background
+)
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -470,80 +477,93 @@ class FurryPromptGenerator(PromptGenerator):
         gender_list = ["male", "female"]
         return random.choice(gender_list)
 
+    def _random_pose(self) -> str:
+        """Get a random pose for the character
+
+        Returns:
+            A random pose
+        """
+        # Use the centralized pose component
+        taxonomy = "default"
+        # Map species to taxonomy if possible
+        if "canine" in self.species.lower() or self.species.lower() in [
+            "wolf", "dog", "fox", "coyote", "jackal"
+        ]:
+            taxonomy = "canine"
+        elif "feline" in self.species.lower() or self.species.lower() in [
+            "cat", "lion", "tiger", "leopard", "cheetah", "lynx", "cougar"
+        ]:
+            taxonomy = "feline"
+        elif "avian" in self.species.lower() or self.species.lower() in [
+            "bird", "hawk", "eagle", "falcon", "owl", "raven", "crow"
+        ]:
+            taxonomy = "avian"
+        elif "reptile" in self.species.lower() or self.species.lower() in [
+            "dragon", "lizard", "snake", "crocodile", "alligator", "turtle"
+        ]:
+            taxonomy = "reptile"
+        elif "equine" in self.species.lower() or self.species.lower() in [
+            "horse", "pony", "unicorn", "zebra", "donkey"
+        ]:
+            taxonomy = "equine"
+        elif "rodent" in self.species.lower() or self.species.lower() in [
+            "mouse", "rat", "hamster", "squirrel", "rabbit", "ferret"
+        ]:
+            taxonomy = "rodent"
+            
+        form_type = "anthro" if self.is_anthro else "feral"
+        return get_random_pose(taxonomy, form_type, "all")
+
     def _random_features(self) -> List[str]:
         """Get random character features
 
         Returns:
             A list of random features
         """
-        feature_pools = {
-            "clothing": [
-                "t-shirt",
-                "hoodie",
-                "jacket",
-                "jeans",
-                "shorts",
-                "dress",
-                "sweater",
-                "tank top",
-                "casual clothes",
-                "formal attire",
-            ],
-            "accessories": [
-                "glasses",
-                "scarf",
-                "hat",
-                "necklace",
-                "earrings",
-                "bracelet",
-                "watch",
-                "backpack",
-                "bag",
-                "headphones",
-            ],
-            "attributes": [
-                "cute",
-                "fluffy",
-                "friendly",
-                "smiling",
-                "cheerful",
-                "athletic",
-                "strong",
-                "slender",
-                "tall",
-                "short",
-                "muscular",
-            ],
-        }
-
-        # Select 1-2 features from each category
-        selected_features = []
-        for category, features in feature_pools.items():
-            count = random.randint(1, 2)
-            selected = random.sample(features, min(count, len(features)))
-            selected_features.extend(selected)
-
-        return selected_features
-
-    def _random_pose(self) -> str:
-        """Get a random pose
-
-        Returns:
-            A random pose
-        """
-        pose_list = [
-            "standing",
-            "sitting",
-            "walking",
-            "running",
-            "jumping",
-            "leaning",
-            "crouching",
-            "kneeling",
-            "lying down",
-            "floating",
+        features = []
+        
+        # Add clothing if appropriate (anthro characters only)
+        if self.is_anthro:
+            # Select 1-2 random clothing items
+            clothing_count = random.randint(1, 2)
+            clothing_items = get_random_clothing("anthro", "all", clothing_count)
+            features.extend(clothing_items)
+        else:
+            # For feral characters, maybe add some simple accessories
+            if random.random() < 0.3:  # 30% chance
+                feral_items = get_random_clothing("feral", "all", 1)
+                features.extend(feral_items)
+                
+        # Add 1-2 accessories
+        accessory_count = random.randint(1, 2)
+        accessories = get_random_accessories("all", accessory_count)
+        features.extend(accessories)
+        
+        # Add general attributes
+        attributes = [
+            "cute",
+            "fluffy",
+            "athletic",
+            "strong",
+            "slender",
+            "tall",
+            "short",
+            "muscular",
+            "curvy",
+            "thick",
+            "slim",
+            "toned",
+            "feminine",
+            "masculine",
+            "androgynous",
         ]
-        return random.choice(pose_list)
+        
+        # Select 1-2 random attributes
+        attribute_count = random.randint(1, 2)
+        selected_attributes = random.sample(attributes, min(attribute_count, len(attributes)))
+        features.extend(selected_attributes)
+        
+        return features
 
     def _random_expression(self) -> str:
         """Get a random expression
@@ -571,22 +591,8 @@ class FurryPromptGenerator(PromptGenerator):
         Returns:
             A random location
         """
-        location_list = [
-            "forest",
-            "beach",
-            "mountains",
-            "city",
-            "park",
-            "meadow",
-            "river",
-            "lake",
-            "desert",
-            "jungle",
-            "coffee shop",
-            "library",
-            "school",
-        ]
-        return random.choice(location_list)
+        # Use centralized background component
+        return get_random_background()
 
     def _random_time_of_day(self) -> str:
         """Get a random time of day
@@ -760,18 +766,13 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
             species: The species of the character
             gender: The gender of the character
             explicit_level: Level of explicitness (1-3)
-            use_anatomical_terms: Whether to use species-specific anatomical terms
+            use_anatomical_terms: Whether to use anatomical terms for genitalia
             use_nlp: Whether to use NLP features for enhanced descriptions
             use_art_style: Whether to include random art style in the prompt
-            is_anthro: Whether the character is anthro (True) or feral (False)
-            is_feral: Whether to use feral-specific features (overrides is_anthro)
-            use_human_genitalia: Whether to use human genitalia instead of animal genitalia
+            is_anthro: Whether to use anthro-specific accessories
+            is_feral: Whether to use feral-specific accessories
+            use_human_genitalia: Whether to use human genitalia terms instead of species-specific
         """
-        self.explicit_level = max(1, min(3, explicit_level))
-        self.use_anatomical_terms = use_anatomical_terms
-        self.use_human_genitalia = use_human_genitalia
-
-        # Initialize the parent class
         super().__init__(
             species=species,
             gender=gender,
@@ -780,75 +781,86 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
             is_anthro=is_anthro,
             is_feral=is_feral,
         )
+        self.explicit_level = min(3, max(1, explicit_level))  # Clamp to 1-3
+        self.use_anatomical_terms = use_anatomical_terms
+        self.use_human_genitalia = use_human_genitalia
 
     def _add_default_components(self) -> None:
         """Add default components for NSFW furry content"""
-        # Use the parent class method but save and remove the style component from parent
-        # We'll use this approach to remove the parent's style component
-        # and replace it with our own that includes checkpoint_name
-        super()._add_default_components()
+        # Determine environment/location that complements the species
+        random_location = self._random_location()
 
-        # Find and remove the StyleComponent added by parent class
-        style_component_index = None
-        for i, component in enumerate(self.components):
-            if isinstance(component, StyleComponent):
-                style_component_index = i
-                break
+        # Add character component with NSFW features
+        features = self._random_features()
+        features.append("solo")  # Add solo tag
 
-        if style_component_index is not None:
-            self.components.pop(style_component_index)
+        # Add anthro or feral tag based on settings
+        if self.is_anthro:
+            features.append("anthro")
+        else:
+            features.append("feral")
 
-        # Add our own style component with checkpoint name if art styles are enabled
+        character = CharacterComponent(
+            species=self.species,
+            gender=self.gender,
+            features=features,
+            colors=self.colors,
+            color_pattern=self.pattern,
+            use_nlp_description=self.use_nlp,
+            is_anthro=self.is_anthro,
+        )
+        self.add_component(character)
+
+        # Add NSFW component with appropriate explicit level
+        nsfw = NsfwComponent(
+            explicit_level=self.explicit_level,
+            species=self.species,
+            gender=self.gender,
+        )
+        self.add_component(nsfw)
+
+        # Add pose component
+        pose = PoseComponent(pose=self._random_pose(), expression=self._random_expression())
+        self.add_component(pose)
+
+        # Add setting component
+        setting = SettingComponent(
+            location=random_location,
+            time_of_day=self._random_time_of_day(),
+            mood=self._random_mood() if random.random() < 0.3 else None,
+            use_nlp_description=self.use_nlp,
+        )
+        self.add_component(setting)
+
+        # Add style component if enabled
         if self.use_art_style:
             style = StyleComponent(
                 art_style=self._random_art_style(), checkpoint_name=self.checkpoint_name
             )
             self.add_component(style)
 
-        # Add NSFW component
-        nsfw = NsfwComponent(
-            explicit_level=self.explicit_level, species=self.species, gender=self.gender
-        )
-        self.add_component(nsfw)
-
-        # Set negative component for NSFW
+        # Set negative component for NSFW content
         negative = NegativePromptComponent(is_nsfw=True)
         self.set_negative_component(negative)
 
     def generate(self) -> str:
-        """Generate a prompt
+        """Generate an NSFW furry prompt
 
         Returns:
-            A complete prompt string
+            The generated prompt
         """
-        # Generate the base prompt
         prompt = super().generate()
 
-        # Enhance with anatomical terms if enabled
-        if self.use_anatomical_terms and self.species and self.gender:
-            # If using human genitalia, override the anatomical terms
-            if self.use_human_genitalia:
-                if self.gender.lower() == "male":
-                    terms = ["penis"]
-                    if self.explicit_level >= 2:
-                        terms.append("testicles")
-                    if self.explicit_level >= 3:
-                        terms.append("erect penis")
-                    conjunction = random.choice(["with", "showing", "displaying", "presenting"])
-                    prompt = f"{prompt}, {conjunction} {', '.join(terms)}"
-                elif self.gender.lower() == "female":
-                    terms = ["vagina"]
-                    if self.explicit_level >= 2:
-                        terms.append("pussy")
-                    if self.explicit_level >= 3:
-                        terms.append("exposed vagina")
-                    conjunction = random.choice(["with", "showing", "displaying", "presenting"])
-                    prompt = f"{prompt}, {conjunction} {', '.join(terms)}"
-            else:
-                # Use species-specific anatomical terms
-                prompt = enhance_prompt_with_anatomy(
-                    prompt, self.species, self.gender, self.explicit_level
-                )
+        # Add anatomical terms if requested
+        if self.use_nlp and self.use_anatomical_terms:
+            # Enhance with anatomy based on gender and species, with explicit level
+            prompt = enhance_prompt_with_anatomy(
+                prompt,
+                self.species,
+                self.gender,
+                self.explicit_level,
+                use_human_terms=self.use_human_genitalia,
+            )
 
         return prompt
 
@@ -856,47 +868,73 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
         """Get a random pose suitable for NSFW content
 
         Returns:
-            A random pose
+            A random NSFW pose
         """
-        # Regular poses
-        regular_poses = [
-            "standing",
-            "sitting",
-            "leaning",
-            "kneeling",
-            "lying down",
-        ]
-
-        # NSFW-specific poses
-        nsfw_poses = [
-            "on all fours",
-            "bent over",
-            "legs spread",
-            "on back",
-            "submissive pose",
-            "provocative pose",
-            "seductive pose",
-            "teasing pose",
-        ]
-
-        # Mix of regular and NSFW poses based on explicit level
-        if self.explicit_level == 1:
-            # Mostly regular poses, few NSFW
-            poses = regular_poses + random.sample(nsfw_poses, 2)
-        elif self.explicit_level == 2:
-            # Even mix
-            poses = regular_poses + random.sample(nsfw_poses, 4)
-        else:
-            # Mostly NSFW poses
-            poses = random.sample(regular_poses, 2) + nsfw_poses
-
-        return random.choice(poses)
+        # Use the centralized pose component with taxonomies
+        taxonomy = "default"
+        # Map species to taxonomy if possible
+        if "canine" in self.species.lower() or self.species.lower() in [
+            "wolf", "dog", "fox", "coyote", "jackal"
+        ]:
+            taxonomy = "canine"
+        elif "feline" in self.species.lower() or self.species.lower() in [
+            "cat", "lion", "tiger", "leopard", "cheetah", "lynx", "cougar"
+        ]:
+            taxonomy = "feline"
+        elif "avian" in self.species.lower() or self.species.lower() in [
+            "bird", "hawk", "eagle", "falcon", "owl", "raven", "crow"
+        ]:
+            taxonomy = "avian"
+        elif "reptile" in self.species.lower() or self.species.lower() in [
+            "dragon", "lizard", "snake", "crocodile", "alligator", "turtle"
+        ]:
+            taxonomy = "reptile"
+        elif "equine" in self.species.lower() or self.species.lower() in [
+            "horse", "pony", "unicorn", "zebra", "donkey"
+        ]:
+            taxonomy = "equine"
+        elif "rodent" in self.species.lower() or self.species.lower() in [
+            "mouse", "rat", "hamster", "squirrel", "rabbit", "ferret"
+        ]:
+            taxonomy = "rodent"
+            
+        form_type = "anthro" if self.is_anthro else "feral"
+        
+        # For NSFW content, add some additional intimate poses
+        pose = get_random_pose(taxonomy, form_type, "intimate" if random.random() < 0.7 else "all")
+        
+        # Add some NSFW-specific poses based on explicit level
+        if self.explicit_level >= 2:
+            nsfw_poses = [
+                "presenting",
+                "provocative pose",
+                "on bed",
+                "on all fours",
+                "bent over",
+                "legs spread",
+                "touching self",
+            ]
+            if random.random() < 0.5:
+                pose = random.choice(nsfw_poses)
+                
+        # For explicit level 3, add even more explicit poses
+        if self.explicit_level == 3:
+            explicit_poses = [
+                "masturbating",
+                "climaxing",
+                "in heat",
+                "mating position",
+            ]
+            if random.random() < 0.5:
+                pose = random.choice(explicit_poses)
+                
+        return pose
 
     def _random_expression(self) -> str:
         """Get a random expression suitable for NSFW content
 
         Returns:
-            A random expression
+            A random NSFW expression
         """
         # Regular expressions
         regular_expressions = [
@@ -939,17 +977,12 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
         Returns:
             A random location
         """
+        # Use centralized background component but filter for NSFW-friendly locations
+        
         # Regular locations
-        regular_locations = [
-            "forest",
-            "beach",
-            "mountains",
-            "meadow",
-            "river",
-            "lake",
-        ]
-
-        # NSFW-friendly locations
+        regular_locations = get_backgrounds_by_type("natural")
+        
+        # NSFW-friendly indoor locations
         nsfw_locations = [
             "bedroom",
             "hotel room",
@@ -958,6 +991,9 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
             "hot spring",
             "shower",
             "bath",
+            "sauna",
+            "massage parlor",
+            "romantic setting",
         ]
 
         # Mix based on explicit level
@@ -981,75 +1017,92 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
         Returns:
             A list of random features
         """
-        feature_pools = {
-            "clothing": [
-                "t-shirt",
-                "hoodie",
-                "jacket",
-                "jeans",
-                "shorts",
-                "dress",
-                "sweater",
-                "tank top",
-                "casual clothes",
-                "formal attire",
-                "lingerie",
-                "underwear",
-            ],
-            "accessories": [
-                "glasses",
-                "scarf",
-                "hat",
-                "necklace",
-                "earrings",
-                "bracelet",
-                "watch",
-                "backpack",
-                "bag",
-                "headphones",
-                "chains",
-                "collar",
-            ],
-            "attributes": [
-                "cute",
-                "fluffy",
-                "athletic",
-                "strong",
-                "slender",
-                "tall",
-                "short",
-                "muscular",
-                "curvy",
-                "thick",
-                "slim",
-                "toned",
-                "feminine",
-                "masculine",
-                "androgynous",
-                "naked",
-            ],
-        }
-
-        # Select features from each category
-        selected_features = []
-
-        # For explicit level 3, skip clothing
-        if self.explicit_level == 3:
-            # Only add "naked" from attributes and some accessories
-            selected_features.append("naked")
-            count = random.randint(1, 2)
-            selected_accessories = random.sample(
-                feature_pools["accessories"], min(count, len(feature_pools["accessories"]))
-            )
-            selected_features.extend(selected_accessories)
+        features = []
+        
+        # For highest explicit level, often include "naked"
+        if self.explicit_level == 3 and random.random() < 0.7:
+            features.append("naked")
+            
+            # For naked characters, still add some accessories
+            accessory_count = random.randint(1, 2)
+            accessories = get_random_accessories("common", accessory_count)
+            features.extend(accessories)
         else:
-            # Add clothing for explicit levels 1-2
-            for category, features in feature_pools.items():
-                count = random.randint(1, 2)
-                selected = random.sample(features, min(count, len(features)))
-                selected_features.extend(selected)
-
-        return selected_features
+            # For lower explicit levels or sometimes at level 3, add revealing clothing
+            if self.is_anthro:
+                if self.explicit_level >= 2:
+                    revealing_clothing = [
+                        "revealing outfit",
+                        "bikini",
+                        "swimsuit",
+                        "underwear",
+                        "lingerie",
+                        "skimpy outfit",
+                        "short skirt",
+                        "tight clothes",
+                        "partially clothed",
+                    ]
+                    clothing_count = random.randint(1, 2)
+                    selected_clothing = random.sample(revealing_clothing, min(clothing_count, len(revealing_clothing)))
+                    features.extend(selected_clothing)
+                else:
+                    # More normal clothing for lower explicit level
+                    clothing_count = random.randint(1, 2)
+                    clothing_items = get_random_clothing("anthro", "all", clothing_count)
+                    features.extend(clothing_items)
+            else:
+                # For feral characters, maybe add some simple accessories
+                if random.random() < 0.3:  # 30% chance
+                    feral_items = get_random_clothing("feral", "all", 1)
+                    features.extend(feral_items)
+            
+            # Add some accessories
+            accessory_count = random.randint(1, 2)
+            accessories = get_random_accessories("all", accessory_count)
+            features.extend(accessories)
+        
+        # Add general attributes
+        attributes = [
+            "cute",
+            "fluffy",
+            "athletic",
+            "strong",
+            "slender",
+            "tall",
+            "short",
+            "muscular",
+            "curvy",
+            "thick",
+            "slim",
+            "toned",
+            "feminine",
+            "masculine",
+            "androgynous",
+        ]
+        
+        # NSFW-specific attributes
+        nsfw_attributes = [
+            "attractive",
+            "sexy",
+            "seductive",
+            "voluptuous",
+            "well-endowed",
+            "fit",
+            "toned",
+            "shapely",
+        ]
+        
+        # Mix based on explicit level
+        if self.explicit_level >= 2:
+            # Add more NSFW attributes for higher explicit levels
+            attributes.extend(nsfw_attributes)
+        
+        # Select random attributes
+        attribute_count = random.randint(1, 3)
+        selected_attributes = random.sample(attributes, min(attribute_count, len(attributes)))
+        features.extend(selected_attributes)
+        
+        return features
 
     def _random_art_style(self) -> str:
         """Get a random art style
