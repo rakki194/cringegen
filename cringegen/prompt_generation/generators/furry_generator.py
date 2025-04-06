@@ -25,7 +25,8 @@ from ...data.prompt_components import (
     get_random_pose, 
     get_random_clothing, 
     get_random_accessories, 
-    get_random_background
+    get_random_background,
+    get_backgrounds_by_type
 )
 
 # Create logger
