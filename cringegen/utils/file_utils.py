@@ -7,6 +7,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+import re
+import platform
+import time
+import random
 from typing import List, Optional, Tuple
 
 from .logger import get_logger
@@ -153,8 +157,11 @@ def rsync_image_from_comfyui(
     ssh_user: str = None,
     ssh_key: str = None,
     subfolder: str = "",
+    max_retries: Optional[int] = None,
 ) -> Optional[str]:
     """Copy an image from a remote ComfyUI output directory using rsync over SSH.
+
+    Implements exponential backoff with retry until successful or max_retries is reached.
 
     Args:
         image_name: Name of the image file or full ComfyUI path
@@ -166,6 +173,7 @@ def rsync_image_from_comfyui(
         ssh_user: SSH username (default: current user)
         ssh_key: Path to SSH private key file (default: use system default)
         subfolder: Optional subfolder within the remote directory
+        max_retries: Maximum number of retry attempts (None for infinite)
 
     Returns:
         Path to the copied image if successful, None otherwise
@@ -213,41 +221,81 @@ def rsync_image_from_comfyui(
     rsync_cmd.append(f"{ssh_host_str}:{remote_path}")
     rsync_cmd.append(dest_path)
 
-    logger.info(f"Running rsync command: {' '.join(rsync_cmd)}")
+    # Exponential backoff parameters
+    base_delay = 1  # Start with 1 second delay
+    max_delay = 60  # Cap at 60 seconds
+    retry_count = 0
 
-    try:
-        # Execute rsync command
-        result = subprocess.run(
-            rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
-        )
+    # Try alternative path (without subfolder) if initial path fails
+    alt_remote_path = os.path.join(remote_dir, image_name)
+    alt_cmd = rsync_cmd.copy()
+    alt_cmd[-2] = f"{ssh_host_str}:{alt_remote_path}"
 
-        logger.debug(f"Rsync output: {result.stdout}")
-        logger.info(f"Successfully rsynced {image_name} to {dest_path}")
-        return dest_path
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Rsync error: {e.stderr}")
+    # Continue retrying until successful or max_retries is reached
+    while True:
+        retry_count += 1
+        logger.info(f"Running rsync command (attempt {retry_count}): {' '.join(rsync_cmd)}")
 
-        # Try alternative path (without subfolder)
-        if subfolder:
-            logger.info("Trying alternative path without subfolder...")
-            alt_remote_path = os.path.join(remote_dir, image_name)
-            rsync_cmd[-2] = f"{ssh_host_str}:{alt_remote_path}"
+        try:
+            # Execute rsync command
+            result = subprocess.run(
+                rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
+            )
 
-            try:
-                result = subprocess.run(
-                    rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
-                )
+            logger.debug(f"Rsync output: {result.stdout}")
+            logger.info(f"Successfully rsynced {image_name} to {dest_path}")
+            return dest_path
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Rsync attempt {retry_count} failed: {e.stderr}")
 
-                logger.debug(f"Rsync output: {result.stdout}")
-                logger.info(f"Successfully rsynced {image_name} to {dest_path}")
-                return dest_path
-            except subprocess.CalledProcessError as e2:
-                logger.error(f"Alternative rsync also failed: {e2.stderr}")
+            # Try alternative path if we haven't already
+            if subfolder and retry_count == 1:
+                logger.info("Trying alternative path without subfolder...")
+                try:
+                    result = subprocess.run(
+                        alt_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        check=True,
+                    )
+                    logger.debug(f"Rsync output: {result.stdout}")
+                    logger.info(
+                        f"Successfully rsynced {image_name} to {dest_path} using alternative path"
+                    )
+                    return dest_path
+                except subprocess.CalledProcessError as e2:
+                    logger.warning(f"Alternative rsync also failed: {e2.stderr}")
 
-        return None
-    except Exception as e:
-        logger.error(f"Error during rsync: {e}")
-        return None
+            # Calculate delay with exponential backoff and jitter
+            delay = min(max_delay, base_delay * (2 ** (retry_count - 1)))
+            # Add jitter (± 20%)
+            jitter = delay * 0.2
+            actual_delay = delay + random.uniform(-jitter, jitter)
+            actual_delay = max(0.1, actual_delay)  # Ensure delay is at least 0.1 second
+
+            logger.warning(
+                f"Retrying rsync in {actual_delay:.2f} seconds (attempt {retry_count+1})..."
+            )
+            time.sleep(actual_delay)
+        except Exception as e:
+            logger.error(f"Unexpected error during rsync attempt {retry_count}: {e}")
+
+            # Calculate delay with exponential backoff (same as above)
+            delay = min(max_delay, base_delay * (2 ** (retry_count - 1)))
+            jitter = delay * 0.2
+            actual_delay = delay + random.uniform(-jitter, jitter)
+            actual_delay = max(0.1, actual_delay)
+
+            logger.warning(
+                f"Retrying rsync in {actual_delay:.2f} seconds (attempt {retry_count+1})..."
+            )
+            time.sleep(actual_delay)
+
+        # Check if max_retries is reached
+        if max_retries is not None and retry_count >= max_retries:
+            logger.warning(f"Max retries reached. Unable to rsync {image_name}")
+            return None
 
 
 def rsync_latest_images_from_comfyui(

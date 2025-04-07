@@ -334,6 +334,12 @@ def add_xyplot_command(subparsers, parent_parser):
         type=str,
         help="Path to SSH private key file for remote ComfyUI instance",
     )
+    xyplot_parser.add_argument(
+        "--rsync-max-retries",
+        type=int,
+        default=None,
+        help="Maximum number of retry attempts for rsync operations (None for infinite)",
+    )
 
     # Add a separator between sections
     xyplot_parser.add_argument("--lora", type=str, help="Base LoRA to use")
@@ -1970,6 +1976,7 @@ def generate_single_image(
                 args.ssh_port,
                 args.ssh_user,
                 getattr(args, "ssh_key", None),  # Handle missing ssh_key attribute
+                max_retries=getattr(args, "rsync_max_retries", None),  # Pass max_retries parameter
             )
 
             if not dest_path:
