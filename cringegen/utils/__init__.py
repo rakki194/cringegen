@@ -59,6 +59,14 @@ from .model_utils import (
     get_model_optimal_resolution,
 )
 
+# Import and export key utilities for easier importing
+try:
+    from .tags_processor import TagsProcessor, default_processor
+except ImportError:
+    # Create placeholder for when tags_processor isn't available
+    TagsProcessor = None
+    default_processor = None
+
 __all__ = [
     # Style utilities
     "get_style_suggestions",
@@ -97,4 +105,7 @@ __all__ = [
     "optimize_prompt",
     "get_model_optimal_parameters",
     "get_model_optimal_resolution",
+    # Tags processor
+    "TagsProcessor",
+    "default_processor",
 ]

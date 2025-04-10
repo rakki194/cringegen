@@ -5,7 +5,10 @@ Client for interacting with Ollama API to generate text with LLMs
 import json
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+import logging
+import sys
+from pathlib import Path
 
 import requests
 
@@ -13,6 +16,77 @@ from .logger import get_logger
 
 # Create logger
 logger = get_logger(__name__)
+
+# Try to import species utils directly instead of relying on tags_processor
+try:
+    from ..prompt_generation.nlp.species_utils import (
+        get_anatomical_terms,
+        get_species_accessories,
+        get_species_colors,
+    )
+    from ..data import anatomy, taxonomy
+
+    SPECIES_UTILS_AVAILABLE = True
+except ImportError:
+    logger.warning("Species utils not available. Some features will be limited.")
+    SPECIES_UTILS_AVAILABLE = False
+
+# Try to import the tags_processor with multiple import approaches
+TAGS_PROCESSOR_AVAILABLE = False
+tags_processor = None
+try:
+    # First try relative import
+    from .tags_processor import default_processor as tags_processor
+
+    TAGS_PROCESSOR_AVAILABLE = True
+    logger.info("Successfully imported tags_processor using relative import")
+except ImportError:
+    try:
+        # Then try absolute import
+        from cringegen.utils.tags_processor import default_processor as tags_processor
+
+        TAGS_PROCESSOR_AVAILABLE = True
+        logger.info("Successfully imported tags_processor using absolute import")
+    except ImportError:
+        # Last resort - try adding the parent path and importing
+        try:
+            # Get the parent directory of the current file
+            parent_dir = str(Path(__file__).parent.parent.parent)
+            if parent_dir not in sys.path:
+                sys.path.append(parent_dir)
+            from cringegen.utils.tags_processor import default_processor as tags_processor
+
+            TAGS_PROCESSOR_AVAILABLE = True
+            logger.info("Successfully imported tags_processor using path manipulation")
+        except ImportError:
+            try:
+                # If we can't import the default_processor, try importing the TagsProcessor class directly
+                # and create an instance
+                from cringegen.utils.tags_processor import TagsProcessor
+
+                # Try to find the tags.json file
+                tags_file = None
+                possible_paths = [
+                    Path(__file__).parent.parent.parent / "tags.json",  # /cringegen/tags.json
+                    Path(__file__).parent.parent
+                    / "data"
+                    / "tags.json",  # /cringegen/cringegen/data/tags.json
+                ]
+
+                for path in possible_paths:
+                    if path.exists():
+                        tags_file = str(path)
+                        break
+
+                # Create a new instance
+                tags_processor = TagsProcessor(tags_file)
+                if tags_processor.loaded:
+                    TAGS_PROCESSOR_AVAILABLE = True
+                    logger.info("Successfully created TagsProcessor instance directly")
+                else:
+                    logger.warning("Created TagsProcessor but tags file could not be loaded")
+            except ImportError:
+                logger.warning("Tags processor not available. Some features will be limited.")
 
 
 def filter_thinking(response_text: str, show_thinking: bool = False) -> str:
@@ -35,6 +109,99 @@ def filter_thinking(response_text: str, show_thinking: bool = False) -> str:
 
     # Trim any extra whitespace from the beginning and end
     return filtered_text.strip()
+
+
+# Function to format tags by replacing underscores with spaces and escaping parentheses
+def format_tag(tag: str) -> str:
+    """Format a tag for use in prompts
+
+    Args:
+        tag: The original tag
+
+    Returns:
+        Formatted tag with spaces instead of underscores and escaped parentheses
+    """
+    # Replace underscores with spaces
+    formatted = tag.replace("_", " ")
+
+    # Escape parentheses
+    formatted = formatted.replace("(", "\\(").replace(")", "\\)")
+
+    return formatted
+
+
+# Create an internal function to generate species-specific tags
+def generate_species_specific_tags(
+    species: str, gender: str, nsfw: bool = False, explicit_level: int = 1
+) -> Dict[str, List[str]]:
+    """Generate comprehensive species-specific tags by category
+
+    This function will use the TagsProcessor if available, otherwise falls back to an
+    internal implementation that doesn't rely on the tags_processor module
+
+    Args:
+        species: The species name
+        gender: The gender
+        nsfw: Whether to include NSFW tags
+        explicit_level: Level of explicitness (1-3)
+
+    Returns:
+        Dictionary of categorized tags
+    """
+    # First try using the TagsProcessor if available
+    if TAGS_PROCESSOR_AVAILABLE and tags_processor and tags_processor.loaded:
+        logger.info(
+            f"Using TagsProcessor to generate species-specific tags for {species}, {gender}"
+        )
+        return tags_processor.generate_species_specific_tags(species, gender, nsfw, explicit_level)
+
+    # Fall back to internal implementation if TagsProcessor is not available
+    if not SPECIES_UTILS_AVAILABLE:
+        logger.warning("Species utils not available, cannot generate species-specific tags")
+        return {"identity": [], "physical": [], "accessories": [], "nsfw": []}
+
+    logger.info(
+        f"Using internal implementation to generate species-specific tags for {species}, {gender}"
+    )
+    result = {
+        "identity": [],
+        "physical": [],
+        "accessories": [],
+        "nsfw": [],
+    }
+
+    # Basic identity tags
+    result["identity"] = ["anthro", species.lower(), gender.lower()]
+
+    # Add taxonomy group if available
+    species_taxonomy = taxonomy.SPECIES_TAXONOMY.get(species.lower(), "default")
+    if species_taxonomy != "default":
+        result["identity"].append(species_taxonomy)
+
+    # Physical characteristics
+    colors = get_species_colors(species, 2)
+    for color in colors:
+        result["physical"].append(f"{color} fur")
+
+    # Species-specific physical traits
+    taxonomy_group = taxonomy.SPECIES_TAXONOMY.get(species.lower(), "default")
+    if taxonomy_group in anatomy.ANTHRO_FEATURES:
+        result["physical"].extend(anatomy.ANTHRO_FEATURES[taxonomy_group])
+
+    # Accessories
+    accessories = get_species_accessories(species, gender, 2)
+    result["accessories"] = accessories
+
+    # NSFW tags
+    if nsfw:
+        anatomical_terms = get_anatomical_terms(species, gender, explicit_level)
+        result["nsfw"] = anatomical_terms
+
+    # Format all tags in the result
+    for category in result:
+        result[category] = [format_tag(tag) for tag in result[category]]
+
+    return result
 
 
 class OllamaAPIClient:
@@ -239,13 +406,13 @@ class OllamaAPIClient:
 
                 # Print a leading newline for cleaner output
                 print("")
-                
+
                 for line in response.iter_lines():
                     if line:
                         chunk = json.loads(line)
                         chunk_text = chunk.get("response", "")
                         full_response += chunk_text
-                        
+
                         # Print the chunk text directly to the console without a newline
                         print(chunk_text, end="", flush=True)
 
@@ -306,6 +473,28 @@ class OllamaAPIClient:
         if style:
             prompt_parts.append(f"Style: {style}")
 
+        # Get species-specific tags if relevant
+        species_specific_tags = {}
+        if species and gender:
+            # Get species-specific tags using the unified function, no NSFW tags
+            species_specific_tags = generate_species_specific_tags(
+                species=species, gender=gender, nsfw=False, explicit_level=0
+            )
+
+            # Add to prompt if we have relevant tags
+            if species_specific_tags:
+                # Extract categories - tags are already formatted
+                identity_tags = ", ".join(species_specific_tags.get("identity", []))
+                physical_tags = ", ".join(species_specific_tags.get("physical", []))
+                accessories_tags = ", ".join(species_specific_tags.get("accessories", []))
+
+                if identity_tags:
+                    prompt_parts.append(f"Identity Tags: {identity_tags}")
+                if physical_tags:
+                    prompt_parts.append(f"Physical Tags: {physical_tags}")
+                if accessories_tags:
+                    prompt_parts.append(f"Accessories Tags: {accessories_tags}")
+
         # Create the main prompt
         param_text = "\n".join(prompt_parts)
 
@@ -314,6 +503,11 @@ class OllamaAPIClient:
             "for text-to-image generation. Your captions should be descriptive, cohesive, "
             "and suitable for high-quality image generation. Focus on visual elements, "
             "composition, lighting, mood, and artistic style."
+            "\n\n"
+            "When species-specific tags are provided, incorporate them naturally "
+            "into your caption. Use the exact terms provided in the tags, as these are "
+            "specific terms recognized by the image generation system. Tags are properly "
+            "formatted with spaces instead of underscores and escaped parentheses."
         )
 
         prompt = (
@@ -383,6 +577,35 @@ class OllamaAPIClient:
         # Add NSFW intensity
         prompt_parts.append(f"NSFW Level: {nsfw_intensity}")
 
+        # Get species-specific tags
+        species_specific_tags = {}
+        if species and gender:
+            # Convert nsfw_intensity to explicit_level
+            explicit_level = 1
+            if nsfw_intensity.lower() == "moderate":
+                explicit_level = 2
+            elif nsfw_intensity.lower() == "explicit":
+                explicit_level = 3
+
+            # Get species-specific tags using the unified function
+            species_specific_tags = generate_species_specific_tags(
+                species=species, gender=gender, nsfw=True, explicit_level=explicit_level
+            )
+
+            # Add to prompt if we have relevant tags
+            if species_specific_tags:
+                # Extract categories - tags are already formatted
+                identity_tags = ", ".join(species_specific_tags.get("identity", []))
+                physical_tags = ", ".join(species_specific_tags.get("physical", []))
+                nsfw_tags = ", ".join(species_specific_tags.get("nsfw", []))
+
+                if identity_tags:
+                    prompt_parts.append(f"Identity Tags: {identity_tags}")
+                if physical_tags:
+                    prompt_parts.append(f"Physical Tags: {physical_tags}")
+                if nsfw_tags:
+                    prompt_parts.append(f"NSFW Anatomy Tags: {nsfw_tags}")
+
         # Create the main prompt
         param_text = "\n".join(prompt_parts)
 
@@ -392,6 +615,11 @@ class OllamaAPIClient:
             "cohesive, and appropriate for the specified NSFW level. Focus on visual elements, "
             "composition, poses, expressions, and anatomical details that would be "
             "appropriate for adult artwork. Use proper anatomical terms and avoid censoring."
+            "\n\n"
+            "When species-specific anatomy tags are provided, incorporate them naturally "
+            "into your caption. Use the exact terms provided in the tags, as these are "
+            "specific terms recognized by the image generation system. Tags are properly "
+            "formatted with spaces instead of underscores and escaped parentheses."
         )
 
         prompt = (
@@ -399,7 +627,8 @@ class OllamaAPIClient:
             f"{param_text}\n\n"
             f"The caption should be detailed and vivid, focusing on visual elements and NSFW content "
             f"appropriate for the specified intensity level. Format your response as a single paragraph "
-            f"without explanations or extra text."
+            f"without explanations or extra text. When using the provided anatomical tags, use them "
+            f"exactly as provided."
         )
 
         # Generate the caption

@@ -64,6 +64,42 @@ NoobAI has excellent understanding of e621 tags. When using these tags:
 - Use commas to separate tags
 - For character names with series, use: `character_name (series)` (e.g., `krystal (star_fox)`)
 
+### Species-Specific Anatomical Details
+
+NoobAI understands detailed anatomical terms for different species. Use these to enhance your prompts, especially for NSFW content:
+
+- **Canine-specific**: `canine penis`, `knot`, `sheath` for males; `canine pussy` for females
+- **Feline-specific**: `feline penis`, `barbed penis` for males; `feline pussy` for females
+- **Equine-specific**: `equine penis`, `flared penis` for males; `equine pussy` for females
+- **Reptilian-specific**: `hemipenes`, `genital slit` for males; `cloaca` for females
+- **Avian-specific**: `cloaca` for both genders
+
+For best results with anatomical details:
+
+1. Use species-appropriate terms (e.g., "knot" for wolves, foxes, dogs)
+2. Place anatomical terms after character description but before pose/action
+3. For SFW content, avoid specific genital terms and use general anatomy instead
+
+### Taxonomical Tag Organization
+
+NoobAI recognizes taxonomical groupings, which can enhance prompt coherence:
+
+- **Canine**: Wolves, foxes, dogs, coyotes
+- **Feline**: Cats, lions, tigers, leopards
+- **Equine**: Horses, ponies, zebras, donkeys
+- **Bovine**: Cows, bulls, bison, buffalo
+- **Cervid**: Deer, elk, moose, reindeer
+- **Rodent**: Mice, rats, squirrels, beavers
+- **Lagomorph**: Rabbits, hares, bunnies
+- **Reptile**: Dragons, lizards, snakes, dinosaurs
+- **Avian**: Birds, gryphons, avians
+
+Include the taxonomical group along with the species for better results:
+
+```
+anthro, canine, wolf, male
+```
+
 ### Useful Tag Categories for Furry Art
 
 - **Species modifiers**: `anthro`, `feral`, `semi-anthro`
@@ -94,6 +130,12 @@ masterpiece, best quality, newest, absurdres, highres, anthro, 1female, fox, red
 masterpiece, best quality, newest, absurdres, highres, anthro, 2girls, fox, wolf, different species, casual interaction, cafe setting, sitting, table, coffee cups, urban background, daylight, cheerful expressions
 ```
 
+#### NSFW Character with Anatomical Detail
+
+```
+masterpiece, best quality, newest, absurdres, highres, anthro, 1male, canine, wolf, gray fur, muscular, presenting, canine penis, knot, bedroom setting, seductive pose, subtle lighting
+```
+
 ### Effective Negative Prompts
 
 Always include these in your negative prompts to avoid common issues:
@@ -115,5 +157,25 @@ mammal, anthro, furry, ambiguous form, feral, semi-anthro
 3. **Background enhancement**: Add `scenery porn, amazing background` for detailed environments
 4. **Dynamic composition**: Add `dynamic angle, depth of field` for more interesting compositions
 5. **Use meaningful suffixes**: For V-Pred models, add `colorful, detailed light` for better lighting
+6. **Species-appropriate accessories**: Include anatomically accurate accessories for your species (e.g., `collar` for canines, `ear rings` for felines)
+
+### Using the Automated Tags System
+
+The cringegen toolkit includes a sophisticated system that can automatically generate species-specific tag sets:
+
+```bash
+# Generate species-specific tags for a dragon character
+python -m cringegen llm-nsfw-caption --species dragon --gender female --tags-only
+
+# Generate a full NSFW prompt with anatomically correct tags
+python -m cringegen llm-nsfw-caption --species wolf --gender male --nsfw-intensity explicit
+```
+
+The automated system will:
+
+1. Select taxonomically appropriate terms for the species
+2. Add proper anatomical details based on gender and species
+3. Include appropriate accessories and physical characteristics
+4. Maintain e621 tag compatibility for optimal results
 
 By following these guidelines, you'll maximize NoobAI's furry art generation capabilities, creating detailed and visually appealing anthro characters with accurate anatomy and high aesthetic quality.

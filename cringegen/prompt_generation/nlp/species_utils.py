@@ -38,16 +38,20 @@ def get_anatomical_terms(species: str, gender: str, explicit_level: int = 1) -> 
         A list of anatomical terms appropriate for the species/gender
     """
     # Default to general terms if species isn't recognized
-    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "default")
+    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "accessory")
 
     # Select terms based on gender
     if gender.lower() == "male":
-        # Get terms for the specific taxonomy, or default if not found
-        available_terms = MALE_ANATOMY.get(taxonomy, MALE_ANATOMY["default"])
+        # Get terms for the specific taxonomy, or accessory if not found
+        available_terms = MALE_ANATOMY.get(taxonomy, MALE_ANATOMY.get("accessory", []))
     elif gender.lower() == "female":
-        available_terms = FEMALE_ANATOMY.get(taxonomy, FEMALE_ANATOMY["default"])
+        available_terms = FEMALE_ANATOMY.get(taxonomy, FEMALE_ANATOMY.get("accessory", []))
     else:
         # For non-binary or unspecified gender, use default terms
+        return []
+
+    # If still no terms are found, return empty list
+    if not available_terms:
         return []
 
     # Select terms based on explicit level
@@ -117,10 +121,14 @@ def get_species_accessories(
         A list of accessory terms
     """
     # Get the taxonomy for the species
-    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "default")
+    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "accessory")
 
     # Get the accessories for this taxonomy group
-    taxonomy_accessories = SPECIES_ACCESSORIES.get(taxonomy, SPECIES_ACCESSORIES["default"])
+    taxonomy_accessories = SPECIES_ACCESSORIES.get(taxonomy, {})
+
+    # If no accessories found for this taxonomy, return empty list
+    if not taxonomy_accessories:
+        return []
 
     # Determine if we're using anthro or feral accessories
     form_type = "anthro" if is_anthro else "feral"
@@ -176,7 +184,7 @@ def generate_species_description(species: str, gender: str) -> str:
         A descriptive phrase for the species
     """
     # Get the taxonomy for the species
-    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "default")
+    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "accessory")
 
     # Ensure gender is a recognized value
     if gender.lower() not in ["male", "female"]:
@@ -249,6 +257,6 @@ def generate_species_description(species: str, gender: str) -> str:
             f"with {colors[0]} markings",
             f"in shades of {colors[0]}",
         ]
-        description += " " + random.choice(color_phrases)
+        description += f" {random.choice(color_phrases)}"
 
     return description
