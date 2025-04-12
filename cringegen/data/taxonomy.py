@@ -24,6 +24,10 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "husky": "canine",
     "jackal": "canine",
     "dog": "canine",
+    # New canines
+    "dingo": "canine",
+    "african_wild_dog": "canine",
+    "maned_wolf": "canine",
     # Dog breeds
     "border_collie": "canine",
     "german_shepherd": "canine",
@@ -55,6 +59,11 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "cheetah": "feline",
     "lynx": "feline",
     "cat": "feline",
+    # New felines
+    "caracal": "feline",
+    "serval": "feline",
+    "jaguar": "feline",
+    "panther": "feline",
     # Cat breeds
     "siamese": "feline",
     "persian": "feline",
@@ -143,6 +152,8 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "penguin": "avian",
     "chicken": "avian",
     "rooster": "avian",
+    # New birds
+    "corvid": "avian",
     # Chiroptera
     "bat": "yangochiropteran",
     "flying_fox": "yangochiropteran",
@@ -163,6 +174,8 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "octopus": "cephalopod",
     "squid": "cephalopod",
     "cuttlefish": "cephalopod",
+    # New aquatic
+    "axolotl": "amphibian",
     # Miscellaneous
     "deer": "deer",
     "raccoon": "procyonid",
@@ -184,6 +197,11 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "ram": "sheep",
     "kangaroo": "macropod",
     "wallaby": "macropod",
+    # New mammals
+    "aardwolf": "hyena",
+    "mongoose": "mustelid",
+    "possum": "marsupial",
+    "opossum": "marsupial",
     # Fantasy/Original Species
     "sergal": "sergal",
     "protogen": "protogen",
@@ -195,6 +213,21 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "shork": "shark",
     "folf": "canine",
     "fennec": "canine",
+    # New fantasy species
+    "eastern_dragon": "eastern_dragon",
+    "synx": "synx",
+    "manticore": "manticore",
+    "kitsune": "kitsune",
+    "drekkubus": "drekkubus",
+    "sparkledog": "sparkledog",
+    "latex_creature": "latex_creature",
+    "goo_creature": "goo_creature",
+    # Special hybrids
+    "fox_wolf_hybrid": "canine",
+    "cat_dog_hybrid": "hybrid",
+    "liger": "feline",
+    "tigon": "feline",
+    "dragon_wolf": "hybrid",
 }
 
 # How different species body coverings should be referenced
@@ -226,25 +259,24 @@ BODY_COVERING_BY_TAXONOMY: Dict[str, str] = {
     "shark": "skink",
     "sergal": "fur",
     "protogen": "fur",
-    "dragon": "fur",
+    "dragon": "scales",
     "avali": "feathers",
-    "dragon": "fur",
     "wickerbeast": "fur",
     "synth_(vader-san)": "synthetic",
 }
 
 # Male anatomical terms by taxonomy group
 MALE_ANATOMY: Dict[str, List[str]] = {
-    "accessory": ["male", "penis", "penis"],
+    "accessory": ["penis", "male"],
     "canine": ["animal penis", "canine penis", "knot", "sheath"],
-    "feline": ["animal penis", "feline penis", "penis", "sheath"],
-    "equine": ["animal penis", "equine penis", "flared penis", "sheath"],
-    "bovine": ["animal penis", "bovine", "sheath"],
-    "rodent": ["animal penis", "rodent", "sheath"],
+    "feline": ["animal penis", "barbed penis", "sheath"],
+    "equine": ["animal penis", "equine penis", "flare", "sheath"],
+    "bovine": ["animal penis", "bovine penis", "sheath"],
+    "rodent": ["animal penis", "rodent penis", "sheath"],
     "lagomorph": ["animal penis", "lagomorph", "sheath"],
     "reptile": ["animal penis", "reptile", "hemipenes", "genital slit"],
-    "avian": ["animal penis", "avian", "genital slit", "cloaca"],
-    "deer": ["animal penis", "penis", "sheath"],
+    "avian": ["animal penis", "avian", "cloaca"],
+    "deer": ["animal penis", "cervid", "sheath"],
     "procyonid": ["animal penis", "procyonid", "sheath"],
     "mustelid": ["animal penis", "mustelid", "sheath"],
     "ursid_humanoid": ["animal penis", "ursine penis", "sheath"],
@@ -264,6 +296,18 @@ MALE_ANATOMY: Dict[str, List[str]] = {
     "yangochiropteran": ["animal penis", "bat", "sheath"],
     "shark": ["animal penis", "shark", "claspers", "genital slit"],
     "cetacean": ["animal penis", "cetacean penis", "tapering penis", "genital slit"],
+    # New species groups
+    "eastern_dragon": ["unusual penis", "dragon penis", "glowing penis", "sheath"],
+    "kitsune": ["animal penis", "fox penis", "knot", "magical penis", "sheath"],
+    "marsupial": ["animal penis", "marsupial penis", "sheath"],
+    "amphibian": ["animal penis", "amphibian", "cloaca"],
+    "synx": ["unusual penis", "alien penis", "tentacle penis"],
+    "manticore": ["animal penis", "feline penis", "barbs", "sheath"],
+    "drekkubus": ["unusual penis", "demonic penis", "glowing penis"],
+    "sparkledog": ["animal penis", "canine penis", "knot", "glowing penis", "sheath"],
+    "latex_creature": ["unusual penis", "rubber penis", "morphing penis"],
+    "goo_creature": ["unusual penis", "slime penis", "morphing penis"],
+    "hybrid": ["unusual penis", "morphing penis", "sheath"],
 }
 
 # Female anatomical terms by taxonomy group
@@ -297,6 +341,18 @@ FEMALE_ANATOMY: Dict[str, List[str]] = {
     "yangochiropteran": ["animal pussy", "bat"],
     "shark": ["animal pussy", "shark", "genital slit", "cloaca"],
     "cetacean": ["animal pussy", "cetacean", "genital slit"],
+    # New species groups
+    "eastern_dragon": ["pussy", "dragon pussy", "glowing pussy"],
+    "kitsune": ["animal pussy", "fox pussy", "magical pussy"],
+    "marsupial": ["animal pussy", "marsupial pussy", "pouch"],
+    "amphibian": ["animal pussy", "amphibian", "cloaca"],
+    "synx": ["unusual pussy", "alien pussy", "tentacled pussy"],
+    "manticore": ["animal pussy", "feline pussy", "predatory pussy"],
+    "drekkubus": ["unusual pussy", "demonic pussy", "glowing pussy"],
+    "sparkledog": ["animal pussy", "canine pussy", "glowing pussy"],
+    "latex_creature": ["unusual pussy", "rubber pussy", "morphing pussy"],
+    "goo_creature": ["unusual pussy", "slime pussy", "morphing pussy"],
+    "hybrid": ["unusual pussy", "morphing pussy", "adaptive pussy"],
 }
 
 # Classification of popular species
@@ -342,6 +398,51 @@ ANTHRO_SPECIES: List[str] = [
     "bovid",
     "hyena",
     "kobold",
+    # Additional canines
+    "dingo",
+    "african_wild_dog",
+    "husky",
+    "german_shepherd",
+    "shiba_inu",
+    # Additional felines
+    "caracal",
+    "maine_coon",
+    "serval",
+    "jaguar",
+    "panther",
+    "scottish_fold",
+    # Additional fantasy/original species
+    "dutch_angel_dragon",
+    "eastern_dragon",
+    "primagen",
+    "synx",
+    "manticore",
+    "kitsune",
+    "drekkubus",
+    "sparkledog",
+    "latex_creature",
+    "goo_creature",
+    # Special hybrids
+    "fox_wolf_hybrid",
+    "cat_dog_hybrid",
+    "liger",
+    "tigon",
+    "dragon_wolf",
+    # Miscellaneous species
+    "aardwolf",
+    "mongoose",
+    "maned_wolf",
+    "panda",
+    "possum",
+    "opossum",
+    "axolotl",
+    # Additional avians
+    "hawk",
+    "falcon",
+    "parrot",
+    "macaw",
+    "corvid",
+    "duck",
 ]
 
 # Most commonly referenced species in prompts
@@ -361,6 +462,9 @@ POPULAR_ANTHRO_SPECIES: List[str] = [
     "bear",
     "sergal",
     "protogen",
+    "husky",
+    "kitsune",
+    "eastern_dragon",
 ]
 
 # Fantasy species that are not conventional Earth animals
@@ -368,9 +472,7 @@ FANTASY_SPECIES: List[str] = [
     "dragon",
     "sergal",
     "protogen",
-    "dragon",
     "avali",
-    "dragon",
     "wickerbeast",
     "synth_(vader-san)",
     "kobold",
@@ -387,6 +489,16 @@ FANTASY_SPECIES: List[str] = [
     "hydra",
     "cerberus",
     "phoenix",
+    "dutch_angel_dragon",
+    "eastern_dragon",
+    "primagen",
+    "synx",
+    "manticore",
+    "kitsune",
+    "drekkubus",
+    "sparkledog",
+    "latex_creature",
+    "goo_creature",
 ]
 
 # Common species for character generation
@@ -405,6 +517,12 @@ COMMON_SPECIES: List[str] = [
     "otter",
     "sergal",
     "protogen",
+    "husky",
+    "german_shepherd",
+    "shiba_inu",
+    "caracal",
+    "eastern_dragon",
+    "kitsune",
 ]
 
 # Rare or less common species
@@ -447,6 +565,31 @@ RARE_SPECIES: List[str] = [
     "moth",
     "butterfly",
     "bee",
+    "dingo",
+    "african_wild_dog",
+    "maine_coon",
+    "serval",
+    "jaguar",
+    "panther",
+    "scottish_fold",
+    "aardwolf",
+    "mongoose",
+    "maned_wolf",
+    "panda",
+    "possum",
+    "opossum",
+    "axolotl",
+    "hawk",
+    "falcon",
+    "parrot",
+    "macaw",
+    "corvid",
+    "duck",
+    "fox_wolf_hybrid",
+    "cat_dog_hybrid",
+    "liger",
+    "tigon",
+    "dragon_wolf",
 ]
 
 # Fantastical species (expanded from FANTASY_SPECIES)
@@ -466,9 +609,7 @@ FANTASTICAL_SPECIES: List[str] = [
     "ice",
     "sergal",
     "protogen",
-    "dragon",
     "avali",
-    "dragon",
     "wickerbeast",
     "synth_(vader-san)",
     "kobold",
@@ -486,6 +627,17 @@ FANTASTICAL_SPECIES: List[str] = [
     "minotaur",
     "mythological_sphinx",
     "cerberus",
+    "dutch_angel_dragon",
+    "eastern_dragon",
+    "primagen",
+    "synx",
+    "manticore",
+    "kitsune",
+    "drekkubus",
+    "sparkledog",
+    "latex_creature",
+    "goo_creature",
+    "dragon_wolf",
 ]
 
 # Pokémon species for character generation
@@ -547,6 +699,15 @@ SPECIES_TO_ADJECTIVES: Dict[str, List[str]] = {
     "bird": ["avian", "feathered_tail", "winged_arms", "aerial", "bone"],
     "lizard": ["reptilian", "scaly_tail", "old", "sun", "darting"],
     "snake": ["serpentine", "ring", "nom", "coiling", "hypnotic_eyes"],
+    # New species adjectives
+    "husky": ["fluffy", "vocal", "energetic", "friendly", "blue-eyed"],
+    "german_shepherd": ["loyal", "protective", "intelligent", "alert", "strong"],
+    "shiba_inu": ["fox-like", "independent", "spirited", "alert", "confident"],
+    "caracal": ["tufted_ears", "agile", "stealthy", "keen", "swift"],
+    "kitsune": ["multi-tailed", "magical", "wise", "mystical", "fox-like"],
+    "eastern_dragon": ["serpentine", "whiskers", "pearl", "longevity", "wisdom"],
+    "axolotl": ["aquatic", "regenerative", "smiling", "cute", "colorful"],
+    "duck": ["waterfowl", "waddling", "buoyant", "quacking", "feathered"],
 }
 
 # Species-to-color mappings for natural coloration
@@ -639,6 +800,18 @@ SPECIES_TO_COLORS: Dict[str, List[str]] = {
         "banded",
         "patterned",
     ],
+    # New species colors
+    "husky": [
+        "grey_and_white_fur",
+        "black_and_white_fur",
+        "copper_and_white_fur",
+        "silver_fur",
+        "agouti",
+    ],
+    "kitsune": ["white_fur", "gold_(metal)", "red_fur", "black_fur", "mystical_fire", "glowing"],
+    "eastern_dragon": ["gold_(metal)", "red_fur", "blue_fur", "green_fur", "pearl", "iridescent"],
+    "dutch_angel_dragon": ["pastel", "bright", "multi-colored", "rainbow", "glowing"],
+    "axolotl": ["pink", "white", "black", "golden", "albino", "leucistic"],
 }
 
 # Taxonomy high-level grouping
@@ -661,12 +834,32 @@ TAXONOMY_GROUPS: Dict[str, List[str]] = {
         "macropod",
         "yangochiropteran",
         "cetacean",
+        "aardwolf",
+        "mongoose",
+        "maned_wolf",
+        "panda",
+        "possum",
+        "opossum",
+        "marsupial",
     ],
     "reptile": ["reptile", "kobold"],
-    "avian": ["avian", "avali"],
-    "aquatic_dragon": ["shark", "cetacean"],
-    "synthetic": ["protogen", "dragon", "synth_(vader-san)"],
-    "unique": ["sergal", "dragon", "wickerbeast"],
+    "avian": ["avian", "avali", "hawk", "falcon", "parrot", "macaw", "corvid", "duck"],
+    "aquatic_dragon": ["shark", "cetacean", "axolotl"],
+    "amphibian": ["amphibian", "axolotl"],
+    "synthetic": ["protogen", "dragon", "synth_(vader-san)", "primagen"],
+    "unique": [
+        "sergal",
+        "dragon",
+        "wickerbeast",
+        "dutch_angel_dragon",
+        "eastern_dragon",
+        "synx",
+        "kitsune",
+        "latex_creature",
+        "goo_creature",
+    ],
+    "hybrid": ["fox_wolf_hybrid", "cat_dog_hybrid", "liger", "tigon", "dragon_wolf", "hybrid"],
+    "fantasy": ["dragon", "eastern_dragon", "kitsune", "manticore", "drekkubus", "sparkledog"],
 }
 
 # Species descriptor sets (for text generation)

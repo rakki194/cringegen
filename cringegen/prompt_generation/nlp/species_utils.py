@@ -38,14 +38,20 @@ def get_anatomical_terms(species: str, gender: str, explicit_level: int = 1) -> 
         A list of anatomical terms appropriate for the species/gender
     """
     # Default to general terms if species isn't recognized
-    taxonomy = SPECIES_TAXONOMY.get(species.lower(), "accessory")
+    species_taxonomy = SPECIES_TAXONOMY.get(species.lower(), "accessory")
 
     # Select terms based on gender
     if gender.lower() == "male":
         # Get terms for the specific taxonomy, or accessory if not found
-        available_terms = MALE_ANATOMY.get(taxonomy, MALE_ANATOMY.get("accessory", []))
+        # Use taxonomy.MALE_ANATOMY directly to get the most up-to-date terms
+        available_terms = taxonomy.MALE_ANATOMY.get(
+            species_taxonomy, taxonomy.MALE_ANATOMY.get("accessory", [])
+        )
     elif gender.lower() == "female":
-        available_terms = FEMALE_ANATOMY.get(taxonomy, FEMALE_ANATOMY.get("accessory", []))
+        # Use taxonomy.FEMALE_ANATOMY directly to get the most up-to-date terms
+        available_terms = taxonomy.FEMALE_ANATOMY.get(
+            species_taxonomy, taxonomy.FEMALE_ANATOMY.get("accessory", [])
+        )
     else:
         # For non-binary or unspecified gender, use default terms
         return []
