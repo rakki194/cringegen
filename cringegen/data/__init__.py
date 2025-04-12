@@ -6,7 +6,7 @@ It includes taxonomies, character data, environments, LoRA datasets,
 and art style classifications.
 """
 
-# Taxonomy and species data
+# Taxonomy and species data - Updated to use the new package structure
 from .taxonomy import (
     SPECIES_TAXONOMY,
     BODY_COVERING_BY_TAXONOMY,
