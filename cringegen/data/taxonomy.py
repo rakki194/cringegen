@@ -228,6 +228,56 @@ SPECIES_TAXONOMY: Dict[str, str] = {
     "liger": "feline",
     "tigon": "feline",
     "dragon_wolf": "hybrid",
+    # Pokemon species
+    "lucario": "pokemon",
+    "zoroark": "pokemon",
+    "delphox": "pokemon",
+    "charizard": "pokemon",
+    "braixen": "pokemon",
+    "incineroar": "pokemon",
+    "zeraora": "pokemon",
+    "lycanroc": "pokemon",
+    "lopunny": "pokemon",
+    "mewtwo": "pokemon",
+    "lugia": "pokemon",
+    "umbreon": "pokemon",
+    "sylveon": "pokemon",
+    "vaporeon": "pokemon",
+    "jolteon": "pokemon",
+    "flareon": "pokemon",
+    "espeon": "pokemon",
+    "glaceon": "pokemon",
+    "leafeon": "pokemon",
+    "eevee": "pokemon",
+    # Digimon species
+    "renamon": "digimon",
+    "guilmon": "digimon",
+    "garurumon": "digimon",
+    "gabumon": "digimon",
+    "veemon": "digimon",
+    "agumon": "digimon",
+    "flamedramon": "digimon",
+    "weregarurumon": "digimon",
+    "angemon": "digimon",
+    "gatomon": "digimon",
+    # Video game characters
+    "blaidd": "video_game_character",
+    "maliketh": "video_game_character",
+    "sif": "video_game_character",
+    "amaterasu": "video_game_character",
+    "wolf_link": "video_game_character",
+    "krystal": "video_game_character",
+    "falco": "video_game_character",
+    "wolf_o'donnell": "video_game_character",
+    "judy_hopps": "video_game_character",
+    "nick_wilde": "video_game_character",
+    "legoshi": "video_game_character",
+    "beastars": "video_game_character",
+    "sonic": "video_game_character",
+    "tails": "video_game_character",
+    "rouge_the_bat": "video_game_character",
+    "crash_bandicoot": "video_game_character",
+    "spyro": "video_game_character",
 }
 
 # How different species body coverings should be referenced
@@ -308,6 +358,10 @@ MALE_ANATOMY: Dict[str, List[str]] = {
     "latex_creature": ["unusual penis", "rubber penis", "morphing penis"],
     "goo_creature": ["unusual penis", "slime penis", "morphing penis"],
     "hybrid": ["unusual penis", "morphing penis", "sheath"],
+    # New fictional species groups
+    "pokemon": ["unusual penis", "fantasy penis", "pokemon penis", "sheath"],
+    "digimon": ["unusual penis", "fantasy penis", "digimon penis", "sheath"],
+    "video_game_character": ["unusual penis", "fantasy penis", "sheath"],
 }
 
 # Female anatomical terms by taxonomy group
@@ -353,6 +407,10 @@ FEMALE_ANATOMY: Dict[str, List[str]] = {
     "latex_creature": ["unusual pussy", "rubber pussy", "morphing pussy"],
     "goo_creature": ["unusual pussy", "slime pussy", "morphing pussy"],
     "hybrid": ["unusual pussy", "morphing pussy", "adaptive pussy"],
+    # New fictional species groups
+    "pokemon": ["unusual pussy", "fantasy pussy", "pokemon pussy"],
+    "digimon": ["unusual pussy", "fantasy pussy", "digimon pussy"],
+    "video_game_character": ["unusual pussy", "fantasy pussy"],
 }
 
 # Classification of popular species
@@ -443,6 +501,42 @@ ANTHRO_SPECIES: List[str] = [
     "macaw",
     "corvid",
     "duck",
+    # Pokemon
+    "lucario",
+    "zoroark",
+    "delphox",
+    "braixen",
+    "incineroar",
+    "zeraora",
+    "lycanroc",
+    "umbreon",
+    "sylveon",
+    "vaporeon",
+    "jolteon",
+    "flareon",
+    "espeon",
+    "glaceon",
+    "leafeon",
+    "eevee",
+    # Digimon
+    "renamon",
+    "guilmon",
+    "garurumon",
+    "gabumon",
+    "veemon",
+    "agumon",
+    "flamedramon",
+    "weregarurumon",
+    "angemon",
+    "gatomon",
+    # Video game characters
+    "blaidd",
+    "maliketh",
+    "krystal",
+    "wolf_o'donnell",
+    "judy_hopps",
+    "nick_wilde",
+    "legoshi",
 ]
 
 # Most commonly referenced species in prompts
@@ -465,6 +559,13 @@ POPULAR_ANTHRO_SPECIES: List[str] = [
     "husky",
     "kitsune",
     "eastern_dragon",
+    # Adding popular Pokemon and Digimon
+    "lucario",
+    "zoroark",
+    "renamon",
+    # Adding popular video game characters
+    "krystal",
+    "blaidd",
 ]
 
 # Fantasy species that are not conventional Earth animals
@@ -499,6 +600,10 @@ FANTASY_SPECIES: List[str] = [
     "sparkledog",
     "latex_creature",
     "goo_creature",
+    # Adding fictional species categories
+    "pokemon",
+    "digimon",
+    "video_game_character",
 ]
 
 # Common species for character generation
@@ -672,11 +777,77 @@ POKEMON_SPECIES: List[str] = [
     "glaceon",
     "greninja",
     "goodra",
+    # Adding more popular Pokemon species
+    "typhlosion",
+    "cinderace",
+    "gallade",
+    "machamp",
+    "scorbunny",
+    "thievul",
+    "salazzle",
+    "fennekin",
+    "mightyena",
+    "houndoom",
 ]
 
-# Combine all species lists
+# Digimon species for character generation
+DIGIMON_SPECIES: List[str] = [
+    "renamon",
+    "guilmon",
+    "garurumon",
+    "gabumon",
+    "veemon",
+    "agumon",
+    "flamedramon",
+    "weregarurumon",
+    "angemon",
+    "gatomon",
+    "angewomon",
+    "beelzemon",
+    "leomon",
+    "lilymon",
+    "wizardmon",
+    "patamon",
+    "tentomon",
+    "palmon",
+    "biyomon",
+    "gomamon",
+]
+
+# Video game characters for character generation
+VIDEO_GAME_CHARACTERS: List[str] = [
+    "blaidd",
+    "maliketh",
+    "sif",
+    "amaterasu",
+    "wolf_link",
+    "krystal",
+    "falco",
+    "wolf_o'donnell",
+    "judy_hopps",
+    "nick_wilde",
+    "legoshi",
+    "haru_(beastars)",
+    "sonic",
+    "tails",
+    "rouge_the_bat",
+    "crash_bandicoot",
+    "spyro",
+    "ratchet",
+    "sly_cooper",
+    "fox_mccloud",
+]
+
+# Combine all species lists including the new ones
 ALL_SPECIES: List[str] = list(
-    set(COMMON_SPECIES + RARE_SPECIES + FANTASTICAL_SPECIES + POKEMON_SPECIES)
+    set(
+        COMMON_SPECIES
+        + RARE_SPECIES
+        + FANTASTICAL_SPECIES
+        + POKEMON_SPECIES
+        + DIGIMON_SPECIES
+        + VIDEO_GAME_CHARACTERS
+    )
 )
 
 # Species-to-adjective mappings
@@ -708,6 +879,12 @@ SPECIES_TO_ADJECTIVES: Dict[str, List[str]] = {
     "eastern_dragon": ["serpentine", "whiskers", "pearl", "longevity", "wisdom"],
     "axolotl": ["aquatic", "regenerative", "smiling", "cute", "colorful"],
     "duck": ["waterfowl", "waddling", "buoyant", "quacking", "feathered"],
+    # Fictional species adjectives
+    "lucario": ["aura-sensitive", "spike-chested", "fighting", "steel", "disciplined"],
+    "zoroark": ["illusory", "dark", "cunning", "swift", "elusive"],
+    "renamon": ["mystical", "ninja-like", "sleek", "spiritual", "fox-like"],
+    "blaidd": ["wolfman", "loyal", "knight", "half-wolf", "armored"],
+    "maliketh": ["beast-clergyman", "death-bladed", "armored", "ferocious", "shadowy"],
 }
 
 # Species-to-color mappings for natural coloration
@@ -812,6 +989,12 @@ SPECIES_TO_COLORS: Dict[str, List[str]] = {
     "eastern_dragon": ["gold_(metal)", "red_fur", "blue_fur", "green_fur", "pearl", "iridescent"],
     "dutch_angel_dragon": ["pastel", "bright", "multi-colored", "rainbow", "glowing"],
     "axolotl": ["pink", "white", "black", "golden", "albino", "leucistic"],
+    # Fictional species colors
+    "lucario": ["blue_fur", "black_fur", "yellow_fur", "steel_blue", "aura_blue"],
+    "zoroark": ["black_fur", "red_fur", "blue_markings", "dark_mane", "purple_markings"],
+    "renamon": ["yellow_fur", "white_fur", "purple_markings", "yin_yang"],
+    "blaidd": ["dark_grey_fur", "blue_fur", "armored", "silver_armor", "tattered_cloak"],
+    "maliketh": ["black_fur", "silver_armor", "death_rune", "red_glow", "shadowy"],
 }
 
 # Taxonomy high-level grouping
@@ -860,6 +1043,7 @@ TAXONOMY_GROUPS: Dict[str, List[str]] = {
     ],
     "hybrid": ["fox_wolf_hybrid", "cat_dog_hybrid", "liger", "tigon", "dragon_wolf", "hybrid"],
     "fantasy": ["dragon", "eastern_dragon", "kitsune", "manticore", "drekkubus", "sparkledog"],
+    "fictional": ["pokemon", "digimon", "video_game_character"],
 }
 
 # Species descriptor sets (for text generation)
