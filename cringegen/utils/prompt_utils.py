@@ -8,6 +8,41 @@ It handles formatting, parsing, and cleaning operations for text prompts.
 from typing import Dict, List, Optional, Any, Tuple, Set, Union
 
 
+def get_indefinite_article(word: str) -> str:
+    """Determine whether to use 'a' or 'an' before a word.
+    
+    Args:
+        word: The word to check
+        
+    Returns:
+        'a' or 'an' based on the word's pronunciation
+    """
+    if not word:
+        return "a"
+    
+    # Clean the word - remove any leading punctuation or spaces
+    word = word.strip().lstrip("\"'([{")
+    if not word:
+        return "a"
+    
+    # Convert to lowercase for checking
+    word_lower = word.lower()
+    
+    # Words starting with vowel sounds generally use 'an'
+    if word_lower[0] in 'aeiou':
+        # Special cases for 'u' when it sounds like 'you'
+        if word_lower.startswith(("uni", "eu", "use", "ute", "u-")):
+            return "a"
+        return "an"
+    
+    # Words starting with silent 'h' use 'an'
+    if word_lower.startswith(("hour", "honor", "heir", "honest")):
+        return "an"
+    
+    # Default to 'a' for consonant sounds
+    return "a"
+
+
 def format_prompt(prompt_segments: Dict[str, str], template: Optional[str] = None) -> str:
     """
     Format a set of prompt segments according to a template.
@@ -123,3 +158,13 @@ def clean_prompt(prompt: str) -> str:
     cleaned = cleaned.strip(", ")
 
     return cleaned
+
+# At the bottom, update __all__
+__all__ = [
+    "format_prompt",
+    "print_prompt",
+    "parse_prompt_template",
+    "combine_prompt_segments",
+    "clean_prompt",
+    "get_indefinite_article",
+]

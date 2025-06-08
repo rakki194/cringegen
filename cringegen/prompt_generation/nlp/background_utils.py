@@ -3,8 +3,7 @@ Utility functions for background and setting-related natural language processing
 """
 
 import random
-import re
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional
 
 # Update imports to use new centralized data module
 from ...data import backgrounds, habitats
@@ -27,40 +26,7 @@ SPECIES_HABITATS = habitats.SPECIES_HABITATS
 TIME_OF_DAY = backgrounds.TIME_OF_DAY
 WEATHER_CONDITIONS = backgrounds.WEATHER_CONDITIONS
 
-
-def get_indefinite_article(word: str) -> str:
-    """Determine whether to use 'a' or 'an' before a word.
-    
-    Args:
-        word: The word to check
-        
-    Returns:
-        'a' or 'an' based on the word's pronunciation
-    """
-    if not word:
-        return "a"
-        
-    # Clean the word - remove any leading punctuation or spaces
-    word = word.strip().lstrip("\"'([{")
-    if not word:
-        return "a"
-    
-    # Convert to lowercase for checking
-    word_lower = word.lower()
-    
-    # Words starting with vowel sounds generally use 'an'
-    if word_lower[0] in 'aeiou':
-        # Special cases for 'u' when it sounds like 'you'
-        if word_lower.startswith(('uni', 'eu', 'use', 'ute', 'u-')):
-            return "a"
-        return "an"
-    
-    # Words starting with silent 'h' use 'an'
-    if word_lower.startswith(('hour', 'honor', 'heir', 'honest')):
-        return "an"
-    
-    # Default to 'a' for consonant sounds
-    return "a"
+from ...utils.prompt_utils import get_indefinite_article
 
 
 def generate_background_description(

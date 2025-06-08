@@ -886,7 +886,6 @@ def add_nsfw_character_command(subparsers, parent_parser):
 
 def generate_nsfw_character(args):
     import importlib
-    import types
     # Try to import the character module
     try:
         char_mod = importlib.import_module(f"cringegen.data.characters.{args.character}")
@@ -902,6 +901,9 @@ def generate_nsfw_character(args):
     args.species = template.species
     args.gender = template.gender.name.lower() if hasattr(template.gender, 'name') else str(template.gender)
     args.checkpoint = "noobaiXLVpredv10.safetensors"
+    args.lora = "noob/fd-v3s6000.safetensors"
+    args.lora_strength = 0.36
+    args.lora_te_strength = 0.36
     # Compose a character-specific prompt prefix
     character_tags = []
     if hasattr(template, "model_tags") and "e621" in template.model_tags:
@@ -910,14 +912,23 @@ def generate_nsfw_character(args):
         character_tags.extend(template.features)
     if hasattr(template, "appearance_traits"):
         character_tags.extend(template.appearance_traits)
-    if hasattr(template, "clothing"):
-        character_tags.extend(template.clothing)
+    # Only add clothing if not hardcore
+    if getattr(args, 'intensity', None) != 'hardcore':
+        if hasattr(template, "clothing"):
+            character_tags.extend(template.clothing)
     if hasattr(template, "accessories"):
         character_tags.extend(template.accessories)
     if hasattr(template, "personality"):
         character_tags.extend(template.personality)
     # Remove duplicates and join
     character_tags = list(dict.fromkeys(character_tags))
+
+    # Always include 'solo' in the prompt for single-character NSFW
+    if 'solo' not in character_tags:
+        character_tags.insert(0, 'solo')
+    # Always include 'nsfw' in the prompt
+    if 'nsfw' not in character_tags:
+        character_tags.insert(0, 'nsfw')
 
     # Always include character nsfw_traits for explicit/hardcore
     if getattr(args, 'intensity', None) in ['explicit', 'hardcore']:
@@ -938,14 +949,14 @@ def generate_nsfw_character(args):
             gender = template.gender.name.lower() if hasattr(template.gender, "name") else str(template.gender).lower()
 
             species_hardcore_tags = {
-                "wolf": ["canine genitalia", "knot", "sheath"],
-                "dog": ["canine genitalia", "knot", "sheath"],
-                "fox": ["canine genitalia", "knot", "sheath"],
+                "wolf": ["canine genitalia"],
+                "dog": ["canine genitalia"],
+                "fox": ["canine genitalia"],
                 "lion": ["feline genitalia", "barbed penis"],
                 "tiger": ["feline genitalia", "barbed penis"],
                 "cat": ["feline genitalia", "barbed penis"],
-                "horse": ["equine genitalia", "horsecock"],
-                "zebra": ["equine genitalia", "horsecock"],
+                "horse": ["equine genitalia"],
+                "zebra": ["equine genitalia"],
                 # Add more as needed
             }
             female_tags = ["animal pussy", "pussy", "vulva", "canine pussy", "feline pussy", "equine pussy"]
@@ -966,10 +977,46 @@ def generate_nsfw_character(args):
                     character_tags.append(tag)
     character_prefix = ", ".join(character_tags)
 
-    # Prepend to prompt
-    if hasattr(args, "prompt") and args.prompt:
-        args.prompt = character_prefix + ", " + args.prompt
+    # --- Add detailed, thematically accurate background prompt ---
+    # Import here to avoid circular imports
+    from cringegen.prompt_generation.nlp.background_utils import generate_background_description, get_complementary_locations
+    character_name = getattr(template, 'model_tags', {}).get('e621', '').lower()
+    # Character-specific backgrounds
+    if 'legoshi' in character_name:
+        location = 'school'
+        background_desc = generate_background_description(location)
+    elif 'krystal' in character_name:
+        location = 'alien world'
+        background_desc = generate_background_description(location)
+    elif 'robin hood' in character_name:
+        location = 'sherwood forest'
+        background_desc = generate_background_description('forest')
+    elif 'nick wilde' in character_name:
+        location = 'city'
+        background_desc = generate_background_description(location)
+    elif 'sonic' in character_name:
+        location = 'green hill zone'
+        background_desc = generate_background_description('meadow')
+    elif 'blaidd' in character_name:
+        location = 'dark fantasy landscape'
+        background_desc = generate_background_description('forest')
     else:
-        args.prompt = character_prefix
+        # Get a thematically appropriate location for the character's species
+        locations = get_complementary_locations(template.species or "forest")
+        location = locations[0] if locations else "forest"
+        background_desc = generate_background_description(location)
+    # Append the background description to the prompt
+    if hasattr(args, "prompt") and args.prompt:
+        args.prompt = character_prefix + ", " + args.prompt + ", " + background_desc
+    else:
+        args.prompt = character_prefix + ", " + background_desc
+
+    # Always add 'safe' to the negative prompt
+    if hasattr(args, "negative_prompt") and args.negative_prompt:
+        if 'safe' not in args.negative_prompt:
+            args.negative_prompt = args.negative_prompt + ', safe'
+    else:
+        args.negative_prompt = 'safe'
+
     # Call the existing NSFW generation function
     return generate_nsfw_furry(args)

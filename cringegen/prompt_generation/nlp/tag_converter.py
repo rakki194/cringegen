@@ -7,11 +7,13 @@ This module provides functions to:
 """
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Tuple
 
 import nltk
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
+
+from ...utils.prompt_utils import get_indefinite_article
 
 # Ensure NLTK data is downloaded
 try:
@@ -532,7 +534,9 @@ def generate_concise_text(categorized_tags: Dict[str, List[str]]) -> str:
 
     # Add setting if any
     if categorized_tags["setting"]:
-        parts.append(f"in {categorized_tags['setting'][0]}")
+        setting = categorized_tags['setting'][0]
+        article = get_indefinite_article(setting)
+        parts.append(f"in {article} {setting}")
 
     # Add style if any
     if categorized_tags["style"]:
@@ -618,14 +622,18 @@ def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
     # Add expression
     if categorized_tags["expression"]:
         if len(categorized_tags["expression"]) == 1:
-            features.append("with a " + categorized_tags["expression"][0] + " expression")
+            expr = categorized_tags["expression"][0]
+            article_expr = get_indefinite_article(expr)
+            features.append(f"with {article_expr} {expr} expression")
         else:
             features.append("with a " + " and ".join(categorized_tags["expression"]) + " expression")
 
     # Add setting/location
     if categorized_tags["setting"]:
         if len(categorized_tags["setting"]) == 1:
-            features.append("in a " + categorized_tags["setting"][0])
+            setting = categorized_tags["setting"][0]
+            article_setting = get_indefinite_article(setting)
+            features.append(f"in {article_setting} {setting}")
         else:
             features.append("in " + " and ".join(categorized_tags["setting"]))
 
@@ -657,8 +665,9 @@ def generate_descriptive_text(categorized_tags: Dict[str, List[str]]) -> str:
             features.append(tag)
 
     # Combine all parts
+    article = get_indefinite_article(subject_desc).capitalize()
     if features:
-        return f"A {quality_desc}{subject_desc} {', '.join(features)}"
+        return f"{article} {quality_desc}{subject_desc} {', '.join(features)}"
     else:
         return f"A {quality_desc}{subject_desc}"
 
@@ -743,8 +752,13 @@ def generate_detailed_text(categorized_tags: Dict[str, List[str]]) -> str:
 
     # Add setting/location
     if categorized_tags["setting"]:
-        setting = " and ".join(categorized_tags["setting"])
-        appearance_details.append(f"The scene takes place in {setting}.")
+        if len(categorized_tags["setting"]) == 1:
+            setting = categorized_tags["setting"][0]
+            article_setting = get_indefinite_article(setting)
+            appearance_details.append(f"The scene takes place in {article_setting} {setting}.")
+        else:
+            setting = " and ".join(categorized_tags["setting"])
+            appearance_details.append(f"The scene takes place in {setting}.")
         
     # Add anatomical features with appropriate phrasing
     if categorized_tags["anatomical"]:
@@ -960,8 +974,7 @@ def natural_tags_to_text(tags: List[str]) -> str:
         main_subject = "character"
 
     # Handle article properly
-    starts_with_vowel = main_subject.lower()[0] in "aeiou"
-    article = "An" if starts_with_vowel else "A"
+    article = get_indefinite_article(main_subject).capitalize()
 
     # Transform quality terms
     quality_adj = []

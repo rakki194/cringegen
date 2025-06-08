@@ -549,6 +549,48 @@ python -m cringegen list-samplers
 python -m cringegen list-schedulers
 ```
 
+## DeepShrink Convenience Flags: --use-deepshrink and --deepshrink
+
+There are two flags for enabling DeepShrink, depending on the command:
+
+- `--use-deepshrink` is used in the main generation commands (`nsfw-furry`, `furry`, `random-nsfw`).
+- `--deepshrink` is used in the `xyplot` and some advanced commands.
+
+Both flags enable DeepShrink for improved high-frequency detail, but the flag name depends on the command you are using. The behavior and default parameters are the same.
+
+### Using --use-deepshrink (main generation commands)
+
+This flag is designed for situations where you want to enable DeepShrink without specifying every individual parameter. When you use `--use-deepshrink`, DeepShrink is enabled with its default parameters, so you don't need to provide `--deepshrink-factor`, `--deepshrink-start`, `--deepshrink-end`, or `--deepshrink-gradual` unless you want to override the defaults.
+
+**Example:**
+
+```bash
+python -m cringegen nsfw-furry --species wolf --use-deepshrink
+```
+
+This will enable DeepShrink with the default settings for high-frequency detail enhancement, making it easy to use DeepShrink in quick workflows or scripts.
+
+### Using --deepshrink (xyplot and advanced commands)
+
+In the `xyplot` command and some advanced workflows, the flag is named `--deepshrink`:
+
+```bash
+cringegen xyplot --workflow furry --checkpoint mymodel.safetensors --deepshrink
+```
+
+This also enables DeepShrink with default parameters, unless you override them with the specific options.
+
+### Difference between the flags
+
+- Both `--use-deepshrink` and `--deepshrink` enable DeepShrink with default parameters for their respective commands.
+- You can override any DeepShrink parameter (e.g., `--deepshrink-factor 2.5`) with either flag.
+- The only difference is which flag name is used for which command.
+
+**Summary:**
+
+- Use `--use-deepshrink` with `nsfw-furry`, `furry`, and `random-nsfw`.
+- Use `--deepshrink` with `xyplot` and advanced commands.
+
 ## Installation
 
 ```bash
