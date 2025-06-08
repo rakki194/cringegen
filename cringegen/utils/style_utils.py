@@ -6,7 +6,7 @@ It ensures backward compatibility with existing code while enabling new
 functionality from the hierarchical style taxonomy.
 """
 
-from typing import Dict, List, Set, Tuple, Any, Optional, Union
+from typing import Dict, List
 import random
 from collections import defaultdict
 
@@ -18,17 +18,12 @@ from ..data.style_taxonomy import (
     STYLE_AESTHETICS,
     STYLE_RELATIONSHIPS,
     STYLE_ATTRIBUTES,
-    get_style_by_medium,
-    get_style_by_movement,
-    get_related_styles,
     get_style_attributes,
     get_styles_by_attribute,
 )
 
 from ..data.styles import (
     ART_STYLES,
-    FILM_TV_STYLES,
-    GAME_ART_STYLES,
     VISUAL_AESTHETICS,
 )
 

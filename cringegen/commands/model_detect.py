@@ -84,7 +84,7 @@ def print_architecture_defaults(architecture: str) -> None:
     defaults = get_model_architecture_defaults(architecture)
     
     print("\n=== Architecture Default Parameters ===")
-    print(f"Optimal resolution: {defaults['optimal_resolution'][0]}×{defaults['optimal_resolution'][1]} ({defaults['optimal_pixel_count']} pixels)")
+    print(f"Optimal resolution: {defaults['optimal_resolution'][0]}*{defaults['optimal_resolution'][1]} ({defaults['optimal_pixel_count']} pixels)")
     print(f"Default steps:      {defaults.get('default_steps', 'N/A')}")
     print(f"Default CFG:        {defaults.get('default_cfg', 'N/A')}")
     print(f"Default sampler:    {defaults.get('default_sampler', 'N/A')}")
@@ -138,10 +138,10 @@ def print_resolution_check(optimizer: ModelOptimizer, width: int, height: int) -
     is_optimal = optimizer.check_resolution(width, height)
     
     if is_optimal:
-        print(f"Resolution {width}×{height} is optimal for this model.")
+        print(f"Resolution {width}*{height} is optimal for this model.")
     else:
         optimal_width, optimal_height = optimizer.get_optimal_resolution(width, height)
-        print(f"Suggested optimal resolution: {optimal_width}×{optimal_height}")
+        print(f"Suggested optimal resolution: {optimal_width}*{optimal_height}")
 
 def run_command(args):
     """Run the model-detect command."""

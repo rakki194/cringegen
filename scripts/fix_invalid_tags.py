@@ -10,9 +10,6 @@ but instead updates the modules to use valid tags.
 import json
 import os
 import re
-import sys
-from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple, Any
 
 # Get the root directory of the project
 script_dir = os.path.dirname(os.path.abspath(__file__))

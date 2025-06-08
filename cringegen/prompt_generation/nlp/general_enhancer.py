@@ -3,8 +3,7 @@ General-purpose prompt enhancement utilities.
 """
 
 import random
-import re
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional
 
 # Descriptive adjectives by category
 DESCRIPTIVE_ADJECTIVES = {

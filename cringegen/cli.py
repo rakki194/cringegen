@@ -4,7 +4,6 @@ Command-line interface for cringegen
 
 import argparse
 import logging
-import sys
 
 from .commands.furry import add_furry_command
 from .commands.info import add_info_commands

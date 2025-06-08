@@ -410,7 +410,7 @@ def generate_nsfw_furry(args):
             # Check if resolution needs optimization
             if not model_optimizer.check_resolution(args.width, args.height):
                 optimal_width, optimal_height = model_optimizer.get_optimal_resolution(args.width, args.height)
-                logger.info(f"Optimizing resolution from {args.width}×{args.height} to {optimal_width}×{optimal_height}")
+                logger.info(f"Optimizing resolution from {args.width}*{args.height} to {optimal_width}*{optimal_height}")
                 args.width, args.height = optimal_width, optimal_height
             
             # Get optimal parameters

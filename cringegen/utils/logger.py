@@ -173,6 +173,11 @@ def configure_cli_logging(args: Any) -> None:
     Args:
         args: Parsed command-line arguments
     """
+    # If --log-level DEBUG is set, also set --debug
+    if hasattr(args, "log_level") and str(args.log_level).upper() == "DEBUG":
+        if hasattr(args, "debug"):
+            args.debug = True  # --log-level DEBUG implies --debug
+
     # Determine log level based on args
     log_level = logging.INFO
 

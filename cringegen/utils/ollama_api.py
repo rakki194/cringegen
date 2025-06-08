@@ -5,8 +5,7 @@ Client for interacting with Ollama API to generate text with LLMs
 import json
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
-import logging
+from typing import Any, Dict, List, Optional
 import sys
 from pathlib import Path
 

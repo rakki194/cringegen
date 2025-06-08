@@ -33,19 +33,19 @@ def is_optimal_resolution(width: int, height: int, model_type: str, use_deepshri
     total_pixels = width * height
     
     if model_type.lower() == "sdxl":
-        # SDXL optimal: 1024×1024 (1,048,576 pixels)
+        # SDXL optimal: 1024*1024 (1,048,576 pixels)
         # Allow 5% margin for different aspect ratios
         target_pixels = 1048576
         margin = target_pixels * 0.05
         return abs(total_pixels - target_pixels) <= margin
     elif model_type.lower() == "sd15":
-        # SD 1.5 optimal: 512×512 (262,144 pixels)
+        # SD 1.5 optimal: 512*512 (262,144 pixels)
         # Allow 5% margin for different aspect ratios
         target_pixels = 262144
         margin = target_pixels * 0.05
         return abs(total_pixels - target_pixels) <= margin
     elif model_type.lower().startswith("sd35"):
-        # SD 3.5 optimal: 1024×1024 (1,048,576 pixels) 
+        # SD 3.5 optimal: 1024*1024 (1,048,576 pixels) 
         # Similar to SDXL but might have different optimal resolutions for variants
         if "turbo" in model_type.lower():
             # SD 3.5 Turbo might work better with smaller resolutions
@@ -76,7 +76,7 @@ def get_optimal_resolution(aspect_ratio: float, model_type: str) -> tuple:
     """
     # First, determine the target pixel count
     if model_type.lower() == "sdxl":
-        target_pixels = 1048576  # 1024×1024
+        target_pixels = 1048576  # 1024*1024
     elif model_type.lower().startswith("sd35"):
         if "turbo" in model_type.lower():
             target_pixels = 786432  # 768x1024
@@ -85,7 +85,7 @@ def get_optimal_resolution(aspect_ratio: float, model_type: str) -> tuple:
     elif model_type.lower() == "flux":
         target_pixels = 1048576  # 1024x1024
     elif model_type.lower() == "sd15":
-        target_pixels = 262144   # 512×512
+        target_pixels = 262144   # 512*512
     else:
         # Default to SD1.5 for unknown models
         target_pixels = 262144

@@ -4,9 +4,7 @@ Model utilities for cringegen.
 This module provides functions for model-specific optimizations and prompt prefix injection.
 """
 
-import os
-import re
-from typing import Dict, List, Tuple, Any, Optional, Union
+from typing import Any, Dict, Tuple
 
 from ..data.model_taxonomy import (
     get_model_architecture_defaults,
@@ -109,8 +107,8 @@ class ModelOptimizer:
             optimal_width, optimal_height = self.get_optimal_resolution(width, height)
             
             print_colored_warning(
-                f"WARNING: Non-optimal resolution for {self.architecture} model ({width}×{height} = {total_pixels} pixels).\n"
-                f"         Optimal pixel count is ~{target_pixels:,}. Consider using {optimal_width}×{optimal_height}."
+                f"WARNING: Non-optimal resolution for {self.architecture} model ({width}*{height} = {total_pixels} pixels).\n"
+                f"         Optimal pixel count is ~{target_pixels:,}. Consider using {optimal_width}*{optimal_height}."
             )
         
         return is_optimal

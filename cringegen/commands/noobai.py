@@ -313,7 +313,7 @@ def generate_noobai_image(args):
     width, height = args.width, args.height
     if not optimizer.check_resolution(width, height):
         width, height = optimizer.get_optimal_resolution(width, height)
-        logger.info(f"Optimizing resolution to {width}×{height}")
+        logger.info(f"Optimizing resolution to {width}*{height}")
     
     # Detect background type
     bg_type = optimizer.detect_background_type(args.prompt)
@@ -331,7 +331,7 @@ def generate_noobai_image(args):
     logger.info(f"Model: {checkpoint_name}")
     logger.info(f"Architecture: {optimizer.architecture}")
     logger.info(f"Model family: {optimizer.family}")
-    logger.info(f"Resolution: {width}×{height}")
+    logger.info(f"Resolution: {width}*{height}")
     logger.info(f"Seed: {seed}")
     
     if bg_type:

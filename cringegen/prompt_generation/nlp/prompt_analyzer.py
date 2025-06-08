@@ -10,7 +10,7 @@ This module provides tools to:
 
 import re
 from collections import Counter
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 
 import nltk
 from nltk.corpus import stopwords

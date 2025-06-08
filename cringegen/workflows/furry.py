@@ -143,10 +143,10 @@ def create_basic_furry_workflow(
             pixels = width * height
             # Get suggestions for better resolutions
             suggestions = get_optimal_resolution_suggestions(width, height, "sdxl")
-            suggestion_text = ", ".join([f"{w}×{h}" for w, h in suggestions[:3]])
+            suggestion_text = ", ".join([f"{w}*{h}" for w, h in suggestions[:3]])
             
             print_colored_warning(
-                f"WARNING: Non-optimal resolution for SDXL model ({width}×{height} = {pixels} pixels).\n"
+                f"WARNING: Non-optimal resolution for SDXL model ({width}*{height} = {pixels} pixels).\n"
                 f"         Optimal pixel count is ~1,048,576. Suggested resolutions: {suggestion_text}"
             )
     # Check SD1.5 resolution if not using DeepShrink
@@ -154,10 +154,10 @@ def create_basic_furry_workflow(
         pixels = width * height
         # Get suggestions for better resolutions
         suggestions = get_optimal_resolution_suggestions(width, height, "sd15")
-        suggestion_text = ", ".join([f"{w}×{h}" for w, h in suggestions[:3]])
+        suggestion_text = ", ".join([f"{w}*{h}" for w, h in suggestions[:3]])
         
         print_colored_warning(
-            f"WARNING: Non-optimal resolution for SD1.5 model ({width}×{height} = {pixels} pixels).\n"
+            f"WARNING: Non-optimal resolution for SD1.5 model ({width}*{height} = {pixels} pixels).\n"
             f"         Optimal pixel count is ~262,144. Suggested resolutions: {suggestion_text}"
         )
 

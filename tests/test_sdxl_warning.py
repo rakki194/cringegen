@@ -117,13 +117,13 @@ except ImportError:
         total_pixels = width * height
         
         if model_type.lower() == "sdxl":
-            # SDXL optimal: 1024×1024 (1,048,576 pixels)
+            # SDXL optimal: 1024*1024 (1,048,576 pixels)
             # Allow 5% margin for different aspect ratios
             target_pixels = 1048576
             margin = target_pixels * 0.05
             return abs(total_pixels - target_pixels) <= margin
         elif model_type.lower() == "sd15":
-            # SD 1.5 optimal: 512×512 (262,144 pixels)
+            # SD 1.5 optimal: 512*512 (262,144 pixels)
             # Allow 5% margin for different aspect ratios
             target_pixels = 262144
             margin = target_pixels * 0.05
@@ -186,23 +186,23 @@ def test_resolution_check():
         is_optimal = is_optimal_resolution(width, height, model_type)
         
         if is_optimal:
-            print(f"✓ Optimal resolution for {model_type}: {width}×{height} = {pixels} pixels")
+            print(f"✓ Optimal resolution for {model_type}: {width}*{height} = {pixels} pixels")
         else:
             if model_type.lower() == "sdxl" or model_type.lower() == "sd35":
                 optimal_pixels = 1048576
                 print_colored_warning(
-                    f"WARNING: Non-optimal resolution for {model_type} model ({width}×{height} = {pixels} pixels).\n"
-                    f"         Optimal pixel count is ~{optimal_pixels:,}. Consider using 1024×1024, 896×1152, or 768×1344."
+                    f"WARNING: Non-optimal resolution for {model_type} model ({width}*{height} = {pixels} pixels).\n"
+                    f"         Optimal pixel count is ~{optimal_pixels:,}. Consider using 1024*1024, 896*1152, or 768*1344."
                 )
             elif model_type.lower() == "sd15" or model_type.lower() == "flux":
                 optimal_pixels = 262144
                 print_colored_warning(
-                    f"WARNING: Non-optimal resolution for {model_type} model ({width}×{height} = {pixels} pixels).\n"
-                    f"         Optimal pixel count is ~{optimal_pixels:,}. Consider using 512×512, 448×576, or 384×640."
+                    f"WARNING: Non-optimal resolution for {model_type} model ({width}*{height} = {pixels} pixels).\n"
+                    f"         Optimal pixel count is ~{optimal_pixels:,}. Consider using 512*512, 448*576, or 384*640."
                 )
             else:
                 print_colored_warning(
-                    f"WARNING: Non-optimal resolution for {model_type} model ({width}×{height} = {pixels} pixels)."
+                    f"WARNING: Non-optimal resolution for {model_type} model ({width}*{height} = {pixels} pixels)."
                 )
 
 if __name__ == "__main__":

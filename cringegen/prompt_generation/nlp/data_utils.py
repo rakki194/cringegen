@@ -2,9 +2,8 @@
 Utilities for integrating data structures with NLP/NLTK tools.
 """
 
-import re
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 # Import from centralized taxonomy module
 from ...data.anatomy import FEMALE_ANATOMY, MALE_ANATOMY
@@ -26,10 +25,6 @@ from ...data.colors import (
 # Import from centralized styles module
 from ...data.styles import (
     ART_STYLES,
-    FILM_TV_STYLES,
-    ANIME_ART_STYLES,
-    GAME_ART_STYLES,
-    STYLE_DESCRIPTORS,
 )
 
 # These items might not exist in the current refactored structure

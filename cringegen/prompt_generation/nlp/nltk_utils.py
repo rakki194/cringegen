@@ -9,14 +9,12 @@ This module provides NLTK-powered functions for:
 5. Chunking and phrase extraction
 """
 
-import string
-from collections import Counter, defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 import nltk
 from nltk.chunk import RegexpParser
 from nltk.corpus import stopwords, wordnet
-from nltk.metrics.distance import edit_distance
 from nltk.probability import FreqDist
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.stem import WordNetLemmatizer

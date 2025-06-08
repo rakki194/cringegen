@@ -4,7 +4,7 @@ Tags processor for loading and using the e621 tags data with NLTK for prompt gen
 
 import json
 import os
-from typing import Dict, List, Tuple, Set, Optional
+from typing import Dict, List, Optional
 import nltk
 from nltk.corpus import wordnet
 from pathlib import Path

@@ -39,14 +39,14 @@ def test_optimal_resolution_calculation():
         aspect_ratio = width_ratio / height_ratio
         width, height = get_optimal_resolution(aspect_ratio, "sdxl")
         pixels = width * height
-        print(f"{width_ratio}:{height_ratio} → {width}×{height} = {pixels} pixels (target: 1,048,576)")
+        print(f"{width_ratio}:{height_ratio} → {width}*{height} = {pixels} pixels (target: 1,048,576)")
     
     print("\nSD1.5 Optimal Resolutions:")
     for width_ratio, height_ratio in test_cases_sdxl:
         aspect_ratio = width_ratio / height_ratio
         width, height = get_optimal_resolution(aspect_ratio, "sd15")
         pixels = width * height
-        print(f"{width_ratio}:{height_ratio} → {width}×{height} = {pixels} pixels (target: 262,144)")
+        print(f"{width_ratio}:{height_ratio} → {width}*{height} = {pixels} pixels (target: 262,144)")
 
 
 def test_optimal_resolution_suggestions():
@@ -65,10 +65,10 @@ def test_optimal_resolution_suggestions():
     
     for width, height, model_type in test_cases:
         suggestions = get_optimal_resolution_suggestions(width, height, model_type)
-        print(f"\nFor {width}×{height} ({width/height:.2f}:1) with {model_type}:")
+        print(f"\nFor {width}*{height} ({width/height:.2f}:1) with {model_type}:")
         for i, (w, h) in enumerate(suggestions):
             pixels = w * h
-            print(f"  {i+1}. {w}×{h} = {pixels} pixels")
+            print(f"  {i+1}. {w}*{h} = {pixels} pixels")
 
 
 def test_is_optimal_resolution():
@@ -89,7 +89,7 @@ def test_is_optimal_resolution():
         is_optimal = is_optimal_resolution(width, height, model_type)
         pixels = width * height
         status = "✓ Optimal" if is_optimal else "✗ Non-optimal"
-        print(f"{status}: {width}×{height} = {pixels} pixels for {model_type}")
+        print(f"{status}: {width}*{height} = {pixels} pixels for {model_type}")
 
 
 if __name__ == "__main__":

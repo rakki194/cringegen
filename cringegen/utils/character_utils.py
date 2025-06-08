@@ -12,33 +12,22 @@ Key functionality:
 """
 
 import random
-from typing import Dict, List, Set, Tuple, Optional, Union, Any
-from enum import Enum
+from typing import Dict, List, Optional, Any
 
 # Import from data modules
 from ..data.character_taxonomy import (
     CharacterType,
     FormType,
     Gender,
-    CharacterFeature,
-    SpeciesInfo,
-    ClothingItem,
-    AccessoryItem,
     CharacterTemplate,
-    CharacterArchetype,
     CHARACTER_NAME_MAP,
-    KEMONOMIMI_TYPES,
-    MONSTER_PEOPLE,
-    FANTASY_RACES,
     COMMON_ANIME_ARCHETYPES,
     get_species_info,
-    get_appropriate_clothing,
-    get_appropriate_accessories,
     generate_character_template,
     get_character_by_name,
     suggest_character_features,
 )
-from ..data.taxonomy import SPECIES_TAXONOMY, ANTHRO_SPECIES, FANTASY_SPECIES
+from ..data.taxonomy import ANTHRO_SPECIES, FANTASY_SPECIES
 
 # -------------------------------------------------------------------------
 # Character Generation Functions

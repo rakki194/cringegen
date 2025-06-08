@@ -627,6 +627,46 @@ python -m cringegen list-schedulers
 python -m cringegen trigger-phrases my_lora
 ```
 
+## Character-Specific NSFW Generation: `nsfw-character`
+
+The `nsfw-character` command generates a thematically appropriate NSFW image for a specific character using NoobAI, automatically applying species- and character-appropriate tags, backgrounds, and intensity-based details.
+
+**Basic usage:**
+
+```bash
+cringegen nsfw-character blaidd --show --log-level DEBUG --intensity hardcore
+```
+
+- `blaidd` is the character name (must match a character module in `cringegen.data.characters`)
+- `--show` displays the generated image after creation
+- `--log-level DEBUG` enables detailed logging and now automatically implies `--debug` (you do not need to specify both)
+- `--intensity` controls the NSFW level (`sfw`, `suggestive`, `explicit`, `hardcore`)
+
+> **Note:** Setting `--log-level DEBUG` will automatically enable debug mode (equivalent to also passing `--debug`).
+
+**Features:**
+
+- Automatically loads the character's species, gender, and traits
+- Adds character-specific tags, clothing, accessories, and personality
+- For `explicit` and `hardcore` intensity, adds anatomical and species-appropriate NSFW tags (e.g., 'canine genitalia' for wolves, 'pussy' for female characters)
+- Dynamically generates a thematically appropriate background for the character
+- Ensures prompts are optimized for NoobAI models
+- Supports all shared NSFW generation options (e.g., `--use-deepshrink`, `--split-sigmas`, etc.)
+
+**Example for Krystal (Star Fox):**
+
+```bash
+cringegen nsfw-character krystal --intensity explicit --show
+```
+
+If the character module or template is missing, the command will display an error message.
+
+For a full list of options, run:
+
+```bash
+cringegen nsfw-character --help
+```
+
 ### ComfyUI Connection
 
 cringegen requires a running ComfyUI server for image generation. By default, it connects to `http://127.0.0.1:8188`. You can specify a different ComfyUI server using the `--comfy-url` option:
