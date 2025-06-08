@@ -4,19 +4,16 @@ Character-specific commands for cringegen CLI.
 This module provides commands for generating prompts for specific canonical characters.
 """
 
-import argparse
 import logging
-from typing import Any, Optional, List
+from typing import Any
 import sys
 import typer
 import rich
 
 from ..utils.character_utils import generate_canon_character_prompt
-from ..utils.prompt_utils import print_prompt
 from ..data.character_taxonomy import (
     FAMOUS_CHARACTER_TEMPLATES,
     FAMOUS_FURRY_CHARACTERS,
-    CHARACTER_NAME_MAP,
 )
 from ..data.characters import get_available_characters, get_individual_character
 

@@ -11,8 +11,7 @@ import tempfile
 import json
 import subprocess
 import time
-import pprint
-from typing import List, Dict, Any, Tuple, Optional, Callable
+from typing import List, Dict, Any
 import re
 import pathlib
 import copy
@@ -190,7 +189,7 @@ def add_xyplot_command(subparsers, parent_parser):
     xyplot_parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory",
     )
     xyplot_parser.add_argument(

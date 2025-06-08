@@ -1139,7 +1139,7 @@ def get_lora_directory() -> str:
     logger = get_logger(__name__)
 
     # Check environment variable first
-    comfy_dir = os.environ.get("COMFY_DIR", "/home/kade/toolkit/diffusion/comfy")
+    comfy_dir = os.environ.get("COMFY_DIR", "/home/kade/comfy")
     logger.info(f"Using ComfyUI directory: {comfy_dir}")
 
     # Possible LoRA directory names

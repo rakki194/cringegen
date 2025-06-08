@@ -7,6 +7,7 @@ from typing import List, Optional
 
 # Update imports to use new centralized data module
 from ...data import anatomy, accessories, colors, taxonomy
+from ...data.anatomy import FEMALE_ANATOMY, MALE_ANATOMY
 
 # Original import for reference:
 # from cringegen.data.species_data import (
@@ -18,8 +19,6 @@ from ...data import anatomy, accessories, colors, taxonomy
 # )
 
 # Map old variables to new module structure
-FEMALE_ANATOMY = anatomy.FEMALE_ANATOMY
-MALE_ANATOMY = anatomy.MALE_ANATOMY
 SPECIES_ACCESSORIES = accessories.SPECIES_ACCESSORIES
 SPECIES_COLORS = colors.SPECIES_COLORS
 BASIC_COLORS = colors.BASIC_COLORS
@@ -44,13 +43,13 @@ def get_anatomical_terms(species: str, gender: str, explicit_level: int = 1) -> 
     if gender.lower() == "male":
         # Get terms for the specific taxonomy, or accessory if not found
         # Use taxonomy.MALE_ANATOMY directly to get the most up-to-date terms
-        available_terms = taxonomy.MALE_ANATOMY.get(
-            species_taxonomy, taxonomy.MALE_ANATOMY.get("accessory", [])
+        available_terms = MALE_ANATOMY.get(
+            species_taxonomy, MALE_ANATOMY.get("accessory", [])
         )
     elif gender.lower() == "female":
         # Use taxonomy.FEMALE_ANATOMY directly to get the most up-to-date terms
-        available_terms = taxonomy.FEMALE_ANATOMY.get(
-            species_taxonomy, taxonomy.FEMALE_ANATOMY.get("accessory", [])
+        available_terms = FEMALE_ANATOMY.get(
+            species_taxonomy, FEMALE_ANATOMY.get("accessory", [])
         )
     else:
         # For non-binary or unspecified gender, use default terms

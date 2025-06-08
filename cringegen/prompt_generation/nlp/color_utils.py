@@ -3,7 +3,7 @@ Utility functions for color generation and manipulation.
 """
 
 import random
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List
 
 # Update imports to use new centralized data module
 from ...data import colors, taxonomy
@@ -46,6 +46,9 @@ def get_body_covering_type(species: str) -> str:
     # Get body covering type for this taxonomy
     covering_type = BODY_COVERING_BY_TAXONOMY.get(taxonomy, "fur")
 
+    # If covering_type is a list, return the first element
+    if isinstance(covering_type, list):
+        return covering_type[0]
     return covering_type
 
 

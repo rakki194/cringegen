@@ -4,7 +4,6 @@ Information and listing commands for cringegen
 
 import logging
 import os
-from typing import Dict, List, Optional
 
 from ..utils.comfy_api import (
     check_comfy_server,
@@ -15,6 +14,8 @@ from ..utils.comfy_api import (
     get_compatible_checkpoints,
     get_compatible_loras,
     get_lora_directory,
+    get_checkpoint_suggestion,
+    get_lora_suggestions,
 )
 from ..utils.file_utils import (
     copy_latest_images_from_comfyui,
@@ -121,7 +122,7 @@ def add_info_commands(subparsers, parent_parser):
     copy_images_parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory",
     )
     copy_images_parser.add_argument(

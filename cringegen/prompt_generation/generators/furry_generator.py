@@ -4,7 +4,7 @@ Furry-specific prompt generators
 
 import random
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List
 
 from ..base import (
     CharacterComponent,
@@ -13,7 +13,6 @@ from ..base import (
     PoseComponent,
     PromptComponent,
     PromptGenerator,
-    QualityComponent,
     SettingComponent,
     StyleComponent,
 )
@@ -774,6 +773,11 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
             is_feral: Whether to use feral-specific accessories
             use_human_genitalia: Whether to use human genitalia terms instead of species-specific
         """
+        # Initialize NSFW-specific attributes BEFORE calling super().__init__
+        self.explicit_level = min(3, max(1, explicit_level))  # Clamp to 1-3
+        self.use_anatomical_terms = use_anatomical_terms
+        self.use_human_genitalia = use_human_genitalia
+
         super().__init__(
             species=species,
             gender=gender,
@@ -782,9 +786,6 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
             is_anthro=is_anthro,
             is_feral=is_feral,
         )
-        self.explicit_level = min(3, max(1, explicit_level))  # Clamp to 1-3
-        self.use_anatomical_terms = use_anatomical_terms
-        self.use_human_genitalia = use_human_genitalia
 
     def _add_default_components(self) -> None:
         """Add default components for NSFW furry content"""
@@ -860,7 +861,6 @@ class NsfwFurryPromptGenerator(FurryPromptGenerator):
                 self.species,
                 self.gender,
                 self.explicit_level,
-                use_human_terms=self.use_human_genitalia,
             )
 
         return prompt

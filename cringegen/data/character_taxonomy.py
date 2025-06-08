@@ -177,6 +177,7 @@ class CharacterTemplate:
     appearance_traits: List[str] = field(default_factory=list)  # Specific appearance traits
     nsfw_traits: List[str] = field(default_factory=list)  # NSFW-specific traits
     is_canon_character: bool = False  # Whether this is a specific canon character
+    hardcore_tags: List[str] = field(default_factory=list)  # Species-appropriate explicit tags for 'hardcore' intensity
 
 
 # -------------------------------------------------------------------------

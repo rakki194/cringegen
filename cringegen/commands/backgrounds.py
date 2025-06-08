@@ -4,15 +4,13 @@ Backgrounds command for cringegen CLI.
 This module provides a command to generate backgrounds for character scenes.
 """
 
-import argparse
 import logging
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 # Import centralized prompt components
 from ..data.prompt_components import (
     get_backgrounds_by_type,
-    get_random_background,
     BACKGROUNDS
 )
 

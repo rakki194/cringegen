@@ -7,9 +7,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Import from centralized taxonomy module
+from ...data.anatomy import FEMALE_ANATOMY, MALE_ANATOMY
 from ...data.taxonomy import (
-    FEMALE_ANATOMY,
-    MALE_ANATOMY,
     SPECIES_TAXONOMY,
 )
 

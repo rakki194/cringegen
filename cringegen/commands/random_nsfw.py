@@ -244,7 +244,7 @@ def add_random_nsfw_command(subparsers, parent_parser):
     random_nsfw_parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory",
     )
     random_nsfw_parser.add_argument(

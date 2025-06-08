@@ -5,11 +5,7 @@ This command detects model architecture and family from a checkpoint name,
 and suggests optimal parameters and prompt prefixes.
 """
 
-import argparse
-import sys
 import os
-from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
 
 from ..utils.logger import print_colored_warning
 from ..utils.model_utils import ModelOptimizer

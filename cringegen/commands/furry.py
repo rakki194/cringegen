@@ -151,7 +151,7 @@ def add_furry_command(subparsers, parent_parser):
     furry_parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory",
     )
     furry_parser.add_argument(

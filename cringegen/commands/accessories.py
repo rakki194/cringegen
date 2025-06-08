@@ -4,14 +4,11 @@ Accessories command for cringegen CLI.
 This module provides a command to generate accessories for characters.
 """
 
-import argparse
 import logging
-import random
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 # Import centralized prompt components
 from ..data.prompt_components import (
-    get_accessories_by_type,
     get_random_accessories,
     ACCESSORIES
 )

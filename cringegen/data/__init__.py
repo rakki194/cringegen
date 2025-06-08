@@ -17,8 +17,8 @@ from .taxonomy import (
     ANTHRO_DESCRIPTOR_SET,
 )
 from .anatomy import (
-    MALE_ANATOMY,
     FEMALE_ANATOMY,
+    MALE_ANATOMY,
 )
 
 # Color system data
@@ -162,8 +162,8 @@ __all__ = [
     "POPULAR_ANTHRO_SPECIES",
     "TAXONOMY_GROUPS",
     "ANTHRO_DESCRIPTOR_SET",
-    "MALE_ANATOMY",
     "FEMALE_ANATOMY",
+    "MALE_ANATOMY",
     # Color system data
     "BASIC_COLORS",
     "EXTENDED_COLORS",

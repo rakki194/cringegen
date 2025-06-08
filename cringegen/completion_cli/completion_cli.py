@@ -12,7 +12,6 @@ from typing import List, Tuple
 from ..utils.completions import (
     generate_bash_completion,
     generate_zsh_completion,
-    get_activation_completions,
     get_checkpoint_completions,
     get_lora_completions,
     get_prompt_completions,

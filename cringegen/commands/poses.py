@@ -4,15 +4,13 @@ Poses command for cringegen CLI.
 This module provides a command to generate poses for furry characters.
 """
 
-import argparse
 import logging
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 # Import centralized prompt components
 from ..data.prompt_components import (
     get_pose_by_taxonomy,
-    get_random_pose,
     POSES
 )
 

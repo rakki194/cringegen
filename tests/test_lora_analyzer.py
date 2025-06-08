@@ -148,25 +148,25 @@ def main():
     parser.add_argument(
         "--lora-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/models/loras",
+        default="/home/kade/comfy/models/loras",
         help="Directory containing LoRA files",
     )
     parser.add_argument(
         "--style-lora",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/models/loras/noob/chunie-v1s2000.safetensors",
+        default="/home/kade/comfy/models/loras/noob/chunie-v1s2000.safetensors",
         help="Path to a style LoRA for testing",
     )
     parser.add_argument(
         "--character-lora",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/models/loras/noob/foxparks-v2s1800.safetensors",
+        default="/home/kade/comfy/models/loras/noob/foxparks-v2s1800.safetensors",
         help="Path to a character LoRA for testing",
     )
     parser.add_argument(
         "--concept-lora",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/models/loras/noob/fart_fetish-v2s3000.safetensors",
+        default="/home/kade/comfy/models/loras/noob/fart_fetish-v2s3000.safetensors",
         help="Path to a concept LoRA for testing",
     )
     parser.add_argument(

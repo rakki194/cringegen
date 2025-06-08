@@ -15,7 +15,7 @@ Key components:
 - RGB color values
 """
 
-from typing import Dict, List, Set, Tuple, Any, Optional
+from typing import Dict, List, Tuple
 
 # Basic colors for general use
 BASIC_COLORS: List[str] = [
@@ -400,6 +400,14 @@ COMMON_MARKINGS: Dict[str, List[str]] = {
     "bovine": ["speckles", "patches", "face mask", "stockings", "ring"],
     "synthetic": ["glowing", "display panels", "joints", "markings"],
     "accessory": ["eye_patch", "spots", "stripes", "king"],
+    "default": [
+        "markings",
+        "patterned",
+        "plain",
+        "unique markings",
+        "distinctive pattern",
+        "unusual coloration"
+    ],
 }
 
 # Descriptive templates for color patterns

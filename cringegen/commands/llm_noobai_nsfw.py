@@ -10,7 +10,6 @@ import random
 import time
 import os
 import re
-from typing import Dict, List, Any, Optional
 
 from ..utils.ollama_api import (
     OllamaAPIClient,
@@ -257,7 +256,7 @@ def add_subparser(subparsers, parent_parser=None):
     parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory",
     )
 

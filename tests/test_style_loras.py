@@ -9,11 +9,11 @@ from cringegen.utils.lora_metadata import analyze_lora_type
 
 # Style LoRAs to test
 STYLE_LORA_PATHS = [
-    "/home/kade/toolkit/diffusion/comfy/models/loras/noob/beksinski-v1s1600.safetensors",
-    "/home/kade/toolkit/diffusion/comfy/models/loras/noob/gren_art-v1s2000.safetensors",
-    "/home/kade/toolkit/diffusion/comfy/models/loras/noob/kenket-v1s3000.safetensors",
-    "/home/kade/toolkit/diffusion/comfy/models/loras/noob/solisolsoli-v1s1600.safetensors",
-    "/home/kade/toolkit/diffusion/comfy/models/loras/noob/noob-bill_watterson-saveus-v1s1600.safetensors",
+    "/home/kade/comfy/models/loras/noob/beksinski-v1s1600.safetensors",
+    "/home/kade/comfy/models/loras/noob/gren_art-v1s2000.safetensors",
+    "/home/kade/comfy/models/loras/noob/kenket-v1s3000.safetensors",
+    "/home/kade/comfy/models/loras/noob/solisolsoli-v1s1600.safetensors",
+    "/home/kade/comfy/models/loras/noob/noob-bill_watterson-saveus-v1s1600.safetensors",
 ]
 
 

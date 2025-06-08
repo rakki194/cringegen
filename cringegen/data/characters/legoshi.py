@@ -51,6 +51,18 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "large",
     ],
     is_canon_character=True,
+    hardcore_tags=[
+        "canine genitalia",
+        "knot",
+        #"sheath", # NOTE: This adds a sword or a hilt to the character on NoobAI!
+        "cum",
+        "cum drip",
+        "ejaculation",
+        "cumshot",
+        "cum on body",
+        "cum inside",
+        "penetration",
+    ],
 )
 
 # Optional pose variations that can be used with the character

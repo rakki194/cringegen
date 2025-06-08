@@ -49,7 +49,17 @@ CHARACTER_TEMPLATE = CharacterTemplate(
         "trait1",
         "trait2",
     ],
-    is_canon_character=True,  # Whether this is a known canon character
+    is_canon_character=False,  # Whether this is a known canon character
+    hardcore_tags=[
+        "animal genitalia",
+        "cum",
+        "cum drip",
+        "ejaculation",
+        "cumshot",
+        "cum on body",
+        "cum inside",
+        "penetration",
+    ],
 )
 
 # Optional pose variations that can be used with the character

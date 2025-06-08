@@ -4,14 +4,11 @@ Clothing command for cringegen CLI.
 This module provides a command to generate clothing options for characters.
 """
 
-import argparse
 import logging
-import random
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 # Import centralized prompt components
 from ..data.prompt_components import (
-    get_clothing_by_type,
     get_random_clothing,
     CLOTHING
 )

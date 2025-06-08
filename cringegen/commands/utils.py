@@ -2,11 +2,9 @@
 Utility commands for cringegen
 """
 
-import argparse
 import logging
 import os
 import random
-from typing import Any, Dict, List
 
 from ..utils.comfy_api import get_lora_directory, resolve_model_path
 from ..utils.lora_metadata.autocomplete import get_trigger_phrases

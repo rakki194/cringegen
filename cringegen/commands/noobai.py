@@ -9,7 +9,6 @@ import logging
 import random
 import os
 import time
-from typing import Dict, List, Tuple, Any, Optional
 
 from ..utils.comfy_api import (
     check_comfy_server,
@@ -106,7 +105,7 @@ def add_subparser(subparsers, parent_parser=None):
     parser.add_argument(
         "--comfy-output-dir",
         type=str,
-        default="/home/kade/toolkit/diffusion/comfy/ComfyUI/output",
+        default="/home/kade/comfy/ComfyUI/output",
         help="ComfyUI output directory"
     )
     
