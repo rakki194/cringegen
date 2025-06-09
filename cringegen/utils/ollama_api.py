@@ -34,57 +34,60 @@ except ImportError:
 TAGS_PROCESSOR_AVAILABLE = False
 tags_processor = None
 try:
+    logger.debug("Trying to import default_processor using relative import from .tags_processor")
     # First try relative import
     from .tags_processor import default_processor as tags_processor
 
     TAGS_PROCESSOR_AVAILABLE = True
     logger.info("Successfully imported tags_processor using relative import")
-except ImportError:
+except ImportError as e:
+    logger.debug(f"Relative import failed: {e}")
     try:
+        logger.debug("Trying to import default_processor using absolute import from cringegen.utils.tags_processor")
         # Then try absolute import
         from cringegen.utils.tags_processor import default_processor as tags_processor
 
         TAGS_PROCESSOR_AVAILABLE = True
         logger.info("Successfully imported tags_processor using absolute import")
-    except ImportError:
+    except ImportError as e2:
+        logger.debug(f"Absolute import failed: {e2}")
         # Last resort - try adding the parent path and importing
         try:
-            # Get the parent directory of the current file
             parent_dir = str(Path(__file__).parent.parent.parent)
+            logger.debug(f"Trying to import default_processor after adding parent_dir to sys.path: {parent_dir}")
             if parent_dir not in sys.path:
                 sys.path.append(parent_dir)
             from cringegen.utils.tags_processor import default_processor as tags_processor
 
             TAGS_PROCESSOR_AVAILABLE = True
             logger.info("Successfully imported tags_processor using path manipulation")
-        except ImportError:
+        except ImportError as e3:
+            logger.debug(f"Path manipulation import failed: {e3}")
             try:
-                # If we can't import the default_processor, try importing the TagsProcessor class directly
-                # and create an instance
+                logger.debug("Trying to import TagsProcessor class directly and instantiate with fallback paths")
                 from cringegen.utils.tags_processor import TagsProcessor
 
-                # Try to find the tags.json file
                 tags_file = None
                 possible_paths = [
                     Path(__file__).parent.parent.parent / "tags.json",  # /cringegen/tags.json
-                    Path(__file__).parent.parent
-                    / "data"
-                    / "tags.json",  # /cringegen/cringegen/data/tags.json
+                    Path(__file__).parent.parent / "data" / "tags.json",  # /cringegen/cringegen/data/tags.json
                 ]
 
                 for path in possible_paths:
+                    logger.debug(f"Checking for tags.json at: {path}")
                     if path.exists():
                         tags_file = str(path)
+                        logger.debug(f"Found tags.json at: {tags_file}")
                         break
 
-                # Create a new instance
                 tags_processor = TagsProcessor(tags_file)
                 if tags_processor.loaded:
                     TAGS_PROCESSOR_AVAILABLE = True
                     logger.info("Successfully created TagsProcessor instance directly")
                 else:
                     logger.warning("Created TagsProcessor but tags file could not be loaded")
-            except ImportError:
+            except ImportError as e4:
+                logger.debug(f"Direct TagsProcessor import failed: {e4}")
                 logger.warning("Tags processor not available. Some features will be limited.")
 
 

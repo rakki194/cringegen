@@ -29,12 +29,25 @@ def ensure_cache_dir():
 
 
 def initialize_db():
-    """Initialize the SQLite database for LoRA metadata"""
+    """Initialize the SQLite database for LoRA metadata, auto-repairing if tables are missing or corrupt."""
     ensure_cache_dir()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Create tables
+    # Check if 'loras' table exists
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='loras'")
+    loras_exists = cursor.fetchone() is not None
+
+    if not loras_exists:
+        # Drop all known tables to ensure a clean state
+        for table in [
+            "lora_captions", "captions", "lora_tags", "tags", "loras"
+        ]:
+            cursor.execute(f"DROP TABLE IF EXISTS {table}")
+        # Log the reset
+        logger.warning("Database schema missing or corrupt. Resetting LoRA metadata database.")
+
+    # Create tables (idempotent)
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS loras (

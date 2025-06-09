@@ -29,19 +29,20 @@ class TagsProcessor:
         Args:
             tags_file: Path to tags.json file (default: None, will use package default)
         """
+        logger.debug(f"Initializing TagsProcessor with tags_file={tags_file}")
         # Try to find tags file if not specified
         if not tags_file:
             # Look in standard locations
             possible_paths = [
                 Path(__file__).parent.parent.parent / "tags.json",  # /cringegen/tags.json
-                Path(__file__).parent.parent
-                / "data"
-                / "tags.json",  # /cringegen/cringegen/data/tags.json
+                Path(__file__).parent.parent / "data" / "tags.json",  # /cringegen/cringegen/data/tags.json
             ]
-
+            logger.debug(f"No tags_file specified. Trying possible paths: {possible_paths}")
             for path in possible_paths:
+                logger.debug(f"Checking if tags file exists at: {path}")
                 if path.exists():
                     tags_file = str(path)
+                    logger.debug(f"Found tags file at: {tags_file}")
                     break
 
         if not tags_file or not os.path.exists(tags_file):
@@ -50,6 +51,7 @@ class TagsProcessor:
             self.id_to_tag = {}
             self.loaded = False
         else:
+            logger.debug(f"Loading tags from file: {tags_file}")
             # Load the tags file
             self.load_tags(tags_file)
             self.loaded = True
@@ -58,6 +60,7 @@ class TagsProcessor:
         try:
             nltk.data.find("corpora/wordnet")
         except LookupError:
+            logger.debug("WordNet not found, downloading...")
             nltk.download("wordnet", quiet=True)
 
     def load_tags(self, tags_file: str) -> None:
@@ -66,10 +69,11 @@ class TagsProcessor:
         Args:
             tags_file: Path to tags.json file
         """
+        logger.debug(f"Attempting to load tags from: {tags_file}")
         try:
             with open(tags_file, "r") as f:
                 self.tags_dict = json.load(f)
-
+            logger.debug(f"Successfully loaded {len(self.tags_dict)} tags from {tags_file}")
             # Create reverse mapping (id to tag)
             self.id_to_tag = {v: k for k, v in self.tags_dict.items()}
             logger.info(f"Loaded {len(self.tags_dict)} tags from {tags_file}")
