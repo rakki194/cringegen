@@ -14,11 +14,8 @@ from ..utils.lora_metadata import (
     extract_lora_metadata,
     get_activation_text,
     get_lora_path,
-    get_lora_tag_frequencies,
     get_loras_by_tag,
-    get_loras_by_type,
     get_tag_suggestions,
-    match_tags,
     suggest_lora_combinations,
 )
 from ..utils.lora_metadata.extractor import DB_PATH

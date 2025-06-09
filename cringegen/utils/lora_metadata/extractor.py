@@ -4,13 +4,10 @@ Functions for extracting metadata from LoRA files
 
 import glob
 import json
-import logging
 import os
-import re
 import sqlite3
-from collections import Counter, defaultdict
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from collections import Counter
+from typing import Any, Dict, List, Optional, Tuple
 
 # Get logger
 from ...utils.logger import get_logger
