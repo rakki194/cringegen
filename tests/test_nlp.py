@@ -121,7 +121,7 @@ def test_species_and_color():
     print(f"\nCommon colors for wolf: {species_colors[:5] if species_colors else 'None'}")
     
     # Test species description
-    species_desc = generate_species_description("dragon", ["blue", "silver"], include_anatomy=True)
+    species_desc = generate_species_description("dragon", "male")
     print(f"\nDescription for blue and silver dragon: {species_desc}")
 
 def main():

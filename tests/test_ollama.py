@@ -7,6 +7,8 @@ import argparse
 import sys
 import json
 from pathlib import Path
+import pytest
+import requests
 
 # Add the parent directory to the path so we can import cringegen
 sys.path.append(str(Path(__file__).parent.parent))
@@ -15,22 +17,40 @@ from cringegen.utils.ollama_api import default_client
 from cringegen.prompt_generation.llm_generator import LLMPromptGenerator, BrainstormGenerator
 
 
-def test_caption_generation(args):
+def ollama_available():
+    try:
+        requests.get("http://localhost:11434")
+        return True
+    except Exception:
+        return False
+
+ollama = pytest.mark.skipif(
+    not ollama_available(),
+    reason="Ollama API is not running on localhost:11434"
+)
+
+@ollama
+def test_caption_generation():
     """Test caption generation"""
-    print(f"Testing caption generation with {args.model}...")
-    print(f"Subject: {args.subject}")
-    
-    if args.model:
-        default_client.default_model = args.model
+    model = "dummy_model"
+    subject = "dummy_subject"
+    species = "dummy_species"
+    gender = "dummy_gender"
+    background = "dummy_background"
+    style = "dummy_style"
+    temperature = 0.7
+    thinking = False
+    print(f"Testing caption generation with {model}...")
+    print(f"Subject: {subject}")
     
     generator = LLMPromptGenerator(
-        subject=args.subject,
-        species=args.species,
-        gender=args.gender,
-        background=args.background,
-        style=args.style,
-        temperature=args.temperature,
-        show_thinking=args.thinking,
+        subject=subject,
+        species=species,
+        gender=gender,
+        background=background,
+        style=style,
+        temperature=temperature,
+        show_thinking=thinking,
     )
     
     caption = generator.generate()
@@ -41,25 +61,32 @@ def test_caption_generation(args):
     print("\n")
 
 
-def test_nsfw_caption_generation(args):
+@ollama
+def test_nsfw_caption_generation():
     """Test NSFW caption generation"""
-    print(f"Testing NSFW caption generation with {args.model}...")
-    print(f"Subject: {args.subject}")
-    print(f"NSFW Intensity: {args.nsfw_intensity}")
-    
-    if args.model:
-        default_client.default_model = args.model
+    model = "dummy_model"
+    subject = "dummy_subject"
+    nsfw_intensity = "medium"
+    species = "dummy_species"
+    gender = "dummy_gender"
+    background = "dummy_background"
+    style = "dummy_style"
+    temperature = 0.7
+    thinking = False
+    print(f"Testing NSFW caption generation with {model}...")
+    print(f"Subject: {subject}")
+    print(f"NSFW Intensity: {nsfw_intensity}")
     
     generator = LLMPromptGenerator(
-        subject=args.subject,
-        species=args.species,
-        gender=args.gender,
-        background=args.background,
-        style=args.style,
-        temperature=args.temperature,
+        subject=subject,
+        species=species,
+        gender=gender,
+        background=background,
+        style=style,
+        temperature=temperature,
         nsfw=True,
-        nsfw_intensity=args.nsfw_intensity,
-        show_thinking=args.thinking,
+        nsfw_intensity=nsfw_intensity,
+        show_thinking=thinking,
     )
     
     caption = generator.generate()
@@ -70,19 +97,21 @@ def test_nsfw_caption_generation(args):
     print("\n")
 
 
-def test_brainstorm(args):
+@ollama
+def test_brainstorm():
     """Test brainstorm functionality"""
-    print(f"Testing brainstorm with {args.model}...")
-    print(f"Concept: {args.concept}")
-    
-    if args.model:
-        default_client.default_model = args.model
+    model = "dummy_model"
+    concept = "dummy_concept"
+    temperature = 0.8
+    thinking = False
+    print(f"Testing brainstorm with {model}...")
+    print(f"Concept: {concept}")
     
     generator = BrainstormGenerator(
-        temperature=args.temperature,
-        show_thinking=args.thinking,
+        temperature=temperature,
+        show_thinking=thinking,
     )
-    variations = generator.generate_variations(args.concept)
+    variations = generator.generate_variations(concept)
     
     print("\nVariations:")
     print("===========")
@@ -129,11 +158,11 @@ def main():
     args = parser.parse_args()
     
     if args.command == "caption":
-        test_caption_generation(args)
+        test_caption_generation()
     elif args.command == "nsfw-caption":
-        test_nsfw_caption_generation(args)
+        test_nsfw_caption_generation()
     elif args.command == "brainstorm":
-        test_brainstorm(args)
+        test_brainstorm()
     else:
         parser.print_help()
 

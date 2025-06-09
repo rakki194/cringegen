@@ -4,9 +4,6 @@ Model detection utilities for cringegen.
 This module provides functions to detect the type and architecture of Stable Diffusion models.
 """
 
-import re
-from typing import Any, Dict, Optional, Tuple, Union
-
 
 def is_sdxl_model(model_or_checkpoint) -> bool:
     """Determine if a model is SDXL based on model properties or name.
@@ -276,7 +273,8 @@ def _is_sd35_by_name(checkpoint_name: str) -> bool:
         "sd3.5", 
         "sd-3.5", 
         "sd_3.5",
-        "sd35"
+        "sd35",
+        "sd3"
     ]
     
     checkpoint_lower = checkpoint_name.lower()

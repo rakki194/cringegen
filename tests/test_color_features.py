@@ -4,7 +4,6 @@ Test script to demonstrate color and multi-subject features.
 """
 
 import random
-from typing import Dict, List, Optional
 
 from cringegen.prompt_generation.generators.furry_generator import FurryPromptGenerator
 from cringegen.prompt_generation.nlp.color_utils import (

@@ -2,15 +2,8 @@
 Furry-specific ComfyUI workflows
 """
 
-import random
 from typing import Any, Dict, Optional
 
-from ..utils.comfy_api import (
-    get_available_samplers,
-    get_available_schedulers,
-    is_valid_sampler,
-    is_valid_scheduler,
-)
 from ..workflows.base import ComfyWorkflow
 from ..utils.logger import (
     get_logger, 

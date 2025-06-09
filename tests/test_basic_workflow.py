@@ -9,7 +9,7 @@ import argparse
 # Add the parent directory to the path to import cringegen
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from cringegen.prompt_generation.furry_generator import FurryPromptGenerator, NsfwFurryPromptGenerator
+from cringegen.prompt_generation.generators.furry_generator import FurryPromptGenerator, NsfwFurryPromptGenerator
 from cringegen.utils.comfy_api import queue_prompt, get_image_path
 from cringegen.workflows.furry import create_basic_furry_workflow, create_nsfw_furry_workflow
 
@@ -65,13 +65,9 @@ def test_workflow_generation():
         print(f"Node {node_id}: {node['class_type']}")
     print()
 
-def test_with_comfyui(checkpoint, lora):
-    """Test with ComfyUI API
-    
-    Args:
-        checkpoint: The checkpoint to use
-        lora: The LoRA to use
-    """
+def test_with_comfyui():
+    checkpoint = "dummy_checkpoint"
+    lora = "dummy_lora"
     print("Testing with ComfyUI API...")
     
     # Generate a prompt
@@ -121,7 +117,7 @@ def main():
     
     # Optionally test with ComfyUI
     if args.test_comfyui:
-        test_with_comfyui(args.checkpoint, args.lora)
+        test_with_comfyui()
 
 if __name__ == "__main__":
     main() 

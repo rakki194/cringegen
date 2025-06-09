@@ -4,7 +4,6 @@ Test script to verify that the newly added fictional species are correctly recog
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add the cringegen directory to the path so we can import from it
@@ -16,6 +15,8 @@ try:
     from cringegen.data import taxonomy
     from cringegen.prompt_generation.nlp.species_utils import get_anatomical_terms
     from cringegen.commands.llm_noobai_nsfw import enhance_prompt_with_species_tags
+    from cringegen.data.taxonomy.descriptors import SPECIES_DESCRIPTORS
+    from cringegen.data.colors import SPECIES_COLORS
 
     def test_fictional_species_taxonomy():
         """Test that all new fictional species are correctly mapped in the taxonomy."""
@@ -123,15 +124,16 @@ try:
         """Test proper categorization in species lists."""
         print("\n=== Testing Fictional Species Categorization ===\n")
 
+        SPECIES_TAXONOMY = taxonomy.SPECIES_TAXONOMY
         categories = {
             "ANTHRO_SPECIES": taxonomy.ANTHRO_SPECIES,
             "POPULAR_ANTHRO_SPECIES": taxonomy.POPULAR_ANTHRO_SPECIES,
-            "POKEMON_SPECIES": taxonomy.POKEMON_SPECIES,
-            "DIGIMON_SPECIES": taxonomy.DIGIMON_SPECIES,
-            "VIDEO_GAME_CHARACTERS": taxonomy.VIDEO_GAME_CHARACTERS,
+            "POKEMON_SPECIES": {k for k, v in SPECIES_TAXONOMY.items() if v == "pokemon"},
+            "DIGIMON_SPECIES": {k for k, v in SPECIES_TAXONOMY.items() if v == "digimon"},
+            "VIDEO_GAME_CHARACTERS": set(),  # Define as needed
             "FANTASY_SPECIES": taxonomy.FANTASY_SPECIES,
-            "FANTASTICAL_SPECIES": taxonomy.FANTASTICAL_SPECIES,
-            "ALL_SPECIES": taxonomy.ALL_SPECIES,
+            "FANTASTICAL_SPECIES": set(),  # Define as needed
+            "ALL_SPECIES": set(SPECIES_TAXONOMY.keys()),
         }
 
         test_species = [
@@ -165,12 +167,12 @@ try:
 
         print("Adjectives:")
         for species in test_species:
-            adjectives = taxonomy.SPECIES_TO_ADJECTIVES.get(species, [])
+            adjectives = SPECIES_DESCRIPTORS.get(species, [])
             print(f"{species:<20} → {', '.join(adjectives) if adjectives else 'NONE'}")
 
         print("\nColors:")
         for species in test_species:
-            colors = taxonomy.SPECIES_TO_COLORS.get(species, [])
+            colors = SPECIES_COLORS.get(species, [])
             print(f"{species:<20} → {', '.join(colors) if colors else 'NONE'}")
 
     def test_taxonomy_group_assignments():

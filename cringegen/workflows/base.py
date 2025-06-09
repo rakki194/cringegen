@@ -3,8 +3,6 @@ Base classes for ComfyUI workflows
 """
 
 import json
-import uuid
-from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 

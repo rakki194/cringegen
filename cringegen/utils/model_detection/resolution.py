@@ -4,8 +4,6 @@ Resolution utilities for cringegen.
 This module provides functions to determine optimal resolutions for different model architectures.
 """
 
-from typing import List, Tuple
-
 # List of functions we're implementing
 __all__ = [
     "is_optimal_resolution",

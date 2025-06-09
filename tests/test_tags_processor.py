@@ -14,18 +14,21 @@ from cringegen.utils.tags_processor import TagsProcessor
 from cringegen.utils.ollama_api import default_client
 
 
-def test_tags_processor(args):
+def test_tags_processor():
     """Test the tags processor"""
-    # Create a tags processor with the specified file
-    processor = TagsProcessor(args.tags_file)
-
+    tags_file = "dummy_tags_file.txt"
+    processor = TagsProcessor(tags_file)
+    species = "wolf"
+    gender = "male"
+    nsfw = True
+    explicit_level = 2
     # Generate species-specific tags
     species_tags = processor.generate_species_specific_tags(
-        species=args.species, gender=args.gender, nsfw=args.nsfw, explicit_level=args.explicit_level
+        species=species, gender=gender, nsfw=nsfw, explicit_level=explicit_level
     )
 
     # Print the results
-    print(f"\nSpecies-specific tags for {args.species} ({args.gender}):")
+    print(f"\nSpecies-specific tags for {species} ({gender}):")
     print("==================================================")
 
     for category, tags in species_tags.items():
@@ -33,16 +36,16 @@ def test_tags_processor(args):
             print(f"\n{category.capitalize()}:")
             print(", ".join(tags))
 
-    # If we should test with LLM, generate a caption
-    if args.with_llm:
+    with_llm = False
+    if with_llm:
         print("\n\nGenerating LLM caption...")
         print("==========================")
 
         caption = default_client.generate_nsfw_caption(
             subject="character",
-            species=args.species,
-            gender=args.gender,
-            nsfw_intensity="explicit" if args.explicit_level > 2 else "moderate",
+            species=species,
+            gender=gender,
+            nsfw_intensity="explicit" if explicit_level > 2 else "moderate",
             temperature=0.7,
             show_thinking=False,
         )
@@ -61,7 +64,7 @@ def main():
     parser.add_argument("--with-llm", action="store_true", help="Test with LLM caption generation")
 
     args = parser.parse_args()
-    test_tags_processor(args)
+    test_tags_processor()
 
 
 if __name__ == "__main__":

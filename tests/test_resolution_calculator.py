@@ -3,18 +3,16 @@ Test script for the resolution calculator functions in logger.py
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add the repository root to the Python path
 repo_root = Path(__file__).parent.parent.parent
 sys.path.append(str(repo_root))
 
-from ..utils.logger import (
+from cringegen.utils.logger import (
     get_optimal_resolution,
     get_optimal_resolution_suggestions,
     is_optimal_resolution,
-    print_colored_warning,
 )
 
 def test_optimal_resolution_calculation():

@@ -22,7 +22,6 @@ from .model_detection import (
     is_lumina_model,
     detect_model_architecture,
     get_model_info,
-    get_sd35_variant,
     test_model_detection,
     is_optimal_resolution,
     get_optimal_resolution,

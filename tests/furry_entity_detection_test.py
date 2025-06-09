@@ -7,7 +7,6 @@ including famous characters from games, anime, and other media.
 
 import sys
 import os
-from pprint import pprint
 
 # Add the parent directory to the path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

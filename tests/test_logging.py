@@ -23,10 +23,11 @@ def test_direct_logging():
     logger.warning("This is a warning message")
     logger.error("This is an error message")
 
-def test_file_logging(log_file):
+def test_file_logging():
     """Test logging to a file."""
     # Set up logging to file
     print("\n=== Testing file logging ===")
+    log_file = "/tmp/cringegen_test_log.txt"
     configure_logging(level="DEBUG", log_file=log_file)
     
     # Get a logger
@@ -89,7 +90,7 @@ def main():
     
     # Run the tests
     test_direct_logging()
-    test_file_logging(args.log_file)
+    test_file_logging()
     test_cli_logging()
     
     print("\n=== Logging test complete ===")
